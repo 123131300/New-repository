@@ -1,508 +1,382 @@
-<!DOCTYPE html>
-<html lang="ru" data-theme="dark">
+<!doctype html>
+<html lang="ru">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Mouse & Cheese</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Mouse & Cheese — Neon v4.6</title>
 <style>
 :root{
-  --bg:#0b1220; --card:#111827; --text:#EAF1FF; --muted:#98A2B3;
-  --primary:#3AB4FF; --accent:#9A6BFF; --ok:#22C55E;
-  --chip:#1f2937; --ring:#8aa4ff40; --radius:16px; --gap:12px;
-  --shadow:0 8px 24px rgba(0,0,0,.25);
-  --danger:#ef4444;
+  --bg:#0f1620; --card:#121b26; --text:#e9eef6; --text-dim:#a9b4c2; --primary:#21b2ff; --ok:#2dd4bf; --warn:#f59e0b; --danger:#ef4444; --chip:rgba(255,255,255,.06);
+  --ring:#6ea8ff; --ring-bg:#263349; --shadow:0 8px 28px rgba(0,0,0,.35);
 }
-:root[data-theme="light"]{
-  --bg:#F6F8FB; --card:#FFFFFF; --text:#101828; --muted:#667085;
-  --primary:#1769FF; --accent:#7B3AFD; --ok:#0EA35C;
-  --chip:#EEF2F6; --ring:#1769ff22; --danger:#e11d48;
+[data-theme="light"]{
+  --bg:#eef2f6; --card:#ffffff; --text:#0c1220; --text-dim:#5b6574; --primary:#0ea5e9; --ok:#0db39e; --warn:#b7791f; --danger:#dc2626; --chip:rgba(0,0,0,.06);
+  --ring:#7c3aed; --ring-bg:#e6e9f2; --shadow:0 10px 30px rgba(12,18,32,.12);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
-a{color:inherit}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; background:var(--bg); color:var(--text)}
+.container{max-width:960px;margin:0 auto;padding:20px 16px 48px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 12px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px}
+.brand .logo{font-size:22px}
+.header-actions{display:flex;gap:8px;align-items:center}
+.btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;font-weight:600;background:var(--primary);color:#fff;box-shadow:var(--shadow);cursor:pointer}
+.btn:active{transform:translateY(1px)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.1)}
+.btn-ghost:where([data-theme="light"] *), [data-theme="light"] .btn-ghost{border-color:rgba(12,18,32,.12)}
+.btn-ok{background:var(--ok);}
+.btn-warn{background:var(--warn)}
+.btn-danger{background:var(--danger)}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}
+.menu-row{display:grid;gap:14px}
+@media(min-width:640px){.menu-row{grid-template-columns:1fr 1fr}}
+.title-xl{font-weight:900;font-size:clamp(22px,5vw,32px);letter-spacing:-.01em;margin:6px 0 14px}
+.title-lg{font-weight:800;font-size:clamp(18px,4.2vw,26px);margin:0 0 10px}
+.subtitle{opacity:.8;font-size:clamp(12px,3.4vw,14px);margin:0}
+.stat-wrap{display:grid;gap:14px}
+@media(min-width:640px){.stat-wrap{grid-template-columns:1fr 1fr}}
+.stat-card{display:flex;align-items:center;gap:16px}
+.stat-ring{position:relative;width:160px;aspect-ratio:1/1;border-radius:50%;background:
+  radial-gradient(closest-side,transparent 78%, var(--ring-bg) 78% 100%),
+  conic-gradient(var(--ring) var(--p,10%), transparent 0)}
+.stat-ring .center{position:absolute;inset:10px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.stat-ring .big{font-size:clamp(28px,10vw,48px);font-weight:900}
+.stat-ring .label{font-size:clamp(12px,3.5vw,16px);opacity:.8;margin-top:-4px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi .cell{background:var(--card);border-radius:14px;padding:12px;text-align:center}
+.kpi .num{font-weight:900;font-size:clamp(18px,5.4vw,22px)}
+.kpi .cap{opacity:.8;font-size:12px}
+.menu-row .item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+.menu-row .left{display:flex;align-items:center;gap:12px}
+.menu-row .emoji{font-size:22px}
+.menu-row .card-title{font-size:clamp(16px,4vw,22px);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-row .card-sub{opacity:.7;font-size:clamp(12px,3.4vw,14px)}
+.menu-row .chipbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.chip{padding:4px 8px;border-radius:999px;background:var(--chip);font-size:12px;opacity:.9}
 .hidden{display:none!important}
-.safe-bottom{height:env(safe-area-inset-bottom)}
-
-/* Top bar */
-.topbar{position:sticky;top:0;z-index:10;background:linear-gradient(to bottom,rgba(0,0,0,.18),transparent),var(--bg);
-  display:flex;align-items:center;gap:10px;padding:10px 12px 8px 12px;backdrop-filter:blur(8px)}
-.brand{font:800 18px/1.1 system-ui;letter-spacing:.2px}
-.topbar .sp{flex:1}
-.btn{border-radius:12px;padding:10px 14px;background:var(--primary);color:#fff;border:0;cursor:pointer}
-.btn.small{padding:8px 10px;font-size:12px}
-.btn.ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.15)}
-:root[data-theme="light"] .btn.ghost{border-color:#E5E7EB}
-.icon{width:18px;height:18px;vertical-align:-3px}
-
-/* Views */
-.view{max-width:980px;margin:0 auto;padding:12px}
-.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)}
-.section{padding:16px 16px 14px}
-.h1{font:800 28px/1.15 system-ui;margin:6px 4px 12px}
-.h2{font:700 20px/1.2 system-ui;margin:0}
-.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-
-/* Menu grid */
-.menu-grid{display:grid;gap:16px}
-.tile{grid-column:1/-1}
-@media(min-width:520px){.menu-grid{grid-template-columns:repeat(6,1fr)} .tile{grid-column:span 3}}
-@media(min-width:920px){.menu-grid{grid-template-columns:repeat(12,1fr)} .tile{grid-column:span 4}}
-.tile .row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;min-width:240px}
-.kpi .box{background:var(--chip);border-radius:12px;padding:10px;text-align:center;min-width:80px}
-.kpi .big{font:800 22px/1.1 system-ui}
-.chips{display:flex;gap:8px;flex-wrap:wrap;max-width:420px}
-.chip{border-radius:999px;padding:6px 10px;font-size:12px;background:var(--chip);color:var(--muted)}
-
-/* ring */
-.ring{width:120px;height:120px}
-.ring-svg text{fill:var(--text);font:800 10px/1 system-ui}
-.ring-val{font-size:12px}
-
-/* Cards / Quiz common */
-.word-box{display:grid;gap:12px}
-.word-en{font:800 44px/1.2 system-ui;letter-spacing:.4px}
-.word-ru{color:var(--muted)}
-.actions-row{display:flex;gap:10px;flex-wrap:wrap}
-.actions-row .btn{flex:1;min-width:120px}
-
-/* Game */
-#gameWrap{display:grid;gap:12px}
-#board{touch-action:none;user-select:none;display:block;margin:0 auto;background:
-  repeating-linear-gradient(90deg,transparent 0,transparent 27px,var(--ring) 28px),
-  repeating-linear-gradient(0deg,transparent 0,transparent 27px,var(--ring) 28px),
-  var(--card);
-  border-radius:10px;box-shadow:inset 0 0 0 1px var(--ring);
-}
-.game-hint{color:var(--muted);text-align:center}
-
-/* Pronunciation */
-.badge{display:inline-block;border-radius:999px;padding:6px 10px;background:var(--chip);color:var(--muted);font-size:12px}
-
-/* Footer links */
-.foot{opacity:.8;font-size:12px;margin:12px 4px;text-align:center;color:var(--muted)}
+.view{display:none}
+.view.active{display:block}
+.center{display:flex;align-items:center;justify-content:center}
+.actions-inline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.word{font-size:clamp(42px,12vw,64px);font-weight:900;letter-spacing:-.02em}
+.pron-hint{font-size:clamp(14px,3.6vw,16px);opacity:.8;margin-bottom:8px}
+.pill{padding:.25rem .6rem;border-radius:999px;background:var(--chip);font-size:12px}
+/* game */
+.game-wrap{display:flex;flex-direction:column;gap:12px}
+.game-instructions{text-align:center;font-size:clamp(12px,3.4vw,14px);opacity:.8}
+canvas{touch-action:none;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(0,0,0,.04))}
+/* quiz buttons */
+.answer{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:var(--card);color:var(--text);font-weight:700}
+[data-theme="light"] .answer{border-color:rgba(12,18,32,.12)}
+.answer.ok{border-color:var(--ok)}
+.answer.bad{border-color:var(--danger)}
+.footer-note{opacity:.6;margin-top:16px;text-align:center;font-size:12px}
 </style>
 </head>
 <body>
+  <div class="container">
+    <header class="header">
+      <div class="brand"><span class="logo">🐭</span><span>Mouse & Cheese</span></div>
+      <div class="header-actions">
+        <button class="btn-ghost" id="btnTheme">Тема</button>
+        <button class="btn-ghost" id="btnSettings">Меню</button>
+      </div>
+    </header>
 
-<header class="topbar">
-  <div class="brand">🐭 Mouse & Cheese</div>
-  <div class="sp"></div>
-  <button class="btn small ghost" id="themeBtn" title="Светлая/тёмная тема">Тема</button>
-  <button class="btn small ghost" id="menuBtn">Меню</button>
-</header>
-
-<!-- MENU -->
-<section id="view-menu" class="view">
-  <div class="h1">Главное меню</div>
-  <div class="menu-grid">
-    <!-- Dashboard -->
-    <div class="tile card section">
-      <div class="row">
-        <div>
-          <div id="ringToday" class="ring"></div>
-          <div class="chips" id="chipsLast" title="Последние изученные"></div>
+    <!-- MENU VIEW -->
+    <section id="view-menu" class="view active">
+      <h1 class="title-xl">Главное меню</h1>
+      <div class="grid">
+        <div class="card">
+          <div class="stat-wrap">
+            <div class="stat-card">
+              <div class="stat-ring" id="ring" style="--p:5%">
+                <div class="center">
+                  <div class="big" id="ringNum">1</div>
+                  <div class="label">Сегодня</div>
+                </div>
+              </div>
+              <div>
+                <h2 class="title-lg">Цель: <span id="goal">20</span>/день</h2>
+                <p class="subtitle">Двигайся к цели — занимайся каждый день.</p>
+                <div class="kpi">
+                  <div class="cell"><div class="num" id="statCards">0</div><div class="cap">Карточки</div></div>
+                  <div class="cell"><div class="num" id="statQuiz">0</div><div class="cap">Викторина</div></div>
+                  <div class="cell"><div class="num" id="statCheese">0</div><div class="cap">Сыр</div></div>
+                  <div class="cell"><div class="num" id="statPron">0</div><div class="cap">Произн.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="kpi">
-          <div class="box"><div class="big" id="kpiCards">0</div><div>Карточки</div></div>
-          <div class="box"><div class="big" id="kpiQuiz">0</div><div>Викторина</div></div>
-          <div class="box"><div class="big" id="kpiCheese">0</div><div>Сыр</div></div>
-          <div class="box"><div class="big" id="kpiPron">0</div><div>Произн.</div></div>
+
+        <div class="menu-row">
+          <div class="item">
+            <div class="left"><div class="emoji">🧠</div>
+              <div>
+                <div class="card-title">Викторина</div>
+                <div class="card-sub">Выбери верный перевод</div>
+                <div class="chipbar"><span class="chip">за сегодня: <b id="today-quiz">0</b></span> <span class="chip">всего: <b id="total-quiz">0</b></span></div>
+              </div>
+            </div>
+            <button class="btn" onclick="navigate('quiz')">Открыть →</button>
+          </div>
+
+          <div class="item">
+            <div class="left"><div class="emoji">🃏</div>
+              <div>
+                <div class="card-title">Карточки</div>
+                <div class="card-sub">EN ⇄ RU. «Знаю» добавляет в изученные</div>
+                <div class="chipbar"><span class="chip">за сегодня: <b id="today-cards">0</b></span> <span class="chip">изучено: <b id="total-known">0</b></span></div>
+              </div>
+            </div>
+            <button class="btn" onclick="navigate('cards')">Открыть →</button>
+          </div>
+
+          <div class="item">
+            <div class="left"><div class="emoji">🎮</div>
+              <div>
+                <div class="card-title">Игра</div>
+                <div class="card-sub">Съешь сыр — «бип» + слово</div>
+              </div>
+            </div>
+            <button class="btn" onclick="navigate('game')">Открыть →</button>
+          </div>
+
+          <div class="item">
+            <div class="left"><div class="emoji">🎙️</div>
+              <div>
+                <div class="card-title">Произношение</div>
+                <div class="card-sub">Скажи слово как можно ближе к оригиналу</div>
+                <div class="chipbar"><span class="chip">доступ к микрофону: <b id="micState">—</b></span></div>
+              </div>
+            </div>
+            <button class="btn" onclick="navigate('pron')">Тренировать →</button>
+          </div>
         </div>
       </div>
-    </div>
+      <div class="footer-note">v4.6 · Light/Dark · тач-управление · локальное сохранение</div>
+    </section>
 
-    <div class="tile card section">
-      <div class="row"><h3 class="h2">🧠 Викторина</h3><button class="btn" onclick="go('quiz')">Открыть →</button></div>
-    </div>
-    <div class="tile card section">
-      <div class="row"><h3 class="h2">🃏 Карточки</h3><button class="btn" onclick="go('cards')">Открыть →</button></div>
-    </div>
-    <div class="tile card section">
-      <div class="row"><h3 class="h2">🎮 Игра</h3><button class="btn" onclick="go('game')">Открыть →</button></div>
-    </div>
-    <div class="tile card section">
-      <div class="row"><h3 class="h2">🎙️ Произношение</h3><button class="btn" onclick="go('pron')">Тренировать →</button></div>
-    </div>
-  </div>
-
-  <div class="foot">v4.5 · Light/Dark · тач‑управление · локальное сохранение</div>
-  <div class="safe-bottom"></div>
-</section>
-
-<!-- CARDS -->
-<section id="view-cards" class="view hidden">
-  <div class="card section">
-    <div class="h2">Карточки</div>
-    <div class="word-box">
-      <div class="word-en" id="cardEN">cheese</div>
-      <div class="word-ru" id="cardRU" hidden>сыр</div>
-      <div class="actions-row">
-        <button class="btn ghost" onclick="cards.showRU()">Показать RU</button>
-        <button class="btn ghost" onclick="speak(current.en)">Озвучить</button>
-        <button class="btn" onclick="cards.know()">Знаю</button>
-        <button class="btn ghost" onclick="cards.next()">Дальше</button>
+    <!-- QUIZ VIEW -->
+    <section id="view-quiz" class="view">
+      <div class="card">
+        <h2 class="title-lg">Викторина — выбери перевод</h2>
+        <div class="word" id="quizPrompt">cheese</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px;gap:12px" id="quizOptions"></div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<!-- QUIZ -->
-<section id="view-quiz" class="view hidden">
-  <div class="card section">
-    <div class="h2">Викторина — выбери перевод</div>
-    <div class="word-box">
-      <div class="word-en" id="quizEN">write</div>
-      <div class="actions-row" id="quizOptions"></div>
-      <div id="quizStatus" class="badge hidden"></div>
-    </div>
-  </div>
-</section>
-
-<!-- GAME -->
-<section id="view-game" class="view hidden">
-  <div class="card section" id="gameWrap">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div class="h2">Мышь & Сыр</div>
-      <button class="btn small ghost" onclick="game.restart()">Рестарт</button>
-    </div>
-    <canvas id="board" width="392" height="336"></canvas>
-    <div class="game-hint">Свайпай для управления. Тап — повернуть к сыру. Съешь сыр — «бип» и слово.</div>
-    <div id="gameWord" class="badge hidden"></div>
-  </div>
-</section>
-
-<!-- PRONUNCIATION -->
-<section id="view-pron" class="view hidden">
-  <div class="card section">
-    <div class="h2">Произношение • скажи слово как можно ближе к оригиналу</div>
-    <div class="word-box">
-      <div class="word-en" id="prEN">ticket</div>
-      <div class="word-ru" id="prRU">билет</div>
-      <div class="actions-row">
-        <button class="btn ghost" onclick="speak(current.en)">Слушать</button>
-        <button class="btn" onclick="pron.say()">Сказать (браuzер)</button>
-        <button class="btn ghost" onclick="pron.next()">Дальше</button>
+    <!-- CARDS VIEW -->
+    <section id="view-cards" class="view">
+      <div class="card">
+        <p class="pron-hint">Нажми «Показать RU»</p>
+        <div class="word" id="cardWord">cheese</div>
+        <div class="actions-inline" style="margin-top:14px">
+          <button class="btn" id="btnShowRU">Показать RU</button>
+          <button class="btn" id="btnCardTTS">Озвучить</button>
+          <button class="btn btn-ok" id="btnKnow">Знаю</button>
+          <button class="btn btn-ghost" id="btnNextCard">Дальше</button>
+        </div>
       </div>
-      <div class="badge" id="prInfo">Доступ к микрофону: <span id="micState">отключён</span></div>
-      <div class="actions-row" id="prFallback" style="margin-top:8px">
-        <input id="prInput" placeholder="Фоллбэк: напечатай английское слово" class="card" style="padding:10px;border-radius:10px;border:1px solid var(--ring);flex:1;background:transparent;color:var(--text)">
-        <button class="btn ghost" onclick="pron.check()">Проверить</button>
+    </section>
+
+    <!-- GAME VIEW -->
+    <section id="view-game" class="view">
+      <div class="card game-wrap">
+        <h2 class="title-lg">Мышь & Сыр</h2>
+        <canvas id="gameCanvas" width="660" height="420"></canvas>
+        <p class="game-instructions">Свайпай для управления. Тап — шаг к сыру. Съешь сыр — «бип» и слово.</p>
       </div>
-      <div id="prMatch" class="badge hidden"></div>
-    </div>
+    </section>
+
+    <!-- PRONUNCIATION VIEW -->
+    <section id="view-pron" class="view">
+      <div class="card">
+        <p class="pron-hint">Произношение • скажи слово максимально похоже к оригиналу</p>
+        <div class="word" id="pronWord">cheese</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+          <button class="btn" id="btnListen">Слушать</button>
+          <button class="btn" id="btnSay">Сказать (браузер)</button>
+          <button class="btn btn-ghost" id="btnPronNext" style="grid-column:1/-1">Дальше</button>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <div class="pill" id="micInfo">Доступ к микрофону: —</div>
+          <div class="grid" style="grid-template-columns:1fr auto;gap:10px">
+            <input id="fallbackInput" class="card" placeholder="Фоллбэк: напечатай англ."/>
+            <button class="btn" id="btnCheck">Проверить</button>
+          </div>
+          <div class="pill" id="score">Совпадение: 0%</div>
+        </div>
+      </div>
+    </section>
+
   </div>
-</section>
 
 <script>
-/* ---------- DATA ---------- */
-const WORDS = [
-  {en:'cheese', ru:'сыр'}, {en:'child', ru:'ребёнок'}, {en:'milk', ru:'молоко'}, {en:'ticket', ru:'билет'},
-  {en:'luggage', ru:'багаж'}, {en:'bread', ru:'хлеб'}, {en:'friend', ru:'друг'}, {en:'computer', ru:'компьютер'},
-  {en:'direction', ru:'направление'}, {en:'tea', ru:'чай'}, {en:'right', ru:'право'}, {en:'room', ru:'комната'},
-  {en:'help', ru:'помогать'}, {en:'left', ru:'лево'}, {en:'write', ru:'писать'}, {en:'water', ru:'вода'},
-  {en:'speak', ru:'говорить'}, {en:'read', ru:'читать'}
+// --- DATA -----------------------------------------------------------------
+const PAIRS = [
+  {en:'cheese', ru:'сыр'},{en:'bread', ru:'хлеб'},{en:'water', ru:'вода'},
+  {en:'friend', ru:'друг'},{en:'computer', ru:'компьютер'},{en:'child', ru:'ребёнок'},
+  {en:'write', ru:'писать'},{en:'speak', ru:'говорить'},{en:'ticket', ru:'билет'},
 ];
-let current = WORDS[0];
 
-/* ---------- STATE ---------- */
-const ST_KEY='mnc-state-v45';
-let state = JSON.parse(localStorage.getItem(ST_KEY) || 'null') || {
-  date: new Date().toISOString().slice(0,10),
-  today: 0,
-  stats: {cards:0, quiz:0, cheese:0, pron:0},
-  lastLearned: [],
-  known: {}
-};
-function save(){ localStorage.setItem(ST_KEY, JSON.stringify(state)); }
-function bumpToday(n=1){
-  const d = new Date().toISOString().slice(0,10);
-  if(state.date!==d){state.date=d;state.today=0;}
-  state.today += n; save(); fillDashboard();
+// --- STATE / STORAGE -------------------------------------------------------
+const S = JSON.parse(localStorage.getItem('mc_state_v46')||'{}');
+S.stats ||= {today:0, quiz:0, cards:0, cheese:0, pron:0, known:[]};
+S.theme ||= (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+
+function save(){localStorage.setItem('mc_state_v46', JSON.stringify(S));}
+
+// --- ROUTER ---------------------------------------------------------------
+function show(id){ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id===id)); }
+function navigate(name){
+  if(name==='menu'){renderMenu(); show('view-menu');}
+  if(name==='quiz'){newQuiz(); show('view-quiz');}
+  if(name==='cards'){renderCard(); show('view-cards');}
+  if(name==='game'){resizeGame(); show('view-game');}
+  if(name==='pron'){newPron(); show('view-pron');}
 }
 
-/* ---------- THEME ---------- */
-(function(){
-  const key='mnc-theme';
-  const prefersLight = matchMedia('(prefers-color-scheme: light)').matches;
-  const saved = localStorage.getItem(key) || (prefersLight?'light':'dark');
-  document.documentElement.setAttribute('data-theme', saved);
-  document.getElementById('themeBtn').onclick=()=>{
-    const cur=document.documentElement.getAttribute('data-theme');
-    const next=cur==='light'?'dark':'light';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem(key,next);
-  };
-})();
+// --- THEME ----------------------------------------------------------------
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', S.theme);
+}
+function toggleTheme(){ S.theme = (S.theme==='light'?'dark':'light'); applyTheme(); save(); }
+applyTheme();
 
-/* ---------- NAV ---------- */
-const views = ['menu','cards','quiz','game','pron'];
-function go(name){
-  views.forEach(v=>document.getElementById('view-'+v).classList.toggle('hidden', v!==name));
-  // ensure menu button present
-  document.getElementById('menuBtn').onclick=()=>go('menu');
-}
-document.getElementById('menuBtn').onclick=()=>go('menu');
-go('menu');
+// header buttons
+btnTheme.addEventListener('click',toggleTheme);
+btnSettings.addEventListener('click',()=>navigate('menu'));
 
-/* ---------- DASHBOARD ---------- */
-function renderRing(el, value, goal=20){
-  const pct = Math.max(0, Math.min(100, Math.round(value/goal*100)));
-  el.innerHTML = `
-  <svg viewBox="0 0 36 36" class="ring-svg" width="120" height="120" aria-label="Сегодня">
-    <defs><linearGradient id="grad" x1="1" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="var(--primary)"/>
-      <stop offset="100%" stop-color="var(--accent)"/>
-    </linearGradient></defs>
-    <circle cx="18" cy="18" r="15.5" stroke="var(--ring)" stroke-width="3" fill="none"/>
-    <circle cx="18" cy="18" r="15.5" stroke="url(#grad)" stroke-width="3" fill="none"
-      stroke-dasharray="${pct} ${100-pct}" stroke-linecap="round" transform="rotate(-90 18 18)"/>
-    <text x="18" y="15" text-anchor="middle">Сегодня</text>
-    <text x="18" y="23" text-anchor="middle" class="ring-val">${value}</text>
-  </svg>`;
+// --- MENU RENDER ----------------------------------------------------------
+function renderMenu(){
+  // ring percent — today/S.goal
+  const today = S.stats.today||0; const goal = 20; 
+  document.getElementById('ring').style.setProperty('--p', Math.min(100, Math.round((today/goal)*100))+'%');
+  document.getElementById('ringNum').textContent = today||1;
+  document.getElementById('goal').textContent = goal;
+  statCards.textContent = S.stats.cards||0; statQuiz.textContent = S.stats.quiz||0; statCheese.textContent = S.stats.cheese||0; statPron.textContent = S.stats.pron||0;
+  today-quiz && (document.getElementById('today-quiz').textContent = S.stats.quiz||0);
+  document.getElementById('total-quiz').textContent = (S.stats.quiz||0);
+  document.getElementById('today-cards').textContent = (S.stats.cards||0);
+  document.getElementById('total-known').textContent = (S.stats.known?.length||0);
 }
-function fillDashboard(){
-  renderRing(document.getElementById('ringToday'), state.today||0, 20);
-  document.getElementById('kpiCards').textContent = state.stats.cards||0;
-  document.getElementById('kpiQuiz').textContent = state.stats.quiz||0;
-  document.getElementById('kpiCheese').textContent = state.stats.cheese||0;
-  document.getElementById('kpiPron').textContent = state.stats.pron||0;
-  const chips=document.getElementById('chipsLast');
-  chips.innerHTML=''; (state.lastLearned||[]).slice(-10).reverse().forEach(w=>{
-    const s=document.createElement('span'); s.className='chip'; s.textContent=w; chips.appendChild(s);
-  });
-}
-fillDashboard();
+renderMenu();
 
-/* ---------- UTILS ---------- */
-function rnd(n){return Math.floor(Math.random()*n)}
-function sample(arr){return arr[rnd(arr.length)]}
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a;}
-function beep(ms=120, freq=880){
-  try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.type='sine'; o.frequency.value=freq; o.start();
-    g.gain.setValueAtTime(.2, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+ms/1000);
-    o.stop(ctx.currentTime+ms/1000+0.02);
-  }catch(e){/* ignore */}
+// --- QUIZ -----------------------------------------------------------------
+let currentQuiz = null;
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a }
+function makeQuizQuestion(pairs, locale='ru'){
+  const idx = Math.floor(Math.random()*pairs.length);
+  const q = pairs[idx];
+  const answer = (locale==='ru') ? q.ru : q.en;
+  const pool = pairs.filter((_,i)=>i!==idx).map(p=> (locale==='ru'?p.ru:p.en));
+  shuffle(pool);
+  const distractors=[]; for(const v of pool){ if(distractors.length===3) break; if(v && v!==answer && !distractors.includes(v)) distractors.push(v); }
+  while(distractors.length<3) distractors.push(answer+' ●');
+  const options = shuffle([answer, ...distractors]).slice(0,4);
+  return { prompt:(locale==='ru')?q.en:q.ru, answer, options, source:q };
 }
-function similarity(a,b){ // 0..1
-  a=a.toLowerCase().trim(); b=b.toLowerCase().trim();
-  if(!a||!b) return 0;
-  const d=[];
-  for(let i=0;i<=a.length;i++){d[i]=[i]}
-  for(let j=0;j<=b.length;j++){d[0][j]=j}
-  for(let i=1;i<=a.length;i++){
-    for(let j=1;j<=b.length;j++){
-      d[i][j]=Math.min(
-        d[i-1][j]+1,
-        d[i][j-1]+1,
-        d[i-1][j-1] + (a[i-1]==b[j-1]?0:1)
-      )
-    }
-  }
-  const dist=d[a.length][b.length];
-  return 1 - dist/Math.max(a.length,b.length);
+function newQuiz(){
+  currentQuiz = makeQuizQuestion(PAIRS,'ru');
+  quizPrompt.textContent = currentQuiz.prompt;
+  quizOptions.innerHTML='';
+  currentQuiz.options.forEach(opt=>{
+    const b=document.createElement('button'); b.className='answer'; b.textContent=opt; b.onclick=()=>pickQuiz(b, opt);
+    quizOptions.appendChild(b);
+  })
+}
+function pickQuiz(btn, val){
+  const ok = (val===currentQuiz.answer);
+  btn.classList.add(ok?'ok':'bad');
+  Array.from(quizOptions.children).forEach(ch=>ch.disabled=true);
+  setTimeout(()=>{ S.stats.quiz=(S.stats.quiz||0)+1; S.stats.today=(S.stats.today||0)+1; save(); newQuiz(); }, 700);
 }
 
-/* ---------- SPEAK ---------- */
-let VOICES=[];
-function loadVoices(){
-  VOICES = speechSynthesis.getVoices();
-  if(!VOICES.length){ setTimeout(loadVoices, 250); }
+// --- CARDS ----------------------------------------------------------------
+let cardIndex = 0; 
+function renderCard(){ const p = PAIRS[cardIndex%PAIRS.length]; cardWord.textContent=p.en; }
+btnShowRU.onclick = ()=>{ const p=PAIRS[cardIndex%PAIRS.length]; alert(p.en+' — '+p.ru); };
+btnCardTTS.onclick = ()=>{ const p=PAIRS[cardIndex%PAIRS.length]; speakWord(p.en,1.0); };
+btnKnow.onclick = ()=>{ const p=PAIRS[cardIndex%PAIRS.length]; if(!S.stats.known.includes(p.en)) S.stats.known.push(p.en); S.stats.cards=(S.stats.cards||0)+1; S.stats.today=(S.stats.today||0)+1; save(); nextCard(); };
+btnNextCard.onclick = ()=> nextCard();
+function nextCard(){ cardIndex=(cardIndex+1)%PAIRS.length; renderCard(); }
+
+// --- GAME -----------------------------------------------------------------
+const EMOJI = { mouse:'🐭', cheese:'🧀' };
+const game = { grid:18, cols:14, rows:10, mouse:{x:2,y:2}, cheese:{x:8,y:4} };
+const ctx = gameCanvas.getContext('2d');
+function resizeGame(){
+  const w = gameCanvas.clientWidth || 660; const h = Math.round(w*0.64);
+  gameCanvas.width=w; gameCanvas.height=h; drawGame();
 }
-if('speechSynthesis' in window){
-  speechSynthesis.onvoiceschanged = loadVoices;
-  loadVoices();
+window.addEventListener('resize', resizeGame, {passive:true});
+function drawGame(){
+  const w=gameCanvas.width,h=gameCanvas.height; ctx.clearRect(0,0,w,h);
+  const cell = Math.min(w/game.cols, h/game.rows);
+  ctx.font = `${Math.floor(cell*0.9)}px system-ui, Apple Color Emoji, Segoe UI Emoji`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  // cheese
+  ctx.fillText(EMOJI.cheese,(game.cheese.x+0.5)*cell,(game.cheese.y+0.5)*cell);
+  ctx.fillText(EMOJI.mouse,(game.mouse.x+0.5)*cell,(game.mouse.y+0.5)*cell);
 }
-function speak(text, lang='en-US'){
-  if(!('speechSynthesis' in window)) return;
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang=lang;
-  const v = VOICES.find(v=>/en/i.test(v.lang)&&/google|samantha|arthur|microsoft|zira/i.test(v.name)) || VOICES.find(v=>/en/i.test(v.lang));
-  if(v) u.voice=v;
-  u.rate=1; u.pitch=1;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
+function stepTowardCheese(){
+  const dx=game.cheese.x-game.mouse.x, dy=game.cheese.y-game.mouse.y;
+  if(Math.abs(dx)>Math.abs(dy)) game.mouse.x+=Math.sign(dx); else game.mouse.y+=Math.sign(dy);
+  clampMouse(); checkEat(); drawGame();
 }
-
-/* ---------- CARDS ---------- */
-const cards = {
-  idx: 0,
-  next(){
-    this.idx = (this.idx + 1) % WORDS.length;
-    current = WORDS[this.idx];
-    document.getElementById('cardEN').textContent=current.en;
-    const ru=document.getElementById('cardRU'); ru.textContent=current.ru; ru.hidden=true;
-  },
-  showRU(){ document.getElementById('cardRU').hidden=false; },
-  know(){
-    state.known[current.en]=true;
-    if(!state.lastLearned.includes(current.en)) state.lastLearned.push(current.en);
-    state.stats.cards++; bumpToday(); save(); fillDashboard();
-    this.next();
+function clampMouse(){ game.mouse.x=Math.max(0,Math.min(game.cols-1,game.mouse.x)); game.mouse.y=Math.max(0,Math.min(game.rows-1,game.mouse.y)); }
+function checkEat(){
+  if(game.mouse.x===game.cheese.x && game.mouse.y===game.cheese.y){
+    beep(); const p=PAIRS[Math.floor(Math.random()*PAIRS.length)]; speakWord(p.en,1.0);
+    S.stats.cheese=(S.stats.cheese||0)+1; S.stats.today=(S.stats.today||0)+1; save();
+    game.cheese={x:Math.floor(Math.random()*game.cols), y:Math.floor(Math.random()*game.rows)};
   }
-};
-cards.next();
-
-/* ---------- QUIZ ---------- */
-function renderQuiz(){
-  const elEN=document.getElementById('quizEN');
-  current = sample(WORDS);
-  elEN.textContent=current.en;
-  const opts = [current, ...shuffle(WORDS.filter(w=>w.en!==current.en)).slice(0,3)];
-  shuffle(opts);
-  const box=document.getElementById('quizOptions'); box.innerHTML='';
-  const status=document.getElementById('quizStatus'); status.classList.add('hidden');
-  opts.forEach(o=>{
-    const b=document.createElement('button');
-    b.className='btn ghost'; b.textContent=o.ru;
-    b.onclick=()=>{
-      const good = o.ru===current.ru;
-      if(good){
-        b.className='btn';
-        status.textContent='Верно ✅'; status.classList.remove('hidden');
-        state.stats.quiz++; bumpToday(); save(); fillDashboard(); beep(60,1200);
-        setTimeout(renderQuiz, 600);
-      }else{
-        b.classList.add('danger');
-        b.style.borderColor='var(--danger)';
-        status.textContent='Неверно ❌'; status.classList.remove('hidden');
-        beep(100,200);
-      }
-    };
-    box.appendChild(b);
-  });
 }
-renderQuiz();
+let touchStart=null;
+gameCanvas.addEventListener('touchstart',e=>{ const t=e.changedTouches[0]; touchStart={x:t.clientX,y:t.clientY}; },{passive:true});
+gameCanvas.addEventListener('touchend',e=>{
+  if(!touchStart) return; const t=e.changedTouches[0]; const dx=t.clientX-touchStart.x, dy=t.clientY-touchStart.y; const adx=Math.abs(dx), ady=Math.abs(dy);
+  if(Math.max(adx,ady)<24){ stepTowardCheese(); }
+  else { if(adx>ady) game.mouse.x+=Math.sign(dx); else game.mouse.y+=Math.sign(dy); clampMouse(); checkEat(); drawGame(); }
+  touchStart=null;
+});
+resizeGame(); drawGame();
 
-/* ---------- GAME ---------- */
-const game = (function(){
-  const board=document.getElementById('board');
-  const ctx=board.getContext('2d');
-  let CELL=28, GRID_W=14, GRID_H=12;
-  board.width=GRID_W*CELL; board.height=GRID_H*CELL;
+// simple beep
+function beep(){ try{ const ac=new (window.AudioContext||window.webkitAudioContext)(); const o=ac.createOscillator(); const g=ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value=880; o.start(); g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.12); setTimeout(()=>ac.close(),180);}catch(e){} }
 
-  const opposite = {r:'l', l:'r', u:'d', d:'u'};
-  const stateG = {
-    mouse:{x:5,y:5,dir:'r'},
-    cheese:{x:9,y:7},
-    running:false, timer:null
-  };
-  function setDir(d){ if(opposite[stateG.mouse.dir]!==d) stateG.mouse.dir=d; }
-  function randCheese(){
-    stateG.cheese.x = rnd(GRID_W); stateG.cheese.y=rnd(GRID_H);
-    if(stateG.cheese.x===stateG.mouse.x && stateG.cheese.y===stateG.mouse.y) randCheese();
-  }
-  function drawEmoji(e, x, y){
-    ctx.font = CELL+'px "Apple Color Emoji","Segoe UI Emoji",system-ui';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(e, x*CELL+CELL/2, y*CELL+CELL/2);
-  }
-  function draw(){
-    ctx.clearRect(0,0,board.width,board.height);
-    drawEmoji('🧀', stateG.cheese.x, stateG.cheese.y);
-    drawEmoji('🐭', stateG.mouse.x, stateG.mouse.y);
-  }
-  function step(){
-    const m=stateG.mouse;
-    if(m.dir==='r') m.x=(m.x+1)%GRID_W;
-    if(m.dir==='l') m.x=(m.x-1+GRID_W)%GRID_W;
-    if(m.dir==='u') m.y=(m.y-1+GRID_H)%GRID_H;
-    if(m.dir==='d') m.y=(m.y+1)%GRID_H;
-    if(m.x===stateG.cheese.x && m.y===stateG.cheese.y){
-      beep(80,1000);
-      showGameWord();
-      state.stats.cheese++; bumpToday(); save(); fillDashboard();
-      randCheese();
-    }
-    draw();
-  }
-  function showGameWord(){
-    const gW=document.getElementById('gameWord');
-    const w=sample(WORDS);
-    gW.textContent = w.en+' — '+w.ru;
-    gW.classList.remove('hidden');
-    setTimeout(()=>gW.classList.add('hidden'),1500);
-  }
-  // gestures
-  let t0=null;
-  board.addEventListener('touchstart',e=>{
-    const t=e.changedTouches[0]; t0={x:t.clientX,y:t.clientY,time:Date.now()};
-  },{passive:true});
-  board.addEventListener('touchend',e=>{
-    if(!t0) return; const t=e.changedTouches[0];
-    const dx=t.clientX-t0.x, dy=t.clientY-t0.y;
-    const dist=Math.hypot(dx,dy);
-    if(dist<18){
-      // tap — повернуть к сыру
-      const vx = stateG.cheese.x - stateG.mouse.x, vy = stateG.cheese.y - stateG.mouse.y;
-      setDir(Math.abs(vx)>Math.abs(vy)? (vx>0?'r':'l') : (vy>0?'d':'u'));
-    }else{
-      setDir(Math.abs(dx)>Math.abs(dy)? (dx>0?'r':'l') : (dy>0?'d':'u'));
-    }
-    t0=null;
-  });
-  function start(){
-    if(stateG.timer) clearInterval(stateG.timer);
-    stateG.timer=setInterval(step, 220);
-    stateG.running=true; draw();
-  }
-  function restart(){
-    stateG.mouse={x:5,y:5,dir:'r'}; randCheese(); start();
-  }
-  restart();
-  return {restart};
-})();
+// --- PRONUNCIATION --------------------------------------------------------
+let currentVoice=null, currentPronIndex=0;
+function pickVoice(locale='en'){ const list=speechSynthesis.getVoices(); return list.find(v=>v.lang?.toLowerCase().startsWith('en')) || list[0] || null; }
+speechSynthesis.onvoiceschanged=()=>{ currentVoice=pickVoice('en'); };
+function speakWord(text, rate=1.0){ try{speechSynthesis.cancel()}catch(e){}; const u=new SpeechSynthesisUtterance(text); u.rate=rate; u.lang=(currentVoice?.lang)||'en-US'; if(currentVoice) u.voice=currentVoice; speechSynthesis.speak(u); }
 
-/* ---------- PRONUNCIATION ---------- */
-const pron=(function(){
-  const en=document.getElementById('prEN'), ru=document.getElementById('prRU');
-  const micState=document.getElementById('micState');
-  const matchEl=document.getElementById('prMatch');
-  let idx=0;
-  function next(){ idx=(idx+1)%WORDS.length; current=WORDS[idx]; en.textContent=current.en; ru.textContent=current.ru; }
-  next(); // init position at 1st call
-  next = next.bind(this); // keep function
-  function setMic(state){ micState.textContent=state; }
-  function say(){
-    if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){ setMic('нет API'); return; }
-    const C = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const r = new C(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
-    setMic('ожидание…');
-    r.onstart=()=>setMic('слушаю…');
-    r.onerror=()=>setMic('ошибка');
-    r.onend=()=>{/* keep state */};
-    r.onresult=(e)=>{
-      const text = (e.results[0][0].transcript||'').trim();
-      const s = similarity(text, current.en);
-      matchEl.textContent = `Распознано: ${text} • Совпадение: ${Math.round(s*100)}%`;
-      matchEl.classList.remove('hidden');
-      state.stats.pron++; bumpToday(); save(); fillDashboard();
-    };
-    r.start();
-  }
-  function check(){
-    const val=(document.getElementById('prInput').value||'').trim();
-    const s = similarity(val, current.en);
-    matchEl.textContent = `Совпадение: ${Math.round(s*100)}%`;
-    matchEl.classList.remove('hidden');
-  }
-  return {next, say, check};
-})();
+function newPron(){ const p=PAIRS[currentPronIndex%PAIRS.length]; pronWord.textContent=p.en; score.textContent='Совпадение: 0%'; }
+btnListen.onclick=()=>{ const p=PAIRS[currentPronIndex%PAIRS.length]; speakWord(p.en,1.0) };
+btnPronNext.onclick=()=>{ currentPronIndex=(currentPronIndex+1)%PAIRS.length; newPron(); };
 
-/* ---------- INIT ---------- */
-// initial current word for sections
-current = WORDS[0];
-document.getElementById('cardEN').textContent=current.en;
-document.getElementById('cardRU').textContent=current.ru;
-document.getElementById('quizEN').textContent=current.en;
-document.getElementById('prEN').textContent=current.en; document.getElementById('prRU').textContent=current.ru;
+// STT (браузер) — если доступно
+let recognizer=null; let micAllowed=false;
+if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; recognizer=new SR(); recognizer.lang='en-US'; recognizer.interimResults=false; recognizer.maxAlternatives=1;
+  recognizer.onresult=(e)=>{ const said=e.results[0][0].transcript||''; gradePronounce(said, PAIRS[currentPronIndex%PAIRS.length].en); };
+  recognizer.onerror=(e)=>{ micInfo.textContent='Ошибка: '+e.error; };
+  micState.textContent='возможно';
+}else{ micState.textContent='нет API'; }
 
+btnSay.onclick=()=>{ if(!recognizer){ micInfo.textContent='API распознавания не поддерживается'; return; } try{ recognizer.start(); micInfo.textContent='слушаю...'; }catch(e){} };
+btnCheck.onclick=()=>{ const said=fallbackInput.value||''; gradePronounce(said, PAIRS[currentPronIndex%PAIRS.length].en); };
+
+function similarity(a,b){ a=(a||'').trim().toLowerCase(); b=(b||'').trim().toLowerCase(); if(!a||!b) return 0; const d=levenshtein(a,b); const maxLen=Math.max(a.length,b.length); return (maxLen===0)?1:(1-d/maxLen); }
+function levenshtein(a,b){ const m=a.length,n=b.length; const dp=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) dp[i][0]=i; for(let j=0;j<=n;j++) dp[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const cost=(a[i-1]===b[j-1])?0:1; dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost); } } return dp[m][n]; }
+function gradePronounce(recognized,target){ const s=Math.round(similarity(recognized,target)*100); score.textContent='Совпадение: '+s+'%'; S.stats.pron=(S.stats.pron||0)+1; S.stats.today=(S.stats.today||0)+1; save(); }
+
+// expose for debug
+window.navigate=navigate;
 </script>
 </body>
 </html>
