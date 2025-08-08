@@ -1,0 +1,508 @@
+
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mouse & Cheese — Neon v4.8 Mobile</title>
+<style>
+:root{
+  --bg:#0b1520; --panel:#101c29; --panel-2:#0e1a26;
+  --text:#cfe9ff; --muted:#89b2cc; --accent:#6cf; --ok:#38f0a4; --err:#ff6b6b;
+  --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#0b1520;color:var(--text);
+  font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;touch-action:manipulation}
+a{color:var(--accent)}
+.container{max-width:1100px;margin:0 auto;padding:12px clamp(12px,3vw,24px) max(12px, var(--safe-bottom));}
+.header{display:flex;align-items:center;gap:12px;margin:6px 0 12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.brand .logo{font-size:20px;padding:10px 12px;border:1px solid #244154;border-radius:16px;background:#0d1a26;box-shadow:inset 0 0 40px rgba(108,255,255,.06)}
+.badges{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.badge{padding:6px 10px;border:1px solid #29465a;border-radius:12px;background:var(--panel);color:#bfe6ff;min-width:84px;text-align:center;cursor:pointer}
+.badge strong{display:block;font-size:14px}
+.badge span{font-size:12px;color:var(--muted)}
+
+.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:10px}
+.menu-card{background:linear-gradient(180deg,rgba(180,140,255,.10),rgba(108,255,255,.05)),var(--panel);
+  border:1px solid #2a4860;border-radius:16px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+.menu-card .title{font-weight:800;font-size:19px;margin-bottom:10px}
+.menu-card .desc{color:var(--muted);font-size:14px;margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:12px;
+  border:1px solid #2b4b63;background:#143149;color:#d9f3ff;cursor:pointer;min-height:44px;text-decoration:none}
+.btn.primary{background:#26a6f7;border-color:#26a6f7;color:#001320;box-shadow:0 8px 20px rgba(38,166,247,.3)}
+.btn.green{background:#15c48a;border-color:#15c48a;color:#00231a;box-shadow:0 8px 20px rgba(21,196,138,.28)}
+.btn.ghost{background:transparent}
+.center{display:flex;justify-content:center}
+.panel{background:var(--panel-2);border:1px solid #28465b;border-radius:16px;padding:16px}
+.title-xl{font-size:42px;line-height:1.1;font-weight:900;letter-spacing:.5px;margin:14px 0}
+.subtitle{color:var(--muted)}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:12px 0}
+.kpi{background:#0e1924;border:1px solid #244154;border-radius:12px;padding:12px;text-align:center}
+.kpi .v{font-size:22px;font-weight:800}
+.kpi .l{font-size:12px;color:var(--muted)}
+.quiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.quiz-grid button{font-weight:700;font-size:16px}
+.quiz-right{outline:2px solid rgba(56,240,164,.9)} .quiz-wrong{outline:2px solid rgba(255,107,107,.9)}
+.card-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.footer{margin:24px 0 8px;color:#6ea3c0;font-size:12px;text-align:center}
+.small{font-size:12px;color:#8fb8d2}
+/* D-pad hidden globally; only on Game screen we show it */
+.dpad{ position: fixed; display:none; left: 12px; bottom: calc(12px + var(--safe-bottom));
+       grid-template-areas:".. up .." "left . right" ".. down .."; gap: 8px; opacity:.95; z-index: 50; }
+.dpad button{ width:56px; height:56px; border-radius:12px; background:#11202c; color:#bfe6ff;
+              border:1px solid #2b3f52; box-shadow:0 4px 12px rgba(0,0,0,.25); font-size:20px; }
+.dpad-up{grid-area:up} .dpad-down{grid-area:down} .dpad-left{grid-area:left} .dpad-right{grid-area:right}
+@media (min-width: 768px){ .dpad{ display:none !important } }
+/* Mobile tweaks */
+@media (max-width: 480px){ .menu-grid{ grid-template-columns: 1fr; gap: 12px; }
+  .menu-card .desc{ display:none; } .kpi-grid{ grid-template-columns: 1fr 1fr; } .title-xl{ font-size:36px } }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<!-- D-Pad -->
+<div class="dpad" id="dpad">
+  <button class="dpad-up"    id="dpad-up">▲</button>
+  <button class="dpad-left"  id="dpad-left">◀</button>
+  <button class="dpad-right" id="dpad-right">▶</button>
+  <button class="dpad-down"  id="dpad-down">▼</button>
+</div>
+
+<script>
+// ===== Toggles =====
+window.TTS_ENDPOINT = window.TTS_ENDPOINT || ''; // внешний TTS (опционально)
+window.STT_ENDPOINT = window.STT_ENDPOINT || ''; // серверный STT (опционально)
+window.SYNC_ENDPOINT = window.SYNC_ENDPOINT || ''; // синхронизация (опционально)
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function canBrowserSTT(){ return !!SR; }
+let sttMode = JSON.parse(localStorage.getItem('sttMode')||'"browser"'); // browser | server | off
+
+// ===== Telegram =====
+let tg, tgUser;
+try{ if (window.Telegram && Telegram.WebApp){ tg=Telegram.WebApp; tg.ready(); tg.expand(); tgUser = tg.initDataUnsafe?.user || null; } }catch(_){}
+
+// ===== Utilities =====
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
+const tap = isTouch ? 'pointerup' : 'click';
+function onTap(el, fn){ el && el.addEventListener(tap, e=>{ e.preventDefault(); fn(e); }, {passive:false}); }
+function showDpad(show){ const el=document.getElementById('dpad'); el.style.display = (show && isTouch) ? 'grid' : 'none'; }
+const store = { get(k, def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(_){ return def } },
+                set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch(_){ } }, };
+
+// Audio prime & beep
+let audioPrimed=false, ac;
+function primeAudio(){
+  if (audioPrimed) return;
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(0.0001, ac.currentTime);
+    o.frequency.value=440; o.start();
+    g.gain.exponentialRampToValueAtTime(0.15, ac.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.12);
+    o.stop(ac.currentTime+0.13);
+    if(ac.state==='suspended') ac.resume();
+    audioPrimed=true;
+  }catch(_){}
+}
+window.addEventListener('pointerdown', primeAudio, {once:true, passive:true});
+function beep(freq=880, dur=0.12){
+  try{ primeAudio(); if(!ac) return; const o=ac.createOscillator(), g=ac.createGain(); o.type='sine';
+       o.frequency.value=freq; o.connect(g); g.connect(ac.destination);
+       const t=ac.currentTime; g.gain.value=0.0001; o.start();
+       g.gain.exponentialRampToValueAtTime(0.2, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+dur); o.stop(t+dur+0.01);
+  }catch(_){}
+}
+
+// ===== TTS (browser by default) =====
+let ttsOn = store.get('ttsOn', true);
+let ttsVoiceName = store.get('ttsVoiceName', '');
+let voices = [];
+function loadVoices(){ try{ voices = speechSynthesis.getVoices(); }catch(_){ voices=[]; } }
+if ('speechSynthesis' in window){
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+async function playExternalTTS(text){
+  try{
+    const url = new URL(window.TTS_ENDPOINT);
+    url.searchParams.set('text', text);
+    const a = new Audio(url.toString());
+    await a.play();
+  }catch(e){ console.warn('TTS endpoint error', e); }
+}
+function speak(text, lang='en-US'){
+  if (!ttsOn || !text) return;
+  if (window.TTS_ENDPOINT){ playExternalTTS(text); return; }
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang=lang; u.rate=0.95;
+    if (ttsVoiceName){
+      const v = voices.find(v=>v.name===ttsVoiceName);
+      if (v) u.voice=v;
+    }
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(_){}
+}
+
+// ===== STT (server or browser) =====
+async function serverSTT(seconds=3){
+  if (!window.STT_ENDPOINT) throw new Error('STT endpoint not configured');
+  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  const rec = new MediaRecorder(stream); const chunks=[];
+  rec.ondataavailable = e=> chunks.push(e.data);
+  rec.start(); await new Promise(r=> setTimeout(r, seconds*1000));
+  await new Promise(r=>{ rec.onstop=r; rec.stop(); });
+  const blob = new Blob(chunks, {type: rec.mimeType || 'audio/webm'});
+  const fd = new FormData(); fd.append('file', blob, 'speech.webm');
+  const res = await fetch(window.STT_ENDPOINT, {method:'POST', body:fd});
+  if (!res.ok) throw new Error('STT failed');
+  const data = await res.json();
+  return data.text || '';
+}
+
+function browserSTT(lang='en-US'){
+  return new Promise((resolve, reject)=>{
+    if (!canBrowserSTT()) return reject(new Error('Browser STT not supported'));
+    try{
+      const r = new SR();
+      r.lang = lang;
+      r.interimResults = false;
+      r.maxAlternatives = 1;
+      let resolved=false;
+      r.onresult = (e)=>{ resolved=true; resolve(e.results[0][0].transcript || ''); };
+      r.onerror = (e)=>{ if(!resolved){ reject(new Error(e.error||'recognition error')); } };
+      r.onend = ()=>{ if(!resolved) resolve(''); };
+      r.start();
+    }catch(err){ reject(err); }
+  });
+}
+
+// ===== App state =====
+const defaultPairs = [["cheese","сыр"],["write","писать"],["left","лево"],["help","помогать"],
+["room","комната"],["bread","хлеб"],["friend","друг"],["ticket","билет"]];
+let pairs = store.get('pairs', defaultPairs);
+let known = new Set(store.get('known', []));
+let counters = store.get('counters', {cards:0, quiz:0, cheese:0, speak:0, today:0, series:1});
+function save(){ store.set('pairs', pairs); store.set('known', Array.from(known)); store.set('counters', counters); }
+
+// ===== Router =====
+const app = document.getElementById('app');
+const routes = {};
+function route(name, ...args){ window.scrollTo({top:0,behavior:'instant'}); showDpad(false); routes[name](...args); }
+function h(tag, attrs={}, ...children){
+  const el=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs||{})){
+    if(k==='class') el.className=v;
+    else if(k==='text') el.textContent=v;
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k,v);
+  }
+  for(const ch of children.flat()) el.append(ch?.nodeType?ch:document.createTextNode(ch));
+  return el;
+}
+
+// ===== Cloud Sync stubs (URLs вводишь в Настройках) =====
+let syncUrl = store.get('syncUrl', window.SYNC_ENDPOINT || '');
+function setSyncUrl(u){ syncUrl=u||''; store.set('syncUrl', syncUrl); }
+async function cloudPull(){
+  if (!syncUrl) throw new Error('SYNC_ENDPOINT не указан');
+  const r = await fetch(syncUrl+'?action=pull', { headers: {'x-telegram-init-data': tg?.initData || ''} });
+  if (!r.ok) throw new Error('pull failed');
+  const data = await r.json();
+  const dict = new Map(pairs.map(p=>[p[0], p])); (data.pairs||[]).forEach(p=> dict.set(p[0], p));
+  pairs = Array.from(dict.values());
+  known = new Set([...(data.known||[]), ...known]);
+  for (const k of Object.keys(counters)){ counters[k] = Math.max(counters[k]||0, (data.counters||{})[k]||0); }
+  save();
+  return {pairs, known: Array.from(known), counters};
+}
+async function cloudPush(){
+  if (!syncUrl) throw new Error('SYNC_ENDPOINT не указан');
+  const payload = { pairs, known: Array.from(known), counters };
+  const r = await fetch(syncUrl+'?action=push', {
+    method:'POST',
+    headers: { 'Content-Type':'application/json', 'x-telegram-init-data': tg?.initData || '' },
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) throw new Error('push failed');
+  return await r.json();
+}
+
+// ===== UI =====
+function header(){
+  const hdr = h('div',{class:'header'},
+    h('div',{class:'brand'}, h('div',{class:'logo'},'🐭'),
+      h('div',{},'Mouse',h('br'),'&',' Cheese',' — ','Neon')),
+    h('div',{class:'badges'},
+      b('Серия', counters.series),
+      b('Сегодня', counters.today),
+      b(ttsOn?'Голос: вкл':'Голос: выкл','', ()=>{ ttsOn=!ttsOn; store.set('ttsOn', ttsOn); route('home'); }),
+      b('Настройки','⚙️', ()=> route('settings'))
+    )
+  );
+  function b(label, v, on){ const el=h('div',{class:'badge'}); el.innerHTML=`<strong>${v||''}</strong><span>${label}</span>`; onTap(el, on||(()=>{})); return el; }
+  return hdr;
+}
+function menuCard(title, desc, go){
+  const btn = h('button',{class:'btn primary', 'data-go':go}, 'Открыть ➜');
+  const card = h('div',{class:'menu-card'}, h('div',{class:'title'}, title), h('div',{class:'desc'}, desc||''), btn);
+  onTap(btn, ()=> route(go));
+  return card;
+}
+
+// ===== Screens =====
+routes.home = function(){
+  app.innerHTML=''; app.append(header());
+  const k = h('div',{class:'kpi-grid'},
+    mkpi(counters.cards,'Карточки (всего)'),
+    mkpi(counters.quiz,'Викторина (всего)'),
+    mkpi(counters.cheese,'Сыр (всего)'),
+    mkpi(counters.speak,'Произношение (всего)'),
+    mkpi(known.size,'Изучено слов')
+  ); app.append(k);
+  function mkpi(v,l){ return h('div',{class:'kpi'}, h('div',{class:'v',text:String(v||0)}), h('div',{class:'l',text:l})); }
+
+  const grid = h('div',{class:'menu-grid'},
+    menuCard('🧪 Викторина','Выбери верный перевод + «слушать».','quiz'),
+    menuCard('🃏 Карточки','EN/RU. «Знаю» — мгновенный переход.','cards'),
+    menuCard('🎮 Игра','D‑pad + свайпы. «Бип» + TTS по сыру.','game'),
+    menuCard('🗣️ Произношение','Браузерный STT (если поддерживается).','pronounce'),
+    menuCard('📥 Импорт/Экспорт','CSV en,ru.','import'),
+    menuCard('⚙️ Настройки','TTS / STT / Облако.','settings')
+  );
+  app.append(grid);
+  app.append(h('div',{class:'footer small'},'v4.8 • Neon Mobile • STT (браузер/сервер) • TTS (браузер) • игра • карточки • викторина'));
+};
+
+routes.settings = function(){
+  app.innerHTML=''; app.append(header());
+  const p=h('div',{class:'panel'}); app.append(p);
+
+  // TTS
+  p.append(h('div',{class:'subtitle',text:'Голос (TTS)'}));
+  const srcRow = h('div',{class:'card-actions'});
+  const bBrowser=h('button',{class:'btn primary'},'Браузер (SpeechSynthesis)');
+  const bExternal=h('button',{class:'btn'},'Внешний (/tts)');
+  srcRow.append(bBrowser,bExternal); p.append(srcRow);
+  onTap(bBrowser, ()=>{ window.TTS_ENDPOINT=''; alert('Активирован браузерный голос'); route('settings'); });
+  onTap(bExternal, ()=>{ const url=prompt('Вставь URL функции TTS (https://.../tts)'); if(url){ window.TTS_ENDPOINT=url; alert('Сохранено.'); route('settings'); } });
+
+  if (!window.TTS_ENDPOINT && 'speechSynthesis' in window){
+    const sel = h('select',{style:'width:100%;max-width:480px;padding:10px;border-radius:12px;background:#0c1824;color:#cfe9ff;border:1px solid #2b4b63'});
+    function fill(){
+      sel.innerHTML='';
+      const vs = speechSynthesis.getVoices();
+      vs.forEach(v=> sel.append(h('option',{value:v.name, text:`${v.name} — ${v.lang}`})));
+      if (ttsVoiceName) sel.value = ttsVoiceName;
+    }
+    fill(); speechSynthesis.onvoiceschanged = fill;
+    const bTest=h('button',{class:'btn primary'},'Тест: “reservation”');
+    onTap(bTest, ()=>{ ttsVoiceName = sel.value; store.set('ttsVoiceName', ttsVoiceName); speak('reservation'); });
+    p.append(h('div',{class:'card-actions'}, sel, bTest));
+  }
+
+  // STT
+  p.append(h('hr')); p.append(h('div',{class:'subtitle',text:'Распознавание речи (STT)'}));
+  const sttInfo = h('div',{class:'small'});
+  const bSttBrowser=h('button',{class:'btn'+(sttMode==='browser'?' green':'')},'Браузерный (эксперимент)');
+  const bSttServer =h('button',{class:'btn'+(sttMode==='server'?' green':'')},'Серверный (/stt)');
+  const bSttOff    =h('button',{class:'btn'+(sttMode==='off'?'':'')},'Выключить');
+  function refreshSttInfo(){
+    let s='';
+    if (sttMode==='browser'){
+      s = canBrowserSTT()? 'Браузерный STT доступен в этом браузере.' : 'В этом браузере STT недоступен. На Android/Chrome и Desktop/Chrome — работает. В Telegram iOS — чаще всего нет.';
+    } else if (sttMode==='server'){
+      s = window.STT_ENDPOINT? 'Серверный STT подключен.' : 'Укажи URL функции /stt.';
+    } else s='STT выключен.';
+    sttInfo.textContent=s;
+  }
+  refreshSttInfo();
+  onTap(bSttBrowser, ()=>{ sttMode='browser'; localStorage.setItem('sttMode', JSON.stringify(sttMode)); refreshSttInfo(); alert('Режим: браузерный'); });
+  onTap(bSttServer,  ()=>{ sttMode='server';  localStorage.setItem('sttMode', JSON.stringify(sttMode)); const u=prompt('URL функции STT (https://.../stt)', window.STT_ENDPOINT||''); if(u){ window.STT_ENDPOINT=u; } refreshSttInfo(); });
+  onTap(bSttOff,     ()=>{ sttMode='off';     localStorage.setItem('sttMode', JSON.stringify(sttMode)); refreshSttInfo(); alert('STT выключен'); });
+  p.append(h('div',{class:'card-actions'}, bSttBrowser, bSttServer, bSttOff, sttInfo));
+
+  // Cloud sync
+  p.append(h('hr')); p.append(h('div',{class:'subtitle',text:'Облако (синхронизация через Telegram + Supabase)'}));
+  const syncLbl=h('div',{class:'small',text: syncUrl? 'SYNC_ENDPOINT: подключен' : 'SYNC_ENDPOINT: не задан'});
+  const bSync=h('button',{class:'btn'}, syncUrl? 'Сменить URL /sync' : 'Вставить URL /sync');
+  onTap(bSync, ()=>{ const u=prompt('URL функции синхронизации (https://.../sync)', syncUrl||''); if(u!==null){ setSyncUrl(u); syncLbl.textContent = u? 'SYNC_ENDPOINT: подключен':'SYNC_ENDPOINT: не задан'; } });
+  const bPull=h('button',{class:'btn'},'⭳ Вытянуть'); const bPush=h('button',{class:'btn primary'},'⭱ Отправить');
+  onTap(bPull, async()=>{ try{ const r=await cloudPull(); alert('Ок. Слова: '+(r?.pairs?.length||0)+', known: '+(r?.known?.length||0)); }catch(e){ alert('Ошибка pull: '+e.message);} });
+  onTap(bPush, async()=>{ try{ await cloudPush(); alert('Отправлено.'); }catch(e){ alert('Ошибка push: '+e.message);} });
+  p.append(h('div',{class:'card-actions'}, bSync, syncLbl));
+  p.append(h('div',{class:'card-actions'}, bPull, bPush));
+
+  app.append(h('div',{class:'footer small'}, tgUser? ('Веб-апп Telegram: '+tgUser.id) : 'Открыто вне Telegram — облако недоступно.' ));
+};
+
+// --- Quiz ---
+routes.quiz = function(){
+  app.innerHTML=''; app.append(header());
+  const panel = h('div',{class:'panel'}); app.append(panel);
+  let idx = Math.floor(Math.random()*pairs.length);
+
+  function render(){
+    panel.innerHTML='';
+    const [en,ru] = pairs[idx];
+    panel.append(h('div',{class:'subtitle',text:'Выбери перевод'}));
+    panel.append(h('div',{class:'title-xl',text:en}));
+    const listen = h('button',{class:'btn'},'▶ Слушать'); panel.append(h('div',{class:'card-actions'}, listen));
+    onTap(listen, ()=> speak(en));
+
+    const opts = new Set([ru]); while(opts.size<4) opts.add(pairs[Math.floor(Math.random()*pairs.length)][1]);
+    const arr = Array.from(opts).sort(()=>Math.random()-.5);
+    const grid = h('div',{class:'quiz-grid'}); panel.append(grid);
+    arr.forEach(opt=>{
+      const b=h('button',{class:'btn ghost quiz-option',text:opt});
+      onTap(b, ()=>{
+        const ok = (opt===ru);
+        b.classList.add(ok?'quiz-right':'quiz-wrong');
+        beep(ok?880:240, 0.12);
+        if (ok) speak(en);
+        counters.quiz++; counters.today++; save();
+        setTimeout(()=>{ idx=Math.floor(Math.random()*pairs.length); render(); }, 420);
+      });
+      grid.append(b);
+    });
+  }
+  render();
+  app.append(h('div',{class:'footer small'},'Тап по ответу → звук → автопереход.'));
+};
+
+// --- Cards ---
+routes.cards = function(){
+  app.innerHTML=''; app.append(header());
+  const panel = h('div',{class:'panel center'}); app.append(panel);
+  let order = pairs.slice().sort(()=>Math.random()-.5), i=0, showRu=false;
+  const title = h('div',{class:'title-xl',text:order[i][0]}); panel.append(title);
+  const sub = h('div',{class:'subtitle',text:'Нажми «Показать RU»'}); panel.append(sub);
+  const actions = h('div',{class:'card-actions'}); panel.append(actions);
+  const bRU=h('button',{class:'btn'},'Показать RU');
+  const bSpeak=h('button',{class:'btn'},'🔊 Озвучить');
+  const bKnow=h('button',{class:'btn primary'},'Знаю');
+  const bNext=h('button',{class:'btn'},'Дальше');
+  actions.append(bRU,bSpeak,bKnow,bNext);
+  onTap(bRU,()=>{ showRu=!showRu; sub.textContent= showRu ? order[i][1] : 'Нажми «Показать RU»';});
+  onTap(bSpeak,()=> speak(order[i][0]));
+  onTap(bKnow,()=>{ known.add(order[i][0]); next(); });
+  onTap(bNext,next);
+  function next(){ counters.cards++; counters.today++; save(); i=(i+1)%order.length; showRu=false; title.textContent=order[i][0]; sub.textContent='Нажми «Показать RU»'; }
+  app.append(h('div',{class:'footer small'},'«Знаю» — мгновенный переход.'));
+};
+
+// --- Game ---
+routes.game = function(){
+  app.innerHTML=''; app.append(header()); showDpad(true);
+  const wrap=h('div',{class:'panel'}); app.append(wrap);
+  const canvas=h('canvas',{width:560,height:360,id:'game-canvas'});
+  canvas.style.background='repeating-conic-gradient(from 45deg,#0e1924 0 20px,#0c1621 20px 40px)';
+  canvas.style.border='1px solid #234458'; canvas.style.borderRadius='12px';
+  wrap.append(h('div',{class:'subtitle',text:'Стрелками / d‑pad управляй мышью. Съешь сыр — «бип» и слово.'}));
+  wrap.append(canvas);
+  const ctx=canvas.getContext('2d'); let grid=20, vx=1, vy=0;
+  let mouse=[{x:4,y:9}], food=randCell(); let word=pickWord();
+  function pickWord(){ return pairs[Math.floor(Math.random()*pairs.length)][0]; }
+  function randCell(){ return {x:Math.floor(Math.random()*(canvas.width/grid)), y:Math.floor(Math.random()*(canvas.height/grid))}; }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // cheese
+    ctx.fillStyle="#f9c542"; ctx.beginPath(); ctx.moveTo(food.x*grid+8, food.y*grid+grid-6);
+    ctx.lineTo(food.x*grid+grid-4, food.y*grid+grid-10); ctx.lineTo(food.x*grid+grid-10, food.y*grid+8);
+    ctx.closePath(); ctx.fill();
+    // mouse
+    ctx.fillStyle="#66c3ff"; mouse.forEach(s=> ctx.fillRect(s.x*grid+6, s.y*grid+6, grid-12, grid-12));
+    // word
+    ctx.fillStyle="#9ecfff"; ctx.font="14px/1 Inter, system-ui"; ctx.fillText(word, 10, canvas.height-8);
+  }
+  function step(){
+    const head={x:mouse[0].x+vx, y:mouse[0].y+vy};
+    head.x=(head.x+canvas.width/grid)%(canvas.width/grid);
+    head.y=(head.y+canvas.height/grid)%(canvas.height/grid);
+    mouse[0]=head;
+    if (head.x===food.x && head.y===food.y){
+      counters.cheese++; counters.today++; save(); beep(880,0.09); speak(word);
+      food=randCell(); word=pickWord();
+    }
+    draw();
+  }
+  draw(); let timer=setInterval(step,120);
+  function dir(d){ if(d==='up'&&vy!==1){vx=0;vy=-1} if(d==='down'&&vy!==-1){vx=0;vy=1}
+                   if(d==='left'&&vx!==1){vx=-1;vy=0} if(d==='right'&&vx!==-1){vx=1;vy=0} }
+  window.addEventListener('keydown', e=>{ if(e.key==='ArrowUp')dir('up'); if(e.key==='ArrowDown')dir('down');
+    if(e.key==='ArrowLeft')dir('left'); if(e.key==='ArrowRight')dir('right'); });
+  ;['up','down','left','right'].forEach(d=> onTap(document.getElementById('dpad-'+d), ()=>dir(d)));
+  let sx,sy; canvas.addEventListener('touchstart',e=>{sx=e.touches[0].clientX; sy=e.touches[0].clientY;},{passive:true});
+  canvas.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)<30) return; if(Math.abs(dx)>Math.abs(dy)) dir(dx>0?'right':'left'); else dir(dy>0?'down':'up');},{passive:true});
+};
+
+// --- Pronounce ---
+routes.pronounce = function(){
+  app.innerHTML=''; app.append(header());
+  const panel=h('div',{class:'panel'}); app.append(panel);
+  let idx=Math.floor(Math.random()*pairs.length); let [en,ru]=pairs[idx];
+  function reroll(){ idx=Math.floor(Math.random()*pairs.length); [en,ru]=pairs[idx]; title.textContent=en; sub.textContent=ru; info.textContent=''; }
+  panel.append(h('div',{class:'subtitle',text:'Скажи слово как можно ближе к оригиналу'}));
+  const title=h('div',{class:'title-xl',text:en}); panel.append(title);
+  const sub=h('div',{class:'subtitle',text:ru}); panel.append(sub);
+
+  const btnListen=h('button',{class:'btn'},'▶ Слушать');
+  const btnSay=h('button',{class:'btn primary'}, sttMode==='server'? '🎙️ Записать (3s)' : (sttMode==='browser' ? '🎤 Сказать (браузер)' : '🎤 Сказать (выкл)'));
+  const btnNext=h('button',{class:'btn'},'Дальше');
+  const info=h('div',{class:'small'}); panel.append(h('div',{class:'card-actions'},btnListen,btnSay,btnNext)); panel.append(info);
+
+  onTap(btnListen,()=>speak(en));
+  onTap(btnNext,()=>{ reroll(); });
+
+  onTap(btnSay, async ()=>{
+    try{
+      if (sttMode==='off'){ info.textContent='STT выключен. Включи в Настройках.'; return; }
+      if (sttMode==='server'){
+        if (!window.STT_ENDPOINT){ info.textContent='Укажи URL функции /stt в Настройках.'; return; }
+        info.textContent='Запись 3 секунды…'; const text = await serverSTT(3);
+        info.textContent = 'Распознано: ' + (text||'—');
+      } else {
+        if (!canBrowserSTT()){ info.textContent='В этом браузере STT недоступен. Попробуй Android/Chrome или Desktop/Chrome.'; return; }
+        info.textContent='Слушаю… Скажи слово.'; const text = await browserSTT('en-US');
+        info.textContent = 'Распознано: ' + (text||'—');
+      }
+      counters.speak++; counters.today++; save();
+    }catch(e){ info.textContent='Ошибка STT: '+e.message; }
+  });
+};
+
+// --- Import/Export ---
+routes.import = function(){
+  app.innerHTML=''; app.append(header());
+  const p=h('div',{class:'panel'}); app.append(p);
+  p.append(h('div',{class:'subtitle',text:'CSV формат: en,ru на строку.'}));
+  const ta=h('textarea',{style:'width:100%;height:180px;border-radius:12px;background:#0c1824;color:#cfe9ff;border:1px solid #2b4b63;padding:12px'});
+  p.append(ta);
+  const bImport=h('button',{class:'btn primary'},'Импортировать');
+  const bExport=h('button',{class:'btn'},'Экспортировать CSV');
+  p.append(h('div',{class:'card-actions'},bImport,bExport));
+  onTap(bImport, ()=>{
+    const lines=ta.value.split(/\\r?\\n/).map(l=>l.trim()).filter(Boolean); let added=0;
+    for(const line of lines){ const [en,ru]=line.split(',').map(s=>s?.trim()).filter(Boolean); if(en&&ru){pairs.push([en,ru]); added++;} }
+    save(); alert('Импортировано: '+added);
+  });
+  onTap(bExport, ()=>{
+    const csv=['en,ru', ...pairs.map(([en,ru])=>`"${en.replace('"','""')}","${ru.replace('"','""')}"`)].join('\\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='words.csv'; a.click();
+  });
+};
+
+// Init
+function init(){ routes.home(); }
+init();
+</script>
+</body>
+</html>

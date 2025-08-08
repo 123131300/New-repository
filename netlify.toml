@@ -1,0 +1,1 @@
+content = "[build]\n  command = \"\"\n  publish = \".\"\n\n[functions]\n  directory = \"netlify/functions\"\n  node_bundler = \"esbuild\"\n\n[build.environment]\n  NODE_VERSION = \"18\"\n"
