@@ -99,7 +99,7 @@
     .cy-tile b{font-family:'Orbitron',system-ui;font-size:26px;color:var(--cy-yellow);display:block}
     .cy-tile span{color:var(--cy-muted);font-weight:700;letter-spacing:.6px}
 
-    .cy-actions{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:18px}
+    .cy-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
     /* bottom cyber nav */
     .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px;padding-bottom: env(safe-area-inset-bottom)}
     .cy-foot .cy-foot-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);color:var(--cy-cyan);box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease}
@@ -196,6 +196,7 @@
     const COLS=18, ROWS=12, SPEED=280, MAX_LIVES=3;
     const wrapRef=useRef(null);
     const rafRef=useRef(0), lastRef=useRef(0), accRef=useRef(0);
+    const collideRef=useRef(false);
     const [cell,setCell]=useState(38);
 
     const [running,setRunning]=useState(true);
@@ -218,28 +219,33 @@
       const fit=()=>{
         const el=wrapRef.current; if(!el) return;
         const panel=el.closest('.cy-panel')||el.parentElement||document.body;
-        const rect=panel.getBoundingClientRect();
         const cs=getComputedStyle(panel);
-        const padX=parseFloat(cs.paddingLeft||'0')+parseFloat(cs.paddingRight||'0');
-        const padTop=parseFloat(cs.paddingTop||'0');
-        const contentW=Math.max(220, rect.width - padX);
+        const padL=parseFloat(cs.paddingLeft)||0;
+        const padR=parseFloat(cs.paddingRight)||0;
+        const padT=parseFloat(cs.paddingTop)||0;
+        // exact inner-content width of the panel
+        const contentW=Math.max(220, Math.floor(panel.clientWidth - padL - padR));
+        const rect=panel.getBoundingClientRect();
         const vp=window.visualViewport; 
-        const nav=document.querySelector('.cy-foot'); 
-        const navH=nav?nav.getBoundingClientRect().height+16:0;
-        const vh=vp?vp.height:window.innerHeight;
-        const availableH=Math.max(220, Math.floor(vh - (rect.top + padTop) - navH - 12));
-        const size=Math.max(24, Math.floor(Math.min(contentW/COLS, availableH/ROWS)));
+        const vh = vp ? Math.floor(vp.height) : window.innerHeight;
+        const nav=document.querySelector('.cy-foot');
+        const navH=(nav && nav.offsetParent)? Math.floor(nav.getBoundingClientRect().height)+12 : 0;
+        const availableH=Math.max(220, Math.floor(vh - (rect.top + padT) - navH - 12));
+        const sizeW=Math.floor(contentW/18); // COLS
+        const sizeH=Math.floor(availableH/12); // ROWS
+        const size=Math.max(24, Math.min(sizeW,sizeH));
+        el.style.width=(size*18)+'px';
+        el.style.height=(size*12)+'px';
         setCell(size);
-        el.style.width=(size*COLS)+'px';
-        el.style.height=(size*ROWS)+'px';
       };
-      const onResize=()=>{ window.requestAnimationFrame(fit); };
+      const onResize=()=>window.requestAnimationFrame(fit);
       fit();
-      const ro=new ResizeObserver(onResize); ro.observe(document.body);
-      const vv=window.visualViewport; vv?.addEventListener('resize',onResize); vv?.addEventListener('scroll',onResize);
+      const ro = window.ResizeObserver ? new ResizeObserver(onResize) : null;
+      ro?.observe(document.body);
       window.addEventListener('resize',onResize);
       window.addEventListener('orientationchange',onResize);
-      return ()=>{ ro.disconnect(); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); };
+      const vv=window.visualViewport; vv?.addEventListener('resize',onResize); vv?.addEventListener('scroll',onResize);
+      return ()=>{ ro?.disconnect(); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); };
     },[]);
 
     // Tap steering (← ↑ → ↓)
@@ -262,25 +268,32 @@
       const step=t=>{
         accRef.current+=t-lastRef.current; lastRef.current=t;
         while(accRef.current>=SPEED){
+          collideRef.current=false;
           setMouse(prev=>{
             let nx=prev.x+dir.x, ny=prev.y+dir.y;
-            if(nx<0||ny<0||nx>=COLS||ny>=ROWS){ setLives(v=>Math.max(0,v-1)); return prev; }
-            if(obstacles.some(o=>o.x===nx && o.y===ny)){ setLives(v=>Math.max(0,v-1)); return prev; }
+            if(nx<0||ny<0||nx>=COLS||ny>=ROWS){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; }
+            if(obstacles.some(o=>o.x===nx && o.y===ny)){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; }
             if(nx===cheese.x && ny===cheese.y){
-              spawnCheese();
+              const c=randomFreeCell(obstacles,{x:nx,y:ny},COLS,ROWS,1);
+              setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
               setLives(v=>clamp(v+1,0,MAX_LIVES));
               setScale(s=>Math.min(1.8,s+0.08));
               onEat && onEat(word);
             }
             return {x:nx,y:ny};
           });
+          if(collideRef.current){
+            accRef.current=0;
+            setDir({x:0,y:0});
+            break;
+          }
           accRef.current-=SPEED;
         }
         rafRef.current=requestAnimationFrame(step);
       };
       rafRef.current=requestAnimationFrame(step);
       return ()=>cancelAnimationFrame(rafRef.current);
-    },[dir,cheese,obstacles,running,word,spawnCheese,onEat]);
+    },[dir,cheese,obstacles,running,word,onEat]);
 
     useEffect(()=>{ if(lives<=0){ setRunning(false); } },[lives]);
 
@@ -375,7 +388,7 @@
     const [voices,setVoices]=useState([]); const [lang,setLang]=useState(audio.voicePref||'en-US'); const [voiceId,setVoiceId]=useState(audio.voiceId||''); const [json,setJson]=useState(''); const fileRef=useRef();
     useEffect(()=>{ const update=()=>{ const v=window?.speechSynthesis?.getVoices?.()||[]; setVoices(v); }; update(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',update);}catch(_){ } return ()=>{ try{window?.speechSynthesis?.removeEventListener?.('voiceschanged',update);}catch(_){ } }; },[]);
     const voicesByLang=voices.filter(v=>v.lang===lang);
-    useEffect(()=>{ if(voicesByLang.length&&!voiceId){ setVoiceId(voicesByLang[0].name+'|'+voicesByLang[0].lang); } },[lang,voicesByLang.length]);
+    useEffect(()=>{ if(voicesByLang.length && !voiceId){ setVoiceId(voicesByLang[0].name+'|'+voicesByLang[0].lang); } },[lang,voicesByLang,voiceId]);
     const saveVoice=()=>{ audio.setVoiceLang(lang); audio.setVoiceById(voiceId); alert('Voice saved'); };
     const importPackJSON=()=>{ try{ const arr=JSON.parse(json); if(!Array.isArray(arr)) throw 0; const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert('Pack imported.'); setJson(''); } catch(_){ alert('JSON must be an array of {en,ru}'); } };
     const importCSV=text=>{ const arr=parseCSV(text); const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert(`CSV imported: +${arr.length} words.`); };
@@ -508,7 +521,7 @@
           <button className="cy-btn" onClick={()=>go('cards')} aria-label="Cards">{icons?.cards?<img className="cy-icon-img" alt="cards" src={icons.cards}/>:<IconCards/>}<span>CARDS</span></button>
           <button className="cy-btn" onClick={()=>go('game')} aria-label="Game">{icons?.game?<img className="cy-icon-img" alt="game" src={icons.game}/>:<IconGame/>}<span>GAME</span></button>
           <button className="cy-btn" onClick={()=>go('accent')} aria-label="Accent">{icons?.accent?<img className="cy-icon-img" alt="accent" src={icons.accent}/>:<IconMic/>}<span>ACCENT</span></button>
-          <button className="cy-btn" onClick={()=>go('settings')} aria-label="Settings"><IconSettings/><span>SETTINGS</span></button>
+          
         </div>
       </div>
     );
@@ -588,6 +601,8 @@
     console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y+1.6)*__cell},__cell).y===1,'dir down');
     console.assert(isValidIcon('https://example.com/i.png')===true,'valid icon url');
     console.assert(isValidIcon('data:text/plain;base64,AA')===false,'invalid icon data');
+    // DOM-size sanity check after mount
+    setTimeout(()=>{ const el=document.querySelector('.arena'); if(el){ const sw=parseInt(el.style.width)||0; const sh=parseInt(el.style.height)||0; console.assert(Math.abs(el.clientWidth - sw) <= 2, 'arena width mismatch vs style'); console.assert(Math.abs(el.clientHeight - sh) <= 2, 'arena height mismatch vs style'); } }, 80);
   }catch(e){ console.warn('self-checks skipped',e); }
   </script>
 </body>
