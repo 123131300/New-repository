@@ -34,6 +34,7 @@
     html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:linear-gradient(180deg,var(--bg1),var(--bg2));overflow-x:hidden}
     #root{min-height:100vh;display:flex;justify-content:center;padding:18px}
     .wrap{width:min(1100px,100%);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+    body.no-foot .wrap{padding-bottom: env(safe-area-inset-bottom)}
     h1{margin:0 0 14px;display:flex;align-items:center;gap:10px;font-size:28px}
     .topbar{display:flex;gap:10px;justify-content:flex-end}
     .btn{appearance:none;border:1px solid var(--cy-border);background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));color:var(--cy-ink);border-radius:999px;padding:10px 18px;font-weight:700;letter-spacing:.3px;font-family:'Rajdhani',system-ui;box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease, box-shadow .12s ease}
@@ -181,7 +182,7 @@
   const audio=new AudioManager();
 
   function similarity(a,b){ a=(a||'').toLowerCase(); b=(b||'').toLowerCase(); if(!a||!b) return 0; const m=Math.max(a.length,b.length); let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===b[i]) s++; } return Math.round((s/m)*100); }
-  function parseCSV(text){ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; const splitter=new RegExp(`${sep}(?=(?:[^"]*"[^"]*")*[^"]*$)`); for(let i=start;i<lines.length;i++){ const cols=lines[i].split(splitter).map(s=>s.replace(/^"|"$/g,'').trim()); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
+  function parseCSV(text){ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; const splitter=new RegExp(`${sep}(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)`); for(let i=start;i<lines.length;i++){ const cols=lines[i].split(splitter).map(s=>s.replace(/^\"|\"$/g,'').trim()); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
   function genObstacles(COLS,ROWS,K=6){ const pool=['🌵','🪵','🪨','🕳️','🧊']; const used=new Set(); const a=[]; while(a.length<K){ const x=1+rand(COLS-2), y=1+rand(ROWS-2); const k=`${x},${y}`; if(used.has(k)) continue; used.add(k); a.push({x,y,em:pool[rand(pool.length)]}); } return a; }
   function isValidIcon(u){ return typeof u==='string' && (u.startsWith('data:image/') || u.startsWith('http://') || u.startsWith('https://')); }
 
@@ -325,7 +326,7 @@
       <div className="cy-panel">
         <div className="row"><div className="cy-title">Quiz — choose translation</div><Btn onClick={onBack}>Menu</Btn><Btn variant="grad" onClick={next} aria-label="Next">Next</Btn></div>
         <div className="quiz-word">{q.en}</div>
-        <div className="grid4">{opts.map(v=> (<div key={v} className={"ans "+(picked?(v===q.ru?'ok':(picked===v?'bad':'')):"")} onClick={()=>choose(v)}>{v}</div>))}</div>
+        <div className="grid4">{opts.map(v=> (<div key={v} className={"ans "+(picked?(v===q.ru?'ok':(picked===v?'bad':'') ):"")} onClick={()=>choose(v)}>{v}</div>))}</div>
       </div>
     );
   }
@@ -542,6 +543,14 @@
     /* Telegram WebApp safe init (optional) */
     useEffect(()=>{ try{ window.Telegram?.WebApp?.ready?.(); }catch(_){} },[]);
 
+    /* Hide bottom nav in Game and add Escape back-to-menu */
+    useEffect(()=>{
+      document.body.classList.toggle('no-foot', screen==='game');
+      const onKey=(e)=>{ if(e.key==='Escape' && screen==='game'){ setScreen('menu'); } };
+      window.addEventListener('keydown', onKey);
+      return ()=>{ window.removeEventListener('keydown', onKey); };
+    },[screen]);
+
     return (
       <div className="wrap">
         {screen==='menu' && <Menu go={go} stats={stats} toggleTheme={toggleTheme} icons={icons}/>}
@@ -550,7 +559,7 @@
         {screen==='accent' && <Accent onBack={()=>go('menu')} onStat={onStat}/>}
         {screen==='game' && <Game onBack={()=>go('menu')} word={WORDS[wordI%WORDS.length]} onEat={(w)=>{audio.speak(w.en); setWordI(i=>i+1); onStat('cheese');}}/>}
         {screen==='settings' && <Settings onBack={()=>go('menu')} icons={icons} setIcons={setIcons}/>}
-        <CyberBottomNav go={go} icons={icons}/>
+        {screen!=='game' && <CyberBottomNav go={go} icons={icons}/>}
       </div>
     );
   }
@@ -577,7 +586,7 @@
     console.assert(dirFromTap(__mouse,{x:(__mouse.x-1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===-1,'dir left');
     console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y-1.6)*__cell},__cell).y===-1,'dir up');
     console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y+1.6)*__cell},__cell).y===1,'dir down');
-    console.assert(isValidIcon('data:image/png;base64,AA')===true,'valid icon data');
+    console.assert(isValidIcon('https://example.com/i.png')===true,'valid icon url');
     console.assert(isValidIcon('data:text/plain;base64,AA')===false,'invalid icon data');
   }catch(e){ console.warn('self-checks skipped',e); }
   </script>
