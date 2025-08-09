@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
   <title>Mouse & Cheese</title>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
@@ -52,6 +52,7 @@
     .card-row{display:flex;gap:12px;flex-wrap:wrap}
     .pill{background:var(--chip);border-radius:999px;padding:10px 16px}
     .cta{padding:12px 18px;border-radius:14px}
+
     .nav{position:sticky;bottom:8px;display:flex;justify-content:space-between;gap:12px}
     .nav button{flex:1;padding:12px;border-radius:14px;background:var(--panel);box-shadow:var(--shadow)}
 
@@ -93,16 +94,16 @@
     .cy-goal h2{margin:0;font-family:'Orbitron',system-ui;font-size:22px;color:var(--cy-cyan)}
     .cy-goal .sub{margin-top:6px;color:var(--cy-muted)}
     .cy-goal .bar{margin-top:10px;height:12px;border-radius:999px;background:rgba(12,17,32,.25);border:1px solid var(--cy-border);overflow:hidden}
-    .cy-goal .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy-yellow),var(--cy-cyan));width:0;box-shadow:var(--cy-glow)}
+    .cy-goal .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy-yellow),var(--cy-cyan));width:0;box-shadow:var(--cy-glow);transition:width .6s ease}
 
     .cy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
     .cy-tile{background:var(--cy-tile);border:1px solid var(--cy-border);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--cy-glow)}
     .cy-tile b{font-family:'Orbitron',system-ui;font-size:26px;color:var(--cy-yellow);display:block}
     .cy-tile span{color:var(--cy-muted);font-weight:700;letter-spacing:.6px}
 
-    .cy-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
+    .cy-actions{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:18px}
     /* bottom cyber nav */
-    .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+    .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
     .cy-foot .cy-foot-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);color:var(--cy-cyan);box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease}
     .cy-foot .cy-foot-btn:hover{transform:translateY(-1px)}
     .cy-foot .cy-foot-btn span{display:none}
@@ -110,7 +111,6 @@
     .cy-btn{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);border-radius:18px;padding:16px 10px;cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease}
     .cy-btn:hover{transform:translateY(-1px)}
     .cy-btn svg{width:32px;height:32px;color:var(--cy-cyan);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))}
-    /* ensure readable labels on dark theme */
     .cy-btn span{color:var(--cy-ink);font-family:'Rajdhani',system-ui;font-weight:700;letter-spacing:.6px;opacity:.95}
     .cy-icon-img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))}
     .cy-foot .cy-icon-img{width:22px;height:22px;filter:drop-shadow(0 0 6px rgba(24,255,227,.45))}
@@ -130,6 +130,7 @@
       .grid4{grid-template-columns:repeat(2,1fr)}
       .cy-grid{grid-template-columns:repeat(2,1fr)}
       .cy-actions{grid-template-columns:repeat(2,1fr)}
+      .cy-foot{grid-template-columns:repeat(5,1fr)}
     }
   </style>
 </head>
@@ -211,22 +212,30 @@
       setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
     },[obstacles,mouse]);
 
-    // Fit grid exactly to panel
+    // Fit grid to visible viewport (WebView-safe)
     useEffect(()=>{
       const fit=()=>{
         const el=wrapRef.current; if(!el) return;
         const parent=el.parentElement || el;
-        const availableW=Math.max(200,parent.clientWidth-2);
-        const availableH=Math.max(200,window.innerHeight*0.55);
+        const vp=window.visualViewport; const vpH=vp?vp.height:window.innerHeight;
+        const nav=document.querySelector('.cy-foot'); const navH=nav?nav.getBoundingClientRect().height+16:0;
+        const parentTop=parent.getBoundingClientRect().top;
+        const availableW=Math.max(220,parent.clientWidth-2);
+        const availableH=Math.max(220, Math.floor(vpH - parentTop - navH - 28));
         const size=Math.max(24, Math.floor(Math.min(availableW/COLS, availableH/ROWS)));
         setCell(size);
+        // ensure container size matches computed cells
+        el.style.width = (size*COLS)+"px";
+        el.style.height = (size*ROWS)+"px";
       };
       fit();
       const ro=new ResizeObserver(()=>fit());
       const target=wrapRef.current?.parentElement || document.body;
       ro.observe(target);
+      const vv=window.visualViewport;
+      if(vv){ vv.addEventListener('resize',fit); vv.addEventListener('scroll',fit); }
       window.addEventListener('resize',fit);
-      return ()=>{ ro.disconnect(); window.removeEventListener('resize',fit); };
+      return ()=>{ ro.disconnect(); if(vv){vv.removeEventListener('resize',fit); vv.removeEventListener('scroll',fit);} window.removeEventListener('resize',fit); };
     },[]);
 
     // Tap steering (← ↑ → ↓)
@@ -284,7 +293,7 @@
     return (
       <div className="cy-panel">
         <div className="row"><div className="cy-title">Mouse & Cheese</div><Btn onClick={onBack}>Menu</Btn></div>
-        <div ref={wrapRef} className="arena" style={{width:cell*COLS, height:cell*ROWS, aspectRatio:`${COLS}/${ROWS}`}}>
+        <div ref={wrapRef} className="arena" style={{aspectRatio:`${COLS}/${ROWS}`}}>
           <div className="lives">{livesMask}</div>
           {grid.map(c=> (
             <div key={`${c.x}-${c.y}`} className="cell" style={{left:c.x*cell,top:c.y*cell,width:cell,height:cell}}></div>
@@ -307,7 +316,7 @@
   function Quiz({onBack,onStat}){
     const WORDS=getWords(); const [i,setI]=useState(0); const [picked,setPicked]=useState(null); const q=WORDS[i%WORDS.length];
     const opts=useMemo(()=>{ const pool=[q.ru]; while(pool.length<4){ const r=WORDS[rand(WORDS.length)].ru; if(!pool.includes(r)) pool.push(r);} return pool.sort(()=>Math.random()-0.5); },[i]);
-    const choose=v=>{ const is=v===q.ru; setPicked(v); if(is){ audio.speak(q.en); onStat&&onStat('quiz'); } };
+    const choose=v=>{ const is=v===q.ru; setPicked(v); if(is){ audio.speak(q.en); onStat&&onStat('quiz'); } else { audio.speak(q.en); } };
     const next=()=>{ setPicked(null); setI(v=>v+1); };
     return (
       <div className="cy-panel">
@@ -336,7 +345,8 @@
   }
 
   function Accent({onBack,onStat}){
-    const WORDS=getWords(); const [i,setI]=useState(0); const [heard,setHeard]=useState('—'); const [match,setMatch]=useState(0); const w=WORDS[i%WORDS.length];
+    const WORDS=getWords(); const [i,setI]=useState(0); const [heard,setHeard]=useState('—'); const [match,setMatch]=useState(0); const [micReady,setMicReady]=useState(false); const w=WORDS[i%WORDS.length];
+    useEffect(()=>{ const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; setMicReady(!!Rec); },[]);
     const listen=()=>audio.speak(w.en);
     const say=()=>{ const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; if(!Rec){ alert('SpeechRecognition not supported in this browser'); return; } const r=new Rec(); r.lang=(audio.getVoice()?.lang)||'en-US'; r.interimResults=false; r.maxAlternatives=1; r.onresult=e=>{ const txt=(e.results[0][0].transcript||'').trim(); setHeard(txt); const m=similarity(txt,w.en); setMatch(m); if(m>=80){ onStat&&onStat('accent'); } }; r.onerror=()=>setHeard('—'); r.start(); };
     return (
@@ -350,7 +360,7 @@
           <Btn variant="grad" onClick={()=>{ setI(v=>v+1); setHeard('—'); setMatch(0); }}>Next</Btn>
         </div>
         <div className="card-row" style={{marginTop:12}}>
-          <div className="stat">Microphone access: ready</div>
+          <div className="stat">Microphone access: {micReady? 'ready':'not available'}</div>
           <div className="stat">Heard: {heard} • Match: {match}%</div>
         </div>
       </div>
@@ -467,9 +477,11 @@
   const IconCards=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M7 9h6M7 13h6"/><rect x="13" y="3" width="8" height="12" rx="2"/></svg>);
   const IconGame=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 12h4M8 10v4"/><path d="M15 10h.01M19 14h.01"/><rect x="2" y="8" width="20" height="8" rx="4"/></svg>);
   const IconMic=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3"/></svg>);
+  const IconSettings=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/><circle cx="12" cy="12" r="3"/></svg>);
 
   function CyberMenu({go,stats,toggleTheme,icons}){
     const goal=20; const done=stats.cards+stats.quiz+stats.cheese+stats.accent; const pct=Math.min(100,Math.round(done/goal*100));
+    useEffect(()=>{ const el=document.querySelector('.cy-goal .bar i'); if(el){ el.style.width=pct+'%'; } },[pct]);
     return (
       <div className="cyber">
         <div className="cy-head">
@@ -479,7 +491,7 @@
         <div className="cy-goal">
           <h2>GOAL: 20 / DAY</h2>
           <div className="sub">Keep up the streak — study every day</div>
-          <div className="bar" aria-label={`Progress ${pct}%`}><i style={{width:pct+'%'}}/></div>
+          <div className="bar" aria-label={`Progress ${pct}%`}><i/></div>
           <div className="cy-grid">
             <div className="cy-tile"><b>{stats.cards}</b><span>CARDS</span></div>
             <div className="cy-tile"><b>{stats.quiz}</b><span>QUIZ</span></div>
@@ -492,6 +504,7 @@
           <button className="cy-btn" onClick={()=>go('cards')} aria-label="Cards">{icons?.cards?<img className="cy-icon-img" alt="cards" src={icons.cards}/>:<IconCards/>}<span>CARDS</span></button>
           <button className="cy-btn" onClick={()=>go('game')} aria-label="Game">{icons?.game?<img className="cy-icon-img" alt="game" src={icons.game}/>:<IconGame/>}<span>GAME</span></button>
           <button className="cy-btn" onClick={()=>go('accent')} aria-label="Accent">{icons?.accent?<img className="cy-icon-img" alt="accent" src={icons.accent}/>:<IconMic/>}<span>ACCENT</span></button>
+          <button className="cy-btn" onClick={()=>go('settings')} aria-label="Settings"><IconSettings/><span>SETTINGS</span></button>
         </div>
       </div>
     );
@@ -506,6 +519,7 @@
         <button className="cy-foot-btn" onClick={()=>go('cards')} aria-label="Cards">{icons?.cards?<img className="cy-icon-img" alt="cards" src={icons.cards}/>:<IconCards/>}</button>
         <button className="cy-foot-btn" onClick={()=>go('game')} aria-label="Game">{icons?.game?<img className="cy-icon-img" alt="game" src={icons.game}/>:<IconGame/>}</button>
         <button className="cy-foot-btn" onClick={()=>go('accent')} aria-label="Accent">{icons?.accent?<img className="cy-icon-img" alt="accent" src={icons.accent}/>:<IconMic/>}</button>
+        <button className="cy-foot-btn" onClick={()=>go('settings')} aria-label="Settings"><IconSettings/></button>
       </div>
     );
   }
@@ -521,6 +535,9 @@
     const toggleTheme=useCallback(()=>{ const now=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',now); try{ localStorage.setItem('theme',now?'dark':'light'); }catch(_){} },[]);
     const go=useCallback((s)=>setScreen(s),[]);
     const [wordI,setWordI]=useState(0);
+
+    // Telegram WebApp safe init (optional)
+    useEffect(()=>{ try{ window.Telegram?.WebApp?.ready?.(); }catch(_){} },[]);
 
     return (
       <div className="wrap">
@@ -560,5 +577,179 @@
     console.assert(isValidIcon('data:text/plain;base64,AA')===false);
   }catch(e){ console.warn('self-checks skipped',e); }
   </script>
+
+  <!--
+  ==========================
+  Netlify Function (TypeScript)
+  File: netlify/functions/progress.ts
+  ==========================
+  import type { Handler } from '@netlify/functions'
+  import { createClient } from '@supabase/supabase-js'
+  
+  type EventBody = { type: 'quiz'|'cards'|'cheese'|'accent', payload?: any, userId?: string }
+  
+  const SUPABASE_URL = process.env.SUPABASE_URL!
+  const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE!
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN // optional: to verify initData
+  
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } })
+  
+  const ok = (body:any, status=200) => ({ statusCode: status, headers: {'Content-Type':'application/json','Cache-Control':'no-store'}, body: JSON.stringify(body) })
+  const bad = (msg:string, status=400) => ok({error: msg}, status)
+  
+  // (optional) Telegram initData verification
+  import crypto from 'crypto'
+  function verifyTelegram(initData:string){
+    try{
+      if(!TELEGRAM_BOT_TOKEN) return null
+      const params = new URLSearchParams(initData)
+      const hash = params.get('hash')
+      params.delete('hash')
+      const dataCheckString = [...params.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${k}=${v}`).join('\n')
+      const secretKey = crypto.createHmac('sha256', 'WebAppData').update(TELEGRAM_BOT_TOKEN).digest()
+      const calcHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
+      if (calcHash !== hash) return null
+      const user = params.get('user')
+      return user ? JSON.parse(user) : null
+    }catch{ return null }
+  }
+  
+  export const handler: Handler = async (event) => {
+    const { httpMethod, queryStringParameters } = event
+    const op = (queryStringParameters?.op||'').toLowerCase()
+    if(op==='ping') return ok({ ok: true })
+
+    if(httpMethod==='POST' && op==='write'){
+      const body: EventBody = JSON.parse(event.body||'{}')
+      if(!body?.type) return bad('type required')
+      // resolve userId: telegram initData or provided or anon
+      let userId = body.userId || 'anon'
+      const initData = event.headers['x-telegram-initdata'] || queryStringParameters?.initData
+      const tg = typeof initData==='string' ? verifyTelegram(initData) : null
+      if(tg?.id) userId = String(tg.id)
+
+      const { error } = await supabase.from('events').insert({ user_id: userId, type: body.type, payload: body.payload||null })
+      if(error) return bad(error.message, 500)
+      return ok({ ok: true })
+    }
+
+    if(httpMethod==='GET' && op==='stats'){
+      const userId = queryStringParameters?.userId || 'anon'
+      const { data, error } = await supabase
+        .from('events')
+        .select('type, count:count(*)')
+        .eq('user_id', userId)
+        .group('type')
+      if(error) return bad(error.message, 500)
+      const stats = { quiz:0, cards:0, cheese:0, accent:0 }
+      for(const row of (data||[])) stats[row.type as keyof typeof stats] = Number((row as any).count||0)
+      return ok({ stats })
+    }
+
+    return bad('unsupported', 404)
+  }
+
+  // ========= Supabase schema (SQL) =========
+  // create table if not exists
+  // create table public.events (
+  //   id bigserial primary key,
+  //   user_id text not null,
+  //   type text not null check (type in ('quiz','cards','cheese','accent')),
+  //   payload jsonb,
+  //   created_at timestamptz default now()
+  // );
+  // alter table public.events enable row level security;
+  // -- Optional RLS: only allow service role by function; no anon direct access
+  // create policy "service only" on public.events for all using (false) with check (false);
+
+  ==========================
+  Netlify headers (file: _headers)
+  ==========================
+  /*
+    Content-Security-Policy: default-src 'self' https:; connect-src 'self' https:; img-src 'self' https: data:; font-src https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net 'unsafe-inline'; frame-ancestors https://web.telegram.org https://*.telegram.org;
+    Referrer-Policy: no-referrer
+    X-Content-Type-Options: nosniff
+    X-Frame-Options: DENY
+    Permissions-Policy: microphone=*, fullscreen=*, clipboard-write=(self)
+  */
+
+  ==========================
+  package.json (tests/dev)
+  ==========================
+  {
+    "name":"telegram-miniapp",
+    "private": true,
+    "scripts": {
+      "dev": "npx serve .",
+      "test": "vitest run",
+      "e2e": "playwright test"
+    },
+    "devDependencies": {
+      "vitest": "^1.6.0",
+      "@playwright/test": "^1.46.0",
+      "@supabase/supabase-js": "^2.45.0"
+    }
+  }
+
+  ==========================
+  vitest.config.ts (optional minimal)
+  ==========================
+  import { defineConfig } from 'vitest/config'
+  export default defineConfig({ test: { environment: 'jsdom' } })
+
+  ==========================
+  tests/unit.spec.ts
+  ==========================
+  import { describe, it, expect } from 'vitest'
+  // In browser app exposes helpers on window.__MNC__ — here we reimplement minimal copies for unit
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v))
+  function similarity(a,b){ a=(a||'').toLowerCase(); b=(b||'').toLowerCase(); if(!a||!b) return 0; const m=Math.max(a.length,b.length); let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===b[i]) s++; } return Math.round((s/m)*100); }
+  function parseCSV(text){ const lines=String(text||'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; for(let i=start;i<lines.length;i++){ const cols=lines[i].split(sep); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
+  
+  describe('helpers',()=>{
+    it('clamp',()=>{ expect(clamp(-1,0,10)).toBe(0); expect(clamp(11,0,10)).toBe(10) })
+    it('similarity',()=>{ expect(similarity('cheese','cheese')).toBe(100) })
+    it('parseCSV',()=>{ expect(parseCSV('en,ru\ncat,кот')).toEqual([{en:'cat',ru:'кот'}]) })
+  })
+
+  ==========================
+  tests/e2e.spec.ts (Playwright)
+  ==========================
+  import { test, expect } from '@playwright/test'
+  test.beforeEach(async ({ page }) => { await page.goto('http://localhost:3000/index.html') })
+  test('Quiz: colors + Next', async ({ page }) => {
+    await page.getByRole('button', { name: 'Quiz' }).click()
+    const opts = page.locator('.ans')
+    const count = await opts.count()
+    await opts.nth(0).click()
+    await expect(opts.nth(0)).toHaveClass(/(ok|bad)/)
+    await page.getByRole('button', { name: 'Next' }).click()
+    await expect(opts.nth(0)).not.toHaveClass(/(ok|bad)/)
+  })
+  test('Game: restart resets lives', async ({ page }) => {
+    await page.getByRole('button', { name: 'Game' }).click()
+    await page.getByRole('button', { name: 'Restart' }).click()
+    await expect(page.locator('.lives')).toContainText('❤')
+  })
+  test('Settings present in menu and footer', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Settings' })).toBeVisible()
+    await page.getByRole('button', { name: 'Settings' }).click()
+    await expect(page.getByText('Supabase link')).toBeVisible()
+  })
+
+  ==========================
+  playwright.config.ts (basic)
+  ==========================
+  import { defineConfig } from '@playwright/test'
+  export default defineConfig({ webServer: { command: 'npx serve -l 3000 .', port: 3000, reuseExistingServer: !process.env.CI } })
+
+  ==========================
+  Env (.env on Netlify)
+  ==========================
+  SUPABASE_URL=...
+  SUPABASE_SERVICE_ROLE=...
+  TELEGRAM_BOT_TOKEN=... # optional for initData verification
+
+  -->
 </body>
 </html>
