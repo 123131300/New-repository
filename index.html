@@ -1,435 +1,330 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-
-// =============== helpers
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const rand = (n) => Math.floor(Math.random() * n);
-const speak = (text) => {
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    u.rate = 0.95;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  } catch {}
-};
-
-const levenshtein = (a, b) => {
-  a = (a || "").toLowerCase().trim();
-  b = (b || "").toLowerCase().trim();
-  const m = a.length, n = b.length;
-  if (!m) return n;
-  if (!n) return m;
-  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-  for (let i = 0; i <= m; i++) dp[i][0] = i;
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,
-        dp[i][j - 1] + 1,
-        dp[i - 1][j - 1] + cost
-      );
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>Mouse & Cheese</title>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <style>
+    :root{
+      --bg:#edf1f7;--panel:#ffffff;--ink:#111827;--muted:#5b6575;--ring:#e5e9f2;
+      --accent1:#5865f2;--accent2:#7c3aed;--ok:#10b981;--warn:#f59e0b;--err:#ef4444;
+      --chip:#f4f6fb;--shadow:0 10px 30px rgba(16,24,40,.08);
+      --radius:18px;--rsm:12px;
     }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:linear-gradient(180deg,#f6f8fc, #eef1f7)}
+    #root{min-height:100vh;display:flex;justify-content:center;padding:18px}
+    .wrap{width:min(1100px,100%)}
+    h1{margin:0 0 14px;display:flex;align-items:center;gap:10px;font-size:28px}
+    .topbar{display:flex;gap:10px;justify-content:flex-end}
+    .btn{appearance:none;border:0;background:#fff;border-radius:999px;padding:10px 18px;font-weight:600;box-shadow:var(--shadow);cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .btn--grad{color:#fff;background:linear-gradient(90deg,var(--accent1),var(--accent2))}
+    .btn--ok{color:#fff;background:var(--ok)}
+    .btn--ghost{background:#fff}
+    .panel{background:var(--panel);box-shadow:var(--shadow);border-radius:var(--radius);padding:22px;margin:18px 0}
+    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .metric{background:#f5f7fc;border-radius:16px;padding:12px;text-align:center}
+    .metric b{font-size:22px}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .title{font-size:22px;font-weight:800;margin:0 0 12px}
+    .subtitle{color:var(--muted);margin:6px 0 0}
+    .card-row{display:flex;gap:12px;flex-wrap:wrap}
+    .pill{background:#f5f7fc;border-radius:999px;padding:10px 16px}
+    .cta{padding:12px 18px;border-radius:14px}
+    .nav{position:sticky;bottom:8px;display:flex;justify-content:space-between;gap:12px}
+    .nav button{flex:1;padding:12px;border-radius:14px;background:#fff;box-shadow:var(--shadow)}
+
+    /* QUIZ */
+    .quiz-word{font-size:64px;font-weight:900;margin:8px 0 16px}
+    .ans{padding:14px 16px;border-radius:14px;border:1px solid var(--ring);background:#fff;cursor:pointer}
+    .ans.ok{background:#d1fae5;border-color:#34d399}
+
+    /* CARDS */
+    .big{font-size:64px;font-weight:900;margin:8px 0 6px}
+
+    /* ACCENT */
+    .stat{background:#f5f7fc;border-radius:14px;padding:12px 14px;margin-top:8px}
+
+    /* GAME */
+    .arena{aspect-ratio:16/9;background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4}
+    .cell{position:absolute;border:1px solid rgba(0,0,0,.04)}
+    .sprite{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))}
+    .lives{position:absolute;top:10px;right:16px;font-size:20px}
+    .gameover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:28px;color:#111827}
+    @media (max-width:720px){
+      .quiz-word,.big{font-size:44px}
+      .grid4{grid-template-columns:repeat(2,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <div id="root"><div class="wrap"><h1>🐭 Mouse & Cheese</h1><p>Loading…</p></div></div>
+
+  <!-- React 18 + ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- In‑browser JSX compiler for a single-file demo -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+  const {useState,useEffect,useRef,useMemo,useCallback} = React;
+
+  // Helpers
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const rand=n=>Math.floor(Math.random()*n);
+
+  // Speak TTS
+  function speak(text){
+    try{ const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=0.95; speechSynthesis.speak(u);}catch(e){}
   }
-  return dp[m][n];
-};
-const similarity = (a, b) => {
-  const maxLen = Math.max((a || "").length, (b || "").length) || 1;
-  return Math.round((1 - levenshtein(a, b) / maxLen) * 100);
-};
 
-// ======= data
-const WORDS = [
-  { en: "cheese", ru: "сыр" },
-  { en: "right", ru: "право" },
-  { en: "room", ru: "комната" },
-  { en: "child", ru: "ребёнок" },
-  { en: "ticket", ru: "билет" },
-  { en: "left", ru: "лево" },
-  { en: "water", ru: "вода" },
-  { en: "bread", ru: "хлеб" },
-  { en: "school", ru: "школа" },
-  { en: "game", ru: "игра" },
-];
+  // String similarity (very rough) for Accent
+  function similarity(a,b){
+    a=(a||'').toLowerCase(); b=(b||'').toLowerCase();
+    if(!a||!b) return 0; const m=Math.max(a.length,b.length);
+    let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===b[i]) s++; }
+    return Math.round((s/m)*100);
+  }
 
-// ======= UI Primitives
-const Card = ({ children, className = "" }) => (
-  <div className={`rounded-3xl shadow-lg ring-1 ring-black/5 bg-white/70 backdrop-blur p-5 ${className}`}>
-    {children}
-  </div>
-);
-const H = ({ children }) => (
-  <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-    <span role="img" aria-label="mouse">🐭</span>
-    Mouse & Cheese
-  </h1>
-);
-const TopBar = ({ onMenu, onTheme }) => (
-  <div className="flex items-center justify-between mb-4">
-    <H />
-    <div className="flex gap-3">
-      <button onClick={onTheme} className="px-4 py-2 rounded-full bg-white shadow hover:shadow-md">Theme</button>
-      <button onClick={onMenu} className="px-4 py-2 rounded-full bg-white shadow hover:shadow-md">Menu</button>
-    </div>
-  </div>
-);
-const Primary = ({ children, onClick, className = "" }) => (
-  <button onClick={onClick} className={`px-5 py-2 rounded-2xl text-white font-semibold shadow-lg hover:shadow-xl transition ring-1 ring-black/5 bg-gradient-to-r from-indigo-500 to-violet-500 ${className}`}>{children}</button>
-);
-const Soft = ({ children, onClick, className = "" }) => (
-  <button onClick={onClick} className={`px-5 py-2 rounded-2xl bg-white/80 ring-1 ring-black/5 shadow hover:shadow-md ${className}`}>{children}</button>
-);
+  // Words
+  const WORDS=[
+    {en:'cheese',ru:'сыр'},{en:'room',ru:'комната'},{en:'right',ru:'право'},{en:'child',ru:'ребёнок'},
+    {en:'ticket',ru:'билет'},{en:'left',ru:'лево'},{en:'school',ru:'школа'},{en:'game',ru:'игра'}
+  ];
 
-// ======= GAME
-function useSwipe(ref, handlers){
-  useEffect(()=>{
-    const el = ref.current;
-    if(!el) return;
-    let sx=0, sy=0, ex=0, ey=0, t0=0;
-    const ts = (e)=>{const t = e.touches[0]; sx=t.clientX; sy=t.clientY; t0=Date.now();};
-    const te = (e)=>{const t = e.changedTouches[0]; ex=t.clientX; ey=t.clientY; const dx=ex-sx, dy=ey-sy; const adx=Math.abs(dx), ady=Math.abs(dy); if(Math.max(adx,ady)<24 || Date.now()-t0>600){ handlers.tap&&handlers.tap({x:ex,y:ey}); return;} if(adx>ady){ handlers.swipe&&handlers.swipe(dx>0?"right":"left"); } else { handlers.swipe&&handlers.swipe(dy>0?"down":"up"); }};
-    el.addEventListener("touchstart", ts, {passive:true});
-    el.addEventListener("touchend", te);
-    return ()=>{ el.removeEventListener("touchstart", ts); el.removeEventListener("touchend", te); };
-  },[ref, handlers]);
-}
-
-const OB_EMOJI = ["🕳️","🧊","🪵","🪨","🌵"];
-
-function Game({ onBack, onSpeakWord, word }){
-  const COLS = 14, ROWS = 9;
-  const MAX_LIVES = 3;
-  const wrapRef = useRef(null);
-  const [running, setRunning] = useState(true);
-  const [lives, setLives] = useState(MAX_LIVES);
-  const [mouse, setMouse] = useState({ x: 1, y: 1 });
-  const [cheese, setCheese] = useState({ x: 6, y: 4 });
-  const [dir, setDir] = useState({ x: 1, y: 0 });
-  const [scale, setScale] = useState(1);
-  const [obstacles, setObstacles] = useState(()=>{
-    const set = new Set();
-    const arr = [];
-    while (arr.length < 6) {
-      const p = { x: rand(COLS), y: rand(ROWS) };
-      const key = p.x+","+p.y;
-      if ((p.x===1&&p.y===1) || (p.x===6&&p.y===4) || set.has(key)) continue;
-      set.add(key);
-      arr.push({ ...p, em: OB_EMOJI[rand(OB_EMOJI.length)] });
-    }
-    return arr;
-  });
-
-  // swipe / tap controls
-  useSwipe(wrapRef, {
-    swipe: (d)=>{
-      if (d === "up") setDir({ x: 0, y: -1 });
-      if (d === "down") setDir({ x: 0, y: 1 });
-      if (d === "left") setDir({ x: -1, y: 0 });
-      if (d === "right") setDir({ x: 1, y: 0 });
-    },
-    tap: ()=>{
-      const dx = cheese.x - mouse.x;
-      const dy = cheese.y - mouse.y;
-      if (Math.abs(dx) > Math.abs(dy)) setDir({ x: Math.sign(dx), y: 0 });
-      else setDir({ x: 0, y: Math.sign(dy) });
-    }
-  });
-
-  // auto movement
-  useEffect(()=>{
-    if(!running) return;
-    const id = setInterval(()=>{
-      setMouse(prev=>{
-        let nx = prev.x + dir.x, ny = prev.y + dir.y;
-        // collision with walls
-        if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) {
-          setLives(l=>l-1);
-          speak("ouch");
-          return prev; // stay, lose life
-        }
-        // obstacle
-        if (obstacles.some(o=>o.x===nx && o.y===ny)) {
-          setLives(l=>l-1);
-          speak("ouch");
-          return prev;
-        }
-        // cheese
-        if (nx===cheese.x && ny===cheese.y) {
-          // new cheese
-          setCheese({ x: rand(COLS), y: rand(ROWS) });
-          onSpeakWord && onSpeakWord();
-          setScale(s=>Math.min(1.6, s + 0.06));
-          setLives(l=>Math.min(MAX_LIVES, l+1));
-        }
-        return { x: nx, y: ny };
-      });
-    }, 260);
-    return ()=>clearInterval(id);
-  }, [dir, running, obstacles, cheese, onSpeakWord]);
-
-  // lives watcher
-  useEffect(()=>{ if (lives <= 0) setRunning(false); }, [lives]);
-
-  // restart
-  const restart = ()=>{
-    setLives(MAX_LIVES);
-    setMouse({ x: 1, y: 1 });
-    setCheese({ x: rand(COLS), y: rand(ROWS) });
-    setDir({ x: 1, y: 0 });
-    setScale(1);
-    setRunning(true);
-    // re-roll obstacles
-    const set = new Set();
-    const arr = [];
-    while (arr.length < 6) {
-      const p = { x: rand(COLS), y: rand(ROWS) };
-      const key = p.x+","+p.y;
-      if ((p.x===1&&p.y===1) || set.has(key)) continue;
-      set.add(key);
-      arr.push({ ...p, em: OB_EMOJI[rand(OB_EMOJI.length)] });
-    }
-    setObstacles(arr);
+  // --- UI atoms
+  const Btn = ({children,onClick,className='',variant='ghost'})=>{
+    const map={grad:'btn btn--grad', ok:'btn btn--ok', ghost:'btn btn--ghost'};
+    return <button className={map[variant]} onClick={onClick}>{children}</button>
   };
 
-  const cellSize = 38; // visual only
-  const gridStyle = { backgroundImage: `linear-gradient(#0001 1px, transparent 1px), linear-gradient(90deg, #0001 1px, transparent 1px)`, backgroundSize: `${cellSize}px ${cellSize}px` };
+  // --- Game component
+  function Game({onBack,onSpeakWord,word}){
+    const COLS=18, ROWS=12, CELL=38, SPEED=280, MAX_LIVES=3;
+    const wrapRef=useRef(null);
+    const [running,setRunning]=useState(true);
+    const [mouse,setMouse]=useState({x:1,y:1});
+    const [cheese,setCheese]=useState({x:6,y:4});
+    const [dir,setDir]=useState({x:1,y:0});
+    const [lives,setLives]=useState(MAX_LIVES);
+    const [obstacles,setObstacles]=useState(()=>{
+      const K=6; const a=[]; const pool=['🌵','🪵','🪨','🕳️','🧊'];
+      for(let i=0;i<K;i++) a.push({x:rand(COLS-2)+1,y:rand(ROWS-2)+1,em:pool[rand(pool.length)]});
+      return a;
+    });
 
-  return (
-    <div>
-      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
-      <Card className="p-4">
-        <div className="flex justify-between items-center px-4">
-          <div className="text-xl font-semibold">Mouse & Cheese</div>
-          <div className="text-2xl select-none">{"❤️".repeat(lives)}{"🤍".repeat(Math.max(0, MAX_LIVES-lives))}</div>
+    // Swipe & tap
+    useEffect(()=>{
+      const el=wrapRef.current; if(!el) return;
+      let sx=0,sy=0, ex=0,ey=0;
+      const touchstart=e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; };
+      const touchend=e=>{ const t=e.changedTouches[0]; ex=t.clientX; ey=t.clientY; const dx=ex-sx, dy=ey-sy; if(Math.abs(dx)>Math.abs(dy)) setDir({x:Math.sign(dx),y:0}); else setDir({x:0,y:Math.sign(dy)}); };
+      el.addEventListener('touchstart',touchstart,{passive:true});
+      el.addEventListener('touchend',touchend,{passive:true});
+      const click=e=>{ // tap turns towards cheese
+        const dx=cheese.x-mouse.x, dy=cheese.y-mouse.y; if(Math.abs(dx)>Math.abs(dy)) setDir({x:Math.sign(dx),y:0}); else setDir({x:0,y:Math.sign(dy)});
+      };
+      el.addEventListener('click',click);
+      return ()=>{ el.removeEventListener('touchstart',touchstart); el.removeEventListener('touchend',touchend); el.removeEventListener('click',click); };
+    },[mouse,cheese]);
+
+    // Auto movement
+    useEffect(()=>{
+      if(!running) return;
+      const id=setInterval(()=>{
+        setMouse(prev=>{
+          let nx=prev.x+dir.x, ny=prev.y+dir.y;
+          // collisions with walls
+          if(nx<0||ny<0||nx>=COLS||ny>=ROWS){ setLives(v=>v-1); speak('ouch'); return prev; }
+          // obstacles
+          if(obstacles.some(o=>o.x===nx && o.y===ny)){ setLives(v=>v-1); speak('ouch'); return prev; }
+          // cheese
+          if(nx===cheese.x && ny===cheese.y){
+            // new cheese
+            setCheese({x:rand(COLS),y:rand(ROWS)});
+            setLives(v=>clamp(v+1,0,MAX_LIVES));
+            onSpeakWord && onSpeakWord(word.en);
+          }
+          return {x:nx,y:ny};
+        });
+      },SPEED);
+      return ()=>clearInterval(id);
+    },[dir,cheese,obstacles,running,word]);
+
+    useEffect(()=>{ if(lives<=0){ setRunning(false); } },[lives]);
+
+    // Layout helpers
+    const w=COLS*CELL, h=ROWS*CELL;
+    const grid=Array.from({length:COLS*ROWS},(_,i)=>({x:i%COLS,y:Math.floor(i/COLS)}));
+
+    return (
+      <div className="panel">
+        <div className="row" style={{marginBottom:10}}>
+          <div className="title">Mouse & Cheese</div>
+          <div className="lives">{'❤'.repeat(lives)+ '🤍'.repeat(MAX_LIVES-lives)}</div>
         </div>
-        <div ref={wrapRef} className="relative mx-auto mt-3 rounded-3xl bg-slate-200/60 ring-1 ring-black/5 shadow-inner overflow-hidden" style={{ width: COLS*cellSize + 40, height: ROWS*cellSize + 40 }}>
-          {/* grid */}
-          <div className="absolute inset-5 rounded-2xl" style={gridStyle}></div>
-          {/* mouse */}
-          {running && (
-            <div className="absolute transition-transform" style={{ left: 20 + mouse.x*cellSize, top: 20 + mouse.y*cellSize, transform: `translate(-50%, -50%) scale(${scale})` }}>
-              <span className="text-3xl">🐭</span>
-            </div>
-          )}
-          {/* cheese */}
-          {running && (
-            <div className="absolute" style={{ left: 20 + cheese.x*cellSize, top: 20 + cheese.y*cellSize, transform: 'translate(-50%, -50%)' }}>
-              <span className="text-3xl">🧀</span>
-            </div>
-          )}
-          {/* obstacles */}
-          {running && obstacles.map((o,i)=> (
-            <div key={i} className="absolute" style={{ left: 20 + o.x*cellSize, top: 20 + o.y*cellSize, transform: 'translate(-50%, -50%)' }}>
-              <span className="text-2xl">{o.em}</span>
-            </div>
+        <div ref={wrapRef} className="arena" style={{width:w}}>
+          {/* grid light lines */}
+          {grid.map(c=> (
+            <div key={`${c.x}-${c.y}`} className="cell" style={{left:c.x*CELL,top:c.y*CELL,width:CELL,height:CELL}}></div>
           ))}
-          {!running && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="px-6 py-3 rounded-2xl bg-white shadow">Game Over</div>
-            </div>
-          )}
+          {/* sprites */}
+          {running && <div className="sprite" style={{left:(mouse.x+.5)*CELL, top:(mouse.y+.5)*CELL, fontSize:28}}>🐭</div>}
+          <div className="sprite" style={{left:(cheese.x+.5)*CELL, top:(cheese.y+.5)*CELL, fontSize:26}}>🧀</div>
+          {obstacles.map((o,i)=> (
+            <div key={i} className="sprite" style={{left:(o.x+.5)*CELL, top:(o.y+.5)*CELL, fontSize:24}}>{o.em}</div>
+          ))}
+          {!running && <div className="gameover">Game Over</div>}
         </div>
-        <div className="flex items-center justify-between px-2 mt-3">
-          <Soft onClick={restart}>Restart</Soft>
-          <div className="text-slate-600">Swipe to move. Tap to turn towards cheese. Eat cheese — “beep” and the word.</div>
+        <div className="row" style={{marginTop:10,justifyContent:'space-between'}}>
+          <Btn onClick={()=>{ setMouse({x:1,y:1}); setDir({x:1,y:0}); setLives(MAX_LIVES); setCheese({x:6,y:4}); setRunning(true); }}>Restart</Btn>
+          <div className="subtitle">Swipe to move. Tap to turn towards cheese. Eat cheese — “beep” and the word.</div>
         </div>
-      </Card>
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
-// ======= QUIZ
-function Quiz({ onBack }){
-  const [idx, setIdx] = useState(0);
-  const word = WORDS[idx % WORDS.length];
-  const options = useMemo(()=>{
-    const rest = WORDS.filter(w=>w.ru!==word.ru).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.ru);
-    const arr = [...rest, word.ru].sort(()=>Math.random()-0.5);
-    return arr;
-  }, [word]);
-  const [chosen, setChosen] = useState(null);
+  // --- Quiz
+  function Quiz({onBack}){
+    const [i,setI]=useState(0);
+    const [ok,setOk]=useState(null);
+    const q=WORDS[i%WORDS.length];
+    const opts=useMemo(()=>{
+      const pool=[q.ru];
+      while(pool.length<4){ const r=WORDS[rand(WORDS.length)].ru; if(!pool.includes(r)) pool.push(r); }
+      return pool.sort(()=>Math.random()-0.5);
+    },[i]);
 
-  useEffect(()=>{ setChosen(null); }, [idx]);
+    const choose=v=>{ const is=v===q.ru; setOk(v); if(is) speak(q.en); };
+    const next=()=>{ setOk(null); setI(v=>v+1); };
 
-  const choose = (ru)=>{
-    setChosen(ru);
-    if (ru===word.ru) speak(word.en);
-  };
+    return (
+      <div className="panel">
+        <div className="row"><div className="title">Quiz — choose translation</div><Btn onClick={onBack}>Menu</Btn><Btn variant="grad" onClick={next}>Next</Btn></div>
+        <div className="quiz-word">{q.en}</div>
+        <div className="grid4">
+          {opts.map(v=> (
+            <div key={v} className={"ans"+(ok===v && v===q.ru?" ok":"")} onClick={()=>choose(v)}>{v}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  return (
-    <div>
-      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
-      <Card>
-        <div className="flex items-center justify-between">
-          <div className="text-2xl font-semibold">Quiz — choose translation</div>
-          <div className="flex gap-2">
-            <Soft onClick={onBack}>Menu</Soft>
-            <Primary onClick={()=>setIdx(i=>i+1)}>Next</Primary>
+  // --- Cards
+  function Cards({onBack}){
+    const [i,setI]=useState(0);
+    const [show,setShow]=useState(false);
+    const w=WORDS[i%WORDS.length];
+    return (
+      <div className="panel">
+        <div className="row"><div className="title">Cards</div><Btn onClick={onBack}>Menu</Btn></div>
+        <div className="big">{w.en}</div>
+        {show && <div className="subtitle" style={{fontSize:18}}>{w.ru}</div>}
+        <div className="card-row" style={{marginTop:12}}>
+          <Btn onClick={()=>setShow(s=>!s)}>{show? 'Hide RU':'Show RU'}</Btn>
+          <Btn onClick={()=>speak(w.en)}>Speak</Btn>
+          <Btn variant="ok" onClick={()=>{ setI(v=>v+1); setShow(false); }}>Know</Btn>
+          <Btn onClick={onBack}>Menu</Btn>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Accent (pronunciation)
+  function Accent({onBack}){
+    const [i,setI]=useState(0);
+    const [heard,setHeard]=useState('—');
+    const [match,setMatch]=useState(0);
+    const w=WORDS[i%WORDS.length];
+
+    const listen=()=> speak(w.en);
+    const say=()=>{
+      const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!Rec){ alert('SpeechRecognition not supported in this browser'); return; }
+      const r=new Rec(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
+      r.onresult=e=>{ const txt=(e.results[0][0].transcript||'').trim(); setHeard(txt); setMatch(similarity(txt,w.en)); };
+      r.onerror=()=>setHeard('—'); r.start();
+    };
+
+    return (
+      <div className="panel">
+        <div className="row"><div className="title">Accent • say the word as close to original</div><Btn onClick={onBack}>Menu</Btn></div>
+        <div className="big">{w.en}</div>
+        <div className="subtitle">{w.ru}</div>
+        <div className="card-row" style={{marginTop:12}}>
+          <Btn onClick={listen}>Listen</Btn>
+          <Btn variant="grad" onClick={say}>Say (browser)</Btn>
+          <Btn variant="ok" onClick={()=>{ setI(v=>v+1); setHeard('—'); setMatch(0); }}>Next</Btn>
+        </div>
+        <div className="card-row" style={{marginTop:12}}>
+          <div className="stat">Microphone access: ready</div>
+          <div className="stat">Heard: {heard} • Match: {match}%</div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Main Menu
+  function Menu({go}){
+    // fake metrics
+    const [stats,setStats]=useState({cards:0,quiz:0,cheese:0,accent:0,day:1});
+    return (
+      <>
+        <div className="row" style={{alignItems:'flex-start', gap:14}}>
+          <h1>🐭 Mouse & Cheese</h1>
+          <div className="topbar"><Btn onClick={()=>document.body.classList.toggle('dark')}>Theme</Btn><Btn onClick={()=>go('menu')}>Menu</Btn></div>
+        </div>
+        <div className="panel">
+          <div className="row">
+            <div className="title">Goal: 20/day</div>
+            <div className="subtitle">Move toward your goal — practice every day.</div>
+          </div>
+          <div className="grid4" style={{marginTop:10}}>
+            <div className="metric"><b>{stats.cards}</b><div>Cards</div></div>
+            <div className="metric"><b>{stats.quiz}</b><div>Quiz</div></div>
+            <div className="metric"><b>{stats.cheese}</b><div>Cheese</div></div>
+            <div className="metric"><b>{stats.accent}</b><div>Accent</div></div>
           </div>
         </div>
-        <div className="text-[64px] font-black tracking-tight mt-3">{word.en}</div>
-        <div className="grid grid-cols-2 gap-4 mt-6">
-          {options.map((ru,i)=>{
-            const isCorrect = chosen && ru===word.ru;
-            const isWrongPick = chosen===ru && ru!==word.ru;
-            const cls = isCorrect ? "bg-green-100" : isWrongPick ? "bg-red-100" : "bg-white";
-            return (
-              <button key={i} onClick={()=>choose(ru)} className={`rounded-2xl ring-1 ring-black/5 px-5 py-4 text-left font-semibold shadow ${cls}`}>{ru}</button>
-            );
-          })}
+
+        <div className="panel"><div className="row"><div className="title">Quiz</div><Btn variant="grad" onClick={()=>go('quiz')}>Open →</Btn></div><div className="subtitle">Pick the correct translation</div></div>
+        <div className="panel"><div className="row"><div className="title">Cards</div><Btn variant="grad" onClick={()=>go('cards')}>Open →</Btn></div><div className="subtitle">EN ⇄ RU. “Know” adds to learned</div></div>
+        <div className="panel"><div className="row"><div className="title">Game</div><Btn variant="grad" onClick={()=>go('game')}>Open →</Btn></div><div className="subtitle">Eat cheese — beep + word</div></div>
+        <div className="panel"><div className="row"><div className="title">Accent</div><Btn variant="grad" onClick={()=>go('accent')}>Train →</Btn></div><div className="subtitle">Say the word close to native</div></div>
+
+        <div className="nav">
+          <button onClick={()=>go('quiz')}>🧠</button>
+          <button onClick={()=>go('cards')}>🃏</button>
+          <button onClick={()=>go('game')}>🎮</button>
+          <button onClick={()=>go('accent')}>💬</button>
         </div>
-      </Card>
-    </div>
-  );
-}
+      </>
+    );
+  }
 
-// ======= CARDS
-function Cards({ onBack }){
-  const [idx, setIdx] = useState(0);
-  const [showRu, setShowRu] = useState(false);
-  const word = WORDS[idx % WORDS.length];
-  useEffect(()=> setShowRu(false), [idx]);
+  function App(){
+    const [screen,setScreen]=useState('menu');
+    const [wordI,setWordI]=useState(0);
+    const word=WORDS[wordI%WORDS.length];
+    const nextWord=()=>setWordI(i=>i+1);
 
-  return (
-    <div>
-      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
-      <Card>
-        <div className="flex items-center justify-between mb-2"><div className="text-2xl font-semibold">Cards</div></div>
-        <div className="text-[64px] font-black tracking-tight">{word.en}</div>
-        <div className="h-6 text-slate-500">{showRu ? word.ru : "\u00A0"}</div>
-        <div className="grid grid-cols-4 gap-3 mt-4">
-          <Soft onClick={()=>setShowRu(v=>!v)}>Show RU</Soft>
-          <Soft onClick={()=>speak(word.en)}>Speak</Soft>
-          <Primary onClick={()=>setIdx(i=>i+1)}>Know</Primary>
-          <Primary onClick={onBack}>Menu</Primary>
-        </div>
-      </Card>
-    </div>
-  );
-}
+    const go=useCallback((s)=>setScreen(s),[]);
 
-// ======= ACCENT (pronunciation)
-function Accent({ onBack }){
-  const [idx, setIdx] = useState(0);
-  const word = WORDS[idx % WORDS.length];
-  const [heard, setHeard] = useState("");
-  const [match, setMatch] = useState(0);
-  const [micState, setMicState] = useState("—");
-  const recRef = useRef(null);
-
-  const setup = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ setMicState("not supported"); return null; }
-    const r = new SR();
-    r.lang = "en-US";
-    r.interimResults = false;
-    r.maxAlternatives = 1;
-    r.continuous = false;
-    r.onstart = ()=> setMicState("listening…");
-    r.onerror = (e)=> setMicState("error");
-    r.onend = ()=> setMicState("ready");
-    r.onresult = (ev)=>{
-      const text = ev.results[0][0].transcript || "";
-      setHeard(text);
-      setMatch(similarity(text, word.en));
-    };
-    setMicState("ready");
-    recRef.current = r;
-    return r;
-  };
-
-  useEffect(()=>{ setup(); return ()=>{ try{recRef.current && recRef.current.abort();}catch{}}; },[]);
-  useEffect(()=>{ setHeard(""); setMatch(0); }, [idx]);
-
-  const say = ()=>{ const r = recRef.current || setup(); if(!r) return; try{ r.abort(); r.start(); }catch{} };
-
-  return (
-    <div>
-      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
-      <Card>
-        <div className="flex items-center justify-between"><div className="text-2xl font-semibold">Accent • say the word as close to original</div></div>
-        <div className="text-[64px] font-black tracking-tight">{word.en}</div>
-        <div className="h-6 text-slate-500">{word.ru}</div>
-        <div className="flex gap-3 mt-4">
-          <Soft onClick={()=>speak(word.en)}>Listen</Soft>
-          <Primary onClick={say}>Say (browser)</Primary>
-          <Primary className="from-emerald-500 to-teal-500" onClick={()=>setIdx(i=>i+1)}>Next</Primary>
-          <Soft onClick={onBack}>Menu</Soft>
-        </div>
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <div className="rounded-2xl bg-white/80 ring-1 ring-black/5 px-4 py-2">Microphone access: {micState}</div>
-          <div className="rounded-2xl bg-white/80 ring-1 ring-black/5 px-4 py-2">Heard: {heard || "—"} • Match: {match}%</div>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// ======= MENU
-function Menu({ onGo }){
-  const Item = ({ title, desc, action }) => (
-    <Card>
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-xl font-semibold">{title}</div>
-          <div className="text-slate-600">{desc}</div>
-        </div>
-        <Primary onClick={action}>Open →</Primary>
+    return (
+      <div className="wrap">
+        {screen==='menu' && <Menu go={go}/>}        
+        {screen==='quiz' && <Quiz onBack={()=>go('menu')}/>}        
+        {screen==='cards' && <Cards onBack={()=>go('menu')}/>}        
+        {screen==='accent' && <Accent onBack={()=>go('menu')}/>}        
+        {screen==='game' && <Game onBack={()=>go('menu')} onSpeakWord={speak} word={word}/>}        
       </div>
-    </Card>
-  );
-  return (
-    <div>
-      <TopBar onMenu={()=>{}} onTheme={()=>document.documentElement.classList.toggle('dark')} />
-      <div className="grid gap-4">
-        <Item title="Quiz" desc="Pick the correct translation" action={()=>onGo('quiz')} />
-        <Item title="Cards" desc="EN ⇄ RU. ‘Know’ adds to learned" action={()=>onGo('cards')} />
-        <Item title="Game" desc="Eat cheese — beep + word" action={()=>onGo('game')} />
-        <Item title="Accent" desc="Say the word close to native" action={()=>onGo('accent')} />
-      </div>
-      <div className="fixed inset-x-0 bottom-3 flex justify-center gap-6 opacity-90">
-        <button onClick={()=>onGo('quiz')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">🧠</button>
-        <button onClick={()=>onGo('cards')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">🎴</button>
-        <button onClick={()=>onGo('game')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">🎮</button>
-        <button onClick={()=>onGo('accent')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">💬</button>
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
-// ======= APP
-export default function App(){
-  const [route, setRoute] = useState('menu');
-  const [quizKey, setQuizKey] = useState(0);
-
-  // for game — provide current word index to TTS when cheese eaten
-  const [wordIdx, setWordIdx] = useState(0);
-  const currentWord = WORDS[wordIdx % WORDS.length];
-  const speakCurrent = ()=> speak(currentWord.en);
-
-  useEffect(()=>{
-    // advance index periodically when user is in quiz/cards/next etc.
-    if(route==='quiz' || route==='cards' || route==='accent') return; // game drives itself
-  },[route]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 p-4">
-      {route==='menu' && <Menu onGo={setRoute} />}
-      {route==='quiz' && <Quiz key={quizKey} onBack={()=>setRoute('menu')} />}
-      {route==='cards' && <Cards onBack={()=>setRoute('menu')} />}
-      {route==='accent' && <Accent onBack={()=>setRoute('menu')} />}
-      {route==='game' && (
-        <Game
-          word={currentWord}
-          onBack={()=>setRoute('menu')}
-          onSpeakWord={()=>{
-            // after eating cheese, speak and advance the word index
-            speakCurrent();
-            setWordIdx(i=>i+1);
-          }}
-        />
-      )}
-    </div>
-  );
-}
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
