@@ -1,423 +1,359 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-<title>Mouse & Cheese — Neon</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>🐭 Mouse & Cheese — Mini</title>
 <style>
+  /* ---------- Design System (responsive, light/dark) ---------- */
   :root{
-    --bg:#0f1620;        /* dark */
-    --panel:#151e29;
-    --panel-2:#0b1119;
-    --text:#eaf1ff;
-    --muted:#9fb3d1;
-    --brand:#3ec7ff;
-    --accent:#7b5cff;
-    --ok:#29d884;
-    --err:#ff5b6e;
-    --ring:rgba(126, 143, 171, .2);
-    --card:#121a24;
-    --shadow: 0 8px 30px rgba(0,0,0,.3);
+    --bg: #0b1220;           /* dark */
+    --elev: #111a2b;
+    --panel: #0f172a;
+    --text: #e6edf7;
+    --muted: #9fb1cc;
+    --primary: #4f8cff;
+    --primary-2: #6d5cff;
+    --good: #22c55e;
+    --bad: #ef4444;
+    --ring: #2b3b5f;
+    color-scheme: dark;
   }
-  [data-theme="light"]{
-    --bg:#f5f7fb;        /* light */
-    --panel:#ffffff;
-    --panel-2:#eef3fb;
-    --text:#0a1628;
-    --muted:#516683;
-    --brand:#0077ff;
-    --accent:#7b5cff;
-    --ok:#0bb070;
-    --err:#e0344b;
-    --ring:rgba(10, 22, 40, .08);
-    --card:#ffffff;
-    --shadow: 0 8px 26px rgba(10,22,40,.08);
+  html.light{
+    --bg: #f6f8fc;           /* light */
+    --elev: #ffffff;
+    --panel: #ffffff;
+    --text: #0b1220;
+    --muted: #4a5568;
+    --primary: #2563eb;
+    --primary-2: #7c3aed;
+    --good: #16a34a;
+    --bad: #dc2626;
+    --ring: #dbe3f2;
+    color-scheme: light;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;}
-  body{
-    margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; 
-  }
-  .wrap{min-height:100svh; display:flex; flex-direction:column; padding-bottom: max(env(safe-area-inset-bottom),16px);}
-  header{
-    position:sticky; top:0; z-index:5; background:linear-gradient(to bottom, var(--bg), color-mix(in oklab, var(--bg), transparent 20%));
-    padding: max(8px, env(safe-area-inset-top)) 12px 8px; border-bottom:1px solid var(--ring);
-  }
-  .row{display:flex; align-items:center; gap:12px; justify-content:space-between; max-width: 720px; margin:0 auto}
-  .brand{display:flex; align-items:center; gap:8px; font-weight:800; letter-spacing:.3px}
-  .brand .emoji{font-size:20px}
-  .toolbar{display:flex; gap:8px}
-  .btn{appearance:none; border:0; border-radius:14px; background:var(--panel); color:var(--text); padding:8px 12px; font-weight:600; box-shadow: var(--shadow); border:1px solid var(--ring);} 
-  .btn.ghost{background:transparent}
-  .btn.primary{background:linear-gradient(135deg, var(--brand), var(--accent)); color:white;}
-  .btn.round{border-radius:10px}
-  .container{max-width:720px; margin:0 auto; padding: 12px; flex:1 1 auto; width:100%}
-  .grid{display:grid; gap:12px}
-  .card{background:var(--card); border:1px solid var(--ring); border-radius:18px; box-shadow:var(--shadow); padding:16px}
-  .title{font-weight:800; font-size: clamp(22px, 3.5vw, 28px); letter-spacing:.3px}
-  .muted{color:var(--muted)}
-  .stat-ring{display:flex; align-items:center; gap:16px}
-  .ring{position:relative; width:116px; height:116px; border-radius:60px; background:conic-gradient(var(--brand) var(--p), var(--ring) 0);
-        display:grid; place-items:center; box-shadow:inset 0 0 0 12px var(--panel-2), var(--shadow);}
-  .ring .day{font-size:40px; font-weight:800}
-  .subs{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
-  .counter{background:var(--panel); padding:10px; border-radius:14px; text-align:center; border:1px solid var(--ring)}
-  .counter .n{font-size:22px; font-weight:800}
-  .list .item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-radius:14px; background:var(--panel); border:1px solid var(--ring)}
-  .left{display:flex; align-items:center; gap:10px}
-  .h3{font-size:18px; font-weight:800}
-  .right .btn{padding:10px 16px}
-  .badge{display:inline-flex; align-items:center; gap:6px; padding: 4px 8px; border-radius:999px; background:var(--panel); border:1px solid var(--ring);}
+  body{margin:0;font-family: ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial; background:var(--bg); color:var(--text);}
+  .wrap{max-width:900px;margin:0 auto;padding:clamp(12px,2.5vw,20px);}
+  header{display:flex;align-items:center;gap:12px;justify-content:space-between;position:sticky;top:0;background:linear-gradient(180deg,var(--bg) 60%, transparent); padding-top:8px; z-index:5}
+  .title{display:flex;align-items:center;gap:10px;font-size:clamp(18px,3.8vw,26px);font-weight:800}
+  .chip{border:1px solid var(--ring); padding:.5em .9em;border-radius:999px;background:var(--elev);color:var(--text);font-weight:700; font-size:14px}
+  .chips{display:flex;gap:8px}
+  .hidden{display:none !important}
 
-  /* views */
-  .view{display:none}
-  .view.active{display:block}
-  .section-title{font-weight:800; font-size: clamp(20px, 4vw, 28px); margin:4px 0 12px}
-  .word{font-weight:900; font-size: clamp(40px, 14vw, 64px); letter-spacing:.5px}
-  .actions{display:flex; flex-wrap:wrap; gap:8px}
-  .actions .btn{flex:1 1 48%}
-  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  /* Panels */
+  .panel{background:var(--panel);border-radius:18px; box-shadow:0 6px 24px rgba(0,0,0,.25); padding:clamp(14px,2.4vw,20px);}
+  .h1{font-size:clamp(22px,4.2vw,30px);font-weight:900;margin:12px 0}
+  .h2{font-size:clamp(16px,3.4vw,22px);font-weight:800;margin:6px 0 12px}
+  .p{color:var(--muted);font-size:clamp(13px,2.6vw,16px)}
 
-  /* game */
-  #board{ width:100%; height:58svh; background:var(--panel); border:1px solid var(--ring); border-radius:18px; overflow:hidden; box-shadow: var(--shadow)}
-  canvas{touch-action:none;}
-  .hint{padding:12px 0 4px; color:var(--muted)}
+  /* Progress header */
+  .grid-header{display:grid;grid-template-columns: 1fr; gap:14px}
+  .progressCard{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+  .ring{inline-size:96px; aspect-ratio:1; border-radius:50%; display:grid; place-items:center; background:
+        conic-gradient(var(--primary) var(--deg,10deg), var(--ring) 0);} 
+  .ring-inner{background:var(--bg); inline-size:76px; aspect-ratio:1; border-radius:50%; display:grid;place-items:center; color:var(--text); font-weight:900; font-size:34px; box-shadow:inset 0 0 0 10px var(--ring)}
+  .stats{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px}
+  .pill{background:var(--elev); border:1px solid var(--ring); border-radius:14px; padding:14px; text-align:center}
+  .pill .n{font-size:clamp(18px,3.6vw,22px); font-weight:900}
+  .pill .k{color:var(--muted); font-weight:700; letter-spacing:.2px}
 
-  /* quiz */
-  .quiz-opts{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-  .opt{padding:14px; border-radius:14px; text-align:center; background:var(--panel); border:1px solid var(--ring); font-weight:700}
-  .opt.ok{outline:3px solid var(--ok)}
-  .opt.bad{outline:3px solid var(--err)}
+  /* Menu blocks */
+  .blocks{display:grid; gap:14px}
+  .block{display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 16px; background:var(--panel); border-radius:16px; border:1px solid var(--ring)}
+  .b-title{font-size:clamp(18px,3.4vw,22px); font-weight:900}
+  .b-sub{color:var(--muted)}
+  .btn{appearance:none;border:none; background:linear-gradient(135deg,var(--primary),var(--primary-2)); color:white; padding:12px 18px; border-radius:12px; font-weight:900; letter-spacing:.2px; box-shadow:0 6px 20px rgba(79,140,255,.35);}
+  .btn:active{transform:translateY(1px)}
+  .btn.outline{background:transparent;color:var(--text);border:1px solid var(--ring);box-shadow:none}
+  .btn.ghost{background:var(--elev)}
 
-  footer{padding:12px; text-align:center; color:var(--muted)}
+  /* Tabs / sections */
+  section{display:none}
+  section.active{display:block}
 
-  /* make top area compact on small phones */
-  @media (max-width:380px){
-    .ring{width:96px; height:96px}
-    .ring .day{font-size:34px}
+  /* Subscreens common */
+  .card{padding:18px; border:1px solid var(--ring); border-radius:18px; background:var(--panel)}
+  .row{display:flex; gap:12px; flex-wrap:wrap}
+  .row.center{justify-content:center}
+  .row.space{justify-content:space-between}
+  .word{font-size:clamp(42px,10vw,80px); font-weight:900; letter-spacing:.5px}
+  .word-ru{color:var(--muted); font-size:clamp(16px,4vw,22px); margin-top:4px}
+  .subhead{font-size:clamp(14px,3.2vw,16px); color:var(--muted); margin-bottom:8px; font-weight:700}
+
+  /* Quiz */
+  .quiz-grid{display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px}
+  .option{padding:14px 16px; border-radius:12px; border:1px solid var(--ring); background:var(--elev); font-weight:800; text-align:center}
+  .option.correct{background:rgba(34,197,94,.15);border-color:var(--good)}
+  .option.wrong{background:rgba(239,68,68,.15);border-color:var(--bad)}
+
+  /* Game */
+  .game-wrap{display:flex; flex-direction:column; gap:12px}
+  .board{position:relative; border:1px dashed var(--ring); border-radius:16px; overflow:hidden; background:linear-gradient(0deg, transparent 24px, var(--ring) 24px),
+          linear-gradient(90deg, transparent 24px, var(--ring) 24px); background-size:48px 48px; background-position: -1px -1px; min-block-size:320px; aspect-ratio: 4/5}
+  .sprite{position:absolute; font-size: clamp(28px,7vw,42px); transform:translate(-50%,-50%)}
+  .note{color:var(--muted)}
+
+  /* Accent (Pronunciation) */
+  .meter{padding:12px 14px; border:1px solid var(--ring); border-radius:12px; background:var(--elev); font-weight:700}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+
+  /* Bottom nav */
+  .tabbar{position:sticky; bottom:0; inset-inline:0; background:linear-gradient(180deg, transparent, rgba(0,0,0,.08) 30%, var(--bg)); padding-top:8px}
+  .tabs{display:grid; grid-template-columns: repeat(4,1fr); gap:8px}
+  .tab{padding:10px 8px; text-align:center; border-radius:12px; background:var(--elev); border:1px solid var(--ring); font-weight:900}
+  .tab.active{outline:2px solid var(--primary)}
+
+  @media (min-width:640px){
+    .grid-header{grid-template-columns: 320px 1fr}
   }
 </style>
 </head>
 <body>
 <div class="wrap" id="app">
   <header>
-    <div class="row">
-      <div class="brand"><span class="emoji">🐭</span><span class="title">Mouse & Cheese</span></div>
-      <div class="toolbar">
-        <button class="btn ghost" id="themeBtn">Тема</button>
-        <button class="btn ghost" data-goto="menu">Меню</button>
-      </div>
+    <div class="title">🐭 <span>Mouse & Cheese</span></div>
+    <div class="chips">
+      <button class="chip" id="themeBtn">Theme</button>
+      <button class="chip" data-go="home">Menu</button>
     </div>
   </header>
 
-  <main class="container">
-
-    <!-- MENU -->
-    <section id="view-menu" class="view active grid" aria-label="Главное меню">
-      <div class="card">
-        <div class="stat-ring">
-          <div class="ring" id="todayRing" style="--p: 0deg"><div class="day" id="todayCount">1</div></div>
+  <!-- HOME -->
+  <section id="home" class="active">
+    <div class="grid-header">
+      <div class="panel progressCard">
+        <div class="ring" id="ring" style="--deg: 18deg"><div class="ring-inner" id="todayCounter">1</div></div>
+        <div>
+          <div class="h2" style="margin:0 0 6px">Goal: 20/day</div>
+          <div class="p">Move toward your goal — practice every day.</div>
+          <div class="stats" style="margin-top:12px">
+            <div class="pill"><div class="n" id="statCards">0</div><div class="k">Cards</div></div>
+            <div class="pill"><div class="n" id="statQuiz">0</div><div class="k">Quiz</div></div>
+            <div class="pill"><div class="n" id="statCheese">0</div><div class="k">Cheese</div></div>
+            <div class="pill"><div class="n" id="statAccent">0</div><div class="k">Accent</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="blocks">
+        <div class="block">
           <div>
-            <div class="h3">Цель: <span id="dailyGoal">20</span>/день</div>
-            <div class="muted">Двигайся к цели — занимайся каждый день.</div>
+            <div class="b-title">Quiz</div>
+            <div class="b-sub">Pick the correct translation</div>
           </div>
+          <button class="btn" data-go="quiz">Open →</button>
         </div>
-        <div class="subs" style="margin-top:12px">
-          <div class="counter"><div class="n" id="c-cards">0</div><div class="muted">Карточки</div></div>
-          <div class="counter"><div class="n" id="c-quiz">0</div><div class="muted">Викторина</div></div>
-          <div class="counter"><div class="n" id="c-cheese">0</div><div class="muted">Сыр</div></div>
-          <div class="counter"><div class="n" id="c-pron">0</div><div class="muted">Произн.</div></div>
-        </div>
-      </div>
-
-      <div class="list grid">
-        <div class="item"><div class="left"><span>🧠</span><div><div class="h3">Викторина</div><div class="muted">Выбери верный перевод</div></div></div>
-             <div class="right"><button class="btn primary" data-goto="quiz">Открыть →</button></div></div>
-        <div class="item"><div class="left"><span>🃏</span><div><div class="h3">Карточки</div><div class="muted">EN ⇄ RU. «Знаю» добавляет в изученные</div></div></div>
-             <div class="right"><button class="btn primary" data-goto="cards">Открыть →</button></div></div>
-        <div class="item"><div class="left"><span>🎮</span><div><div class="h3">Игра</div><div class="muted">Съешь сыр — «бип» + слово</div></div></div>
-             <div class="right"><button class="btn primary" data-goto="game">Открыть →</button></div></div>
-        <div class="item"><div class="left"><span>🎙️</span><div><div class="h3">Произношение</div><div class="muted">Скажи слово максимально похоже</div></div></div>
-             <div class="right"><button class="btn primary" data-goto="pron">Тренировать →</button></div></div>
-      </div>
-    </section>
-
-    <!-- QUIZ -->
-    <section id="view-quiz" class="view grid" aria-label="Викторина">
-      <div class="card">
-        <div class="section-title">Викторина — выбери перевод</div>
-        <div class="word" id="q-word">cheese</div>
-        <div class="quiz-opts" id="q-opts"></div>
-        <div class="actions" style="margin-top:12px">
-          <button class="btn" data-goto="menu">Меню</button>
-          <button class="btn primary" id="q-next">Дальше</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- CARDS -->
-    <section id="view-cards" class="view grid" aria-label="Карточки">
-      <div class="card">
-        <div class="section-title">Карточки — быстрое повторение</div>
-        <div class="word" id="c-word">cheese</div>
-        <div id="c-sub" class="muted" style="min-height:28px">нажми «Показать RU»</div>
-        <div class="actions">
-          <button class="btn" id="c-show">Показать RU</button>
-          <button class="btn" id="c-say">Озвучить</button>
-          <button class="btn" id="c-know">Знаю</button>
-          <button class="btn primary" id="c-next">Дальше</button>
-        </div>
-        <div class="actions" style="margin-top:10px">
-          <button class="btn" data-goto="menu">Меню</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- GAME -->
-    <section id="view-game" class="view grid" aria-label="Игра">
-      <div class="card">
-        <div class="section-title">Мышь & Сыр</div>
-        <div class="actions" style="margin-bottom:8px"><button class="btn" id="g-restart">Рестарт</button> <button class="btn" data-goto="menu">Меню</button></div>
-        <div id="board"><canvas id="game" width="10" height="10"></canvas></div>
-        <div class="hint">Свайпай для управления. Тап — повернуть к сыру. Съешь сыр — «бип» и слово.</div>
-      </div>
-    </section>
-
-    <!-- PRONUNCIATION -->
-    <section id="view-pron" class="view grid" aria-label="Произношение">
-      <div class="card">
-        <div class="section-title">Произношение • скажи слово как можно ближе к оригиналу</div>
-        <div class="word" id="p-word">cheese</div>
-        <div class="muted" id="p-ru">сыр</div>
-        <div class="actions" style="margin-top:10px">
-          <button class="btn" id="p-listen">Слушать</button>
-          <button class="btn primary" id="p-say">Сказать (браузер)</button>
-        </div>
-        <div class="actions" style="margin-top:6px">
-          <button class="btn" data-goto="menu">Меню</button>
-          <button class="btn" id="p-next">Дальше</button>
-        </div>
-        <div class="grid" style="margin-top:10px">
-          <div class="badge">Доступ к микрофону: <span id="micState">слушаю…</span></div>
-          <div class="grid2">
-            <input id="p-typed" class="btn round" placeholder="Фоллбэк: напечатай англ" />
-            <button id="p-check" class="btn">Проверить</button>
+        <div class="block">
+          <div>
+            <div class="b-title">Cards</div>
+            <div class="b-sub">EN ⇄ RU. “Know” adds to learned</div>
           </div>
-          <div class="badge">Совпадение: <span id="p-score">0%</span></div>
+          <button class="btn" data-go="cards">Open →</button>
+        </div>
+        <div class="block">
+          <div>
+            <div class="b-title">Game</div>
+            <div class="b-sub">Eat cheese — beep + word</div>
+          </div>
+          <button class="btn" data-go="game">Open →</button>
+        </div>
+        <div class="block">
+          <div>
+            <div class="b-title">Accent</div>
+            <div class="b-sub">Say the word close to native</div>
+          </div>
+          <button class="btn" data-go="accent">Train →</button>
         </div>
       </div>
-    </section>
+    </div>
 
-  </main>
+    <div class="tabbar">
+      <div class="tabs">
+        <button class="tab" data-go="quiz">🧠</button>
+        <button class="tab" data-go="cards">🃏</button>
+        <button class="tab" data-go="game">🎮</button>
+        <button class="tab" data-go="accent">💬</button>
+      </div>
+    </div>
+  </section>
 
-  <footer>v4.7 • Light/Dark • тач-управление • локальное сохранение</footer>
+  <!-- QUIZ -->
+  <section id="quiz">
+    <div class="card">
+      <div class="subhead">Quiz — choose the translation</div>
+      <div class="word" id="quizWord">word</div>
+      <div class="quiz-grid" id="quizOptions"></div>
+      <div class="row space" style="margin-top:12px">
+        <button class="btn outline" data-go="home">Menu</button>
+        <button class="btn" id="quizNext">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CARDS -->
+  <section id="cards">
+    <div class="card">
+      <div class="subhead">Cards</div>
+      <div class="word" id="cardWord">—</div>
+      <div class="word-ru" id="cardRu" style="opacity:.85">tap “Show RU”</div>
+      <div class="row center" style="margin-top:12px">
+        <button class="btn outline" id="cardShow">Show RU</button>
+        <button class="btn ghost" id="cardSpeak">Speak</button>
+        <button class="btn good" id="cardKnow" style="background:var(--good)">Know</button>
+        <button class="btn" id="cardNext">Next</button>
+      </div>
+      <div class="row center" style="margin-top:10px">
+        <button class="btn outline" data-go="home">Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game">
+    <div class="game-wrap">
+      <div class="row space">
+        <button class="btn outline" id="gRestart">Restart</button>
+        <button class="btn outline" data-go="home">Menu</button>
+      </div>
+      <div class="board" id="board">
+        <div class="sprite" id="mouse">🐭</div>
+        <div class="sprite" id="cheese">🧀</div>
+      </div>
+      <div class="note p">Swipe to move. Tap to turn towards cheese. Eat cheese — “beep” and the word.</div>
+    </div>
+  </section>
+
+  <!-- ACCENT -->
+  <section id="accent">
+    <div class="card">
+      <div class="subhead">Pronunciation • say the word as close as you can</div>
+      <div class="word" id="accWord">—</div>
+      <div class="word-ru" id="accRu">—</div>
+      <div class="row center" style="margin-top:10px">
+        <button class="btn outline" id="accListen">Listen</button>
+        <button class="btn" id="accSay">Say (browser)</button>
+      </div>
+      <div class="row center" style="margin-top:10px">
+        <button class="btn outline" data-go="home">Menu</button>
+        <button class="btn" id="accNext">Next</button>
+      </div>
+      <div class="meter" id="micState" style="margin-top:12px">Mic: —</div>
+      <div class="row space" style="margin-top:10px">
+        <div class="meter mono" style="flex:1" id="heard">Heard: —</div>
+        <div class="meter" style="min-width:160px" id="score">Match: 0%</div>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <script>
-// ======= DATA =======
-const WORDS = [
-  ["cheese","сыр"],["bread","хлеб"],["water","вода"],["write","писать"],["friend","друг"],
-  ["child","ребёнок"],["milk","молоко"],["computer","компьютер"],["direction","направление"],
-  ["tea","чай"],["right","право"],["hotel","отель"],["room","комната"],["help","помогать"],
-  ["speak","говорить"],["left","лево"],["city","город"],["ticket","билет"],
+// ---------- Data ----------
+const PAIRS = [
+  {en:'cheese', ru:'сыр'}, {en:'bread', ru:'хлеб'}, {en:'milk', ru:'молоко'}, {en:'water', ru:'вода'},
+  {en:'computer', ru:'компьютер'}, {en:'child', ru:'ребёнок'}, {en:'room', ru:'комната'}, {en:'right', ru:'право'},
+  {en:'left', ru:'лево'}, {en:'ticket', ru:'билет'}, {en:'help', ru:'помогать'}, {en:'friend', ru:'друг'},
+  {en:'hotel', ru:'отель'}, {en:'direction', ru:'направление'}, {en:'luggage', ru:'багаж'}
 ];
 
-const state = {
-  day: 1,
-  goal: 20,
-  counts: {cards:0, quiz:0, cheese:0, pron:0},
-  learned: new Set(JSON.parse(localStorage.getItem('mc_learned')||'[]')),
-  theme: localStorage.getItem('mc_theme') || 'dark'
+// Persistent progress
+const store = {
+  get known(){return JSON.parse(localStorage.getItem('known_v1')||'[]')},
+  set known(v){localStorage.setItem('known_v1', JSON.stringify(v))},
+  get stats(){return JSON.parse(localStorage.getItem('stats_v1')||'{"cards":0,"quiz":0,"cheese":0,"accent":0,"today":1}')},
+  set stats(v){localStorage.setItem('stats_v1', JSON.stringify(v))}
 };
 
-function save(){
-  localStorage.setItem('mc_learned', JSON.stringify([...state.learned]));
-  localStorage.setItem('mc_theme', state.theme);
-  localStorage.setItem('mc_counts', JSON.stringify(state.counts));
-}
-(function restore(){
-  const c = localStorage.getItem('mc_counts'); if(c){ try{ state.counts = {...state.counts, ...JSON.parse(c)} }catch(e){} }
-  document.body.setAttribute('data-theme', state.theme);
-})();
-
-// ======= UTIL =======
+// Utility
 const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-const rnd = (n)=>Math.floor(Math.random()*n);
-const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]} return a};
-
-function chooseWord(){
-  const idx = rnd(WORDS.length);
-  return {en: WORDS[idx][0], ru: WORDS[idx][1], idx};
+const $$ = sel => [...document.querySelectorAll(sel)];
+function show(id){ $$('section').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); }
+function speak(txt){
+  const u = new SpeechSynthesisUtterance(txt);
+  u.lang = 'en-US';
+  u.rate = 0.95; u.pitch = 1.02; u.volume = 1;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+function beep(){
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  const o = ctx.createOscillator(); const g = ctx.createGain();
+  o.type='sine'; o.frequency.setValueAtTime(880, ctx.currentTime);
+  g.gain.setValueAtTime(0.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.2);
+  o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.21);
+}
+// Similarity (Jaro–Winkler simplified)
+function sim(a,b){a=a.toLowerCase(); b=b.toLowerCase(); const m=Math.min(a.length,b.length); if(!m)return 0; let matches=0, trans=0; const window=Math.floor(Math.max(a.length,b.length)/2)-1; const aFlag=[], bFlag=[]; for(let i=0;i<a.length;i++){const start=Math.max(0,i-window), end=Math.min(i+window+1,b.length); for(let j=start;j<end;j++){if(bFlag[j])continue; if(a[i]===b[j]){aFlag[i]=bFlag[j]=true; matches++; break;}}}
+ if(!matches) return 0; let k=0; for(let i=0;i<a.length;i++){ if(!aFlag[i]) continue; while(!bFlag[k]) k++; if(a[i]!==b[k]) trans++; k++; }
+ const j = (matches/a.length + matches/b.length + (matches-trans/2)/matches)/3; // jaro
+ const p=0.1; let l=0; while(l<4 && a[l]===b[l]) l++; return (j + l*p*(1-j));
 }
 
-// ======= NAV =======
-const VIEWS = {menu:'#view-menu', quiz:'#view-quiz', cards:'#view-cards', game:'#view-game', pron:'#view-pron'};
-function go(name){
-  for(const k in VIEWS) $(VIEWS[k]).classList.toggle('active', k===name);
-  window.scrollTo({top:0, behavior:'instant'});
+// Routing
+$$('[data-go]').forEach(b=>b.addEventListener('click', e=>{show(e.currentTarget.dataset.go)}));
+$('#themeBtn').addEventListener('click',()=>{document.documentElement.classList.toggle('light');});
+
+// ---------- Dashboard ----------
+function refreshStats(){
+  const s = store.stats; $('#statCards').textContent = s.cards; $('#statQuiz').textContent = s.quiz; $('#statCheese').textContent = s.cheese; $('#statAccent').textContent = s.accent; $('#todayCounter').textContent = s.today||1; const pct=Math.min(360,(s.cards+s.quiz+s.cheese+s.accent)/20*360); $('#ring').style.setProperty('--deg', pct+'deg');
 }
-$$('[data-goto]').forEach(b=> b.addEventListener('click', e=>{ go(e.currentTarget.dataset.goto) }));
+refreshStats();
 
-$('#themeBtn').addEventListener('click', ()=>{ state.theme = (state.theme==='light'?'dark':'light'); document.body.setAttribute('data-theme', state.theme); save(); });
+// ---------- Cards ----------
+let idxCards = Math.floor(Math.random()*PAIRS.length);
+function setCard(){ const p = PAIRS[idxCards]; $('#cardWord').textContent=p.en; $('#cardRu').textContent='tap “Show RU”'; $('#cardRu').style.opacity=.85; }
+setCard();
+$('#cardShow').onclick = ()=>{ $('#cardRu').textContent = PAIRS[idxCards].ru; };
+$('#cardSpeak').onclick = ()=> speak(PAIRS[idxCards].en);
+$('#cardNext').onclick = ()=>{ idxCards = (idxCards+1)%PAIRS.length; setCard(); };
+$('#cardKnow').onclick = ()=>{ const k = store.known; const en=PAIRS[idxCards].en; if(!k.includes(en)) k.push(en); store.known = k; const s=store.stats; s.cards++; store.stats=s; refreshStats(); idxCards=(idxCards+1)%PAIRS.length; setCard(); };
 
-// ======= MENU =======
-function updateMenu(){
-  $('#todayCount').textContent = state.day;
-  const p = Math.min(360, ( (state.counts.cards+state.counts.quiz+state.counts.cheese+state.counts.pron) / Math.max(1,state.goal) ) * 360);
-  $('#todayRing').style.setProperty('--p', p+'deg');
-  $('#dailyGoal').textContent = state.goal;
-  $('#c-cards').textContent = state.counts.cards;
-  $('#c-quiz').textContent = state.counts.quiz;
-  $('#c-cheese').textContent = state.counts.cheese;
-  $('#c-pron').textContent = state.counts.pron;
-}
-updateMenu();
+// ---------- Quiz ----------
+let qIndex = 0, qAnswer = '';
+function nextQuiz(){ const p=PAIRS[qIndex = (qIndex+1)%PAIRS.length]; $('#quizWord').textContent=p.en; qAnswer = p.ru; const opts = new Set([p.ru]); while(opts.size<4){ const r = PAIRS[Math.floor(Math.random()*PAIRS.length)].ru; opts.add(r)} const arr=[...opts].sort(()=>Math.random()-0.5); const box=$('#quizOptions'); box.innerHTML=''; arr.forEach(txt=>{ const b=document.createElement('button'); b.className='option'; b.textContent=txt; b.onclick=()=>{ if(b.dataset.lock)return; b.dataset.lock=1; [...box.children].forEach(c=>c.disabled=true); const ok = (txt===qAnswer); b.classList.add(ok?'correct':'wrong'); const s=store.stats; if(ok){ s.quiz++; store.stats=s; refreshStats(); beep(); speak(PAIRS[qIndex].en);} else { /*no stat on wrong*/ } }; box.appendChild(b); }); }
+$('#quizNext').onclick = ()=> nextQuiz();
+nextQuiz();
 
-// ======= TTS & BEEP =======
-let voices = [];
-function refreshVoices(){
-  voices = speechSynthesis.getVoices();
-}
-refreshVoices();
-if (typeof speechSynthesis !== 'undefined') speechSynthesis.onvoiceschanged = refreshVoices;
+// ---------- Game ----------
+const board = $('#board'); const mouse = $('#mouse'); const cheese = $('#cheese');
+let m={x:50,y:50, size:1}, c={x:20,y:20};
+function place(sprite, obj){ sprite.style.left=obj.x+'%'; sprite.style.top=obj.y+'%'; sprite.style.transform=`translate(-50%,-50%) scale(${obj.size||1})`; }
+function rnd(){ return 10 + Math.random()*80; }
+function resetGame(){ m={x:50,y:50,size:1}; c={x:rnd(), y:rnd()}; place(mouse,m); place(cheese,c); }
+resetGame();
+$('#gRestart').onclick=resetGame;
 
-function pickEnVoice(){
-  const v = voices.find(v=> /^en(-|_)/i.test(v.lang) && /female|male|Google|Samantha|Daniel/i.test(v.name)) || voices.find(v=>/^en/i.test(v.lang)) || voices[0];
-  return v;
-}
+function step(dx,dy){ m.x=Math.max(5,Math.min(95,m.x+dx)); m.y=Math.max(5,Math.min(95,m.y+dy)); place(mouse,m); const dist=Math.hypot(m.x-c.x, m.y-c.y); if(dist<6){ // eat
+   beep(); const w = PAIRS[Math.floor(Math.random()*PAIRS.length)].en; speak(w); const s=store.stats; s.cheese++; store.stats=s; refreshStats(); m.size=Math.min(1.8, m.size+0.05); place(mouse,m); c={x:rnd(),y:rnd()}; place(cheese,c);
+ }}
+// Touch controls
+let t0=null; board.addEventListener('touchstart',e=>{t0=e.touches[0]});
+board.addEventListener('touchmove',e=>{ if(!t0) return; const t=e.touches[0]; const dx=t.clientX-t0.clientX, dy=t.clientY-t0.clientY; const ax=Math.abs(dx), ay=Math.abs(dy); if(ax>20||ay>20){ if(ax>ay) step(dx>0?3:-3,0); else step(0, dy>0?3:-3); t0=t; } });
+board.addEventListener('touchend',()=>t0=null);
+// Tap: face the cheese by snapping closer
+board.addEventListener('click',()=>{ const dx = c.x>m.x?3:-3; const dy = c.y>m.y?3:-3; step(dx,dy) });
 
-function speak(text){
-  if (!('speechSynthesis' in window)) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.rate = 0.95; u.pitch = 1; u.volume = 1;
-  const v = pickEnVoice(); if(v) u.voice = v;
-  window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
-}
+// ---------- Accent (Pronunciation) ----------
+let aIndex = Math.floor(Math.random()*PAIRS.length);
+function setAccent(){ const p=PAIRS[aIndex]; $('#accWord').textContent=p.en; $('#accRu').textContent=p.ru; $('#heard').textContent='Heard: —'; $('#score').textContent='Match: 0%'; }
+setAccent();
+$('#accNext').onclick = ()=>{ aIndex=(aIndex+1)%PAIRS.length; setAccent(); };
+$('#accListen').onclick = ()=> speak(PAIRS[aIndex].en);
 
-// quick beep
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function beep(freq=880, time=0.08){
-  const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-  o.type='square'; o.frequency.value=freq; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.0001, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+time); o.start(); o.stop(audioCtx.currentTime+time);
-}
+// STT via Web Speech (browser)
+let recog, micReady=false; function ensureRecog(){ try{ const WSR = window.SpeechRecognition||window.webkitSpeechRecognition; if(!WSR) return null; if(!recog){ recog = new WSR(); recog.lang='en-US'; recog.interimResults=false; recog.maxAlternatives=1; recog.onresult = (e)=>{ const heard = e.results[0][0].transcript; $('#heard').textContent = 'Heard: '+heard; const target = PAIRS[aIndex].en; const pct = Math.round(sim(heard, target)*100); $('#score').textContent = 'Match: '+pct+'%'; if(pct>=65){ const s=store.stats; s.accent++; store.stats=s; refreshStats(); }
+      };
+      recog.onstart=()=>{$('#micState').textContent='Mic: listening…'}; recog.onend=()=>{$('#micState').textContent='Mic: ready'}; }
+    micReady=true; $('#micState').textContent='Mic: ready'; return recog; }catch(err){ console.warn(err); $('#micState').textContent='Mic: not available'; return null; }}
 
-// ======= QUIZ =======
-let qCurrent = null; let qAnswered = false;
-function makeQuiz(){
-  qAnswered=false;
-  const base = chooseWord();
-  qCurrent = base;
-  $('#q-word').textContent = base.en;
-  const opts = new Set([base.ru]);
-  while (opts.size<4){ opts.add( WORDS[rnd(WORDS.length)][1] ); }
-  const arr = shuffle([...opts]);
-  const box = $('#q-opts'); box.innerHTML='';
-  arr.forEach(ru=>{
-    const el = document.createElement('button'); el.className='opt btn'; el.textContent=ru; el.addEventListener('click',()=>quizAnswer(el, ru===base.ru)); box.appendChild(el);
-  });
-}
-function quizAnswer(el, ok){
-  if(qAnswered) return; qAnswered=true;
-  el.classList.add(ok?'ok':'bad');
-  if(ok){ state.counts.quiz++; save(); updateMenu(); speak(qCurrent.en); }
-}
-$('#q-next').addEventListener('click', makeQuiz);
+$('#accSay').onclick = ()=>{ const r=ensureRecog(); if(r){ r.stop(); r.start(); } };
 
-// ======= CARDS =======
-let cCurrent = chooseWord();
-function showCard(){
-  $('#c-word').textContent = cCurrent.en;
-  $('#c-sub').textContent = 'нажми «Показать RU»';
-}
-$('#c-show').addEventListener('click', ()=>{ $('#c-sub').textContent = cCurrent.ru; });
-$('#c-say').addEventListener('click', ()=> speak(cCurrent.en));
-$('#c-know').addEventListener('click', ()=>{ state.learned.add(cCurrent.en); state.counts.cards++; save(); updateMenu(); nextCard(); });
-function nextCard(){ cCurrent = chooseWord(); showCard(); }
-$('#c-next').addEventListener('click', nextCard);
-showCard();
+// ---------- Nav helpers ----------
+function activateTabBySection(){ const sec = $$('section').find(s=>s.classList.contains('active')); $$('.tab').forEach(t=>t.classList.remove('active')); if(!sec||sec.id==='home') return; const map={quiz:0,cards:1,game:2,accent:3}; const i=map[sec.id]; if(i!=null) $$('.tab')[i].classList.add('active'); }
+window.addEventListener('click', activateTabBySection, true);
 
-// ======= GAME =======
-const g = $('#game'); const ctx = g.getContext('2d');
-let grid=14, size=24, mouse={x:2,y:2,dir:'R'}, cheese={x:8,y:8};
-function resizeCanvas(){
-  const board = $('#board');
-  const w = board.clientWidth - 4; // border
-  size = Math.max(20, Math.floor(w / grid));
-  g.width = grid*size; g.height = Math.min(board.clientHeight-4, grid*size);
-  draw();
-}
-window.addEventListener('resize', resizeCanvas);
+// Start with light theme if OS prefers
+if(matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.classList.add('light');
 
-function draw(){
-  ctx.clearRect(0,0,g.width,g.height);
-  // grid bg
-  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--panel');
-  ctx.fillRect(0,0,g.width,g.height);
-  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--ring');
-  ctx.lineWidth=1; for(let i=0;i<=grid;i++){ ctx.beginPath(); ctx.moveTo(i*size,0); ctx.lineTo(i*size,g.height); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,i*size); ctx.lineTo(g.width,i*size); ctx.stroke(); }
-  // cheese
-  ctx.font = (size*0.8)+'px Apple Color Emoji, Segoe UI Emoji'; ctx.textBaseline='top';
-  ctx.fillText('🧀', cheese.x*size + size*0.1, cheese.y*size + size*0.05);
-  // mouse
-  ctx.fillText('🐭', mouse.x*size + size*0.1, mouse.y*size + size*0.05);
-}
-function randFree(){ return {x:rnd(grid), y:rnd(grid)} }
-function step(){
-  const d = {L:[-1,0], R:[1,0], U:[0,-1], D:[0,1]}[mouse.dir];
-  mouse.x = (mouse.x + d[0] + grid) % grid;
-  mouse.y = (mouse.y + d[1] + grid) % grid;
-  if(mouse.x===cheese.x && mouse.y===cheese.y){
-    state.counts.cheese++; save(); updateMenu();
-    beep(); speak(cCurrent.en); // speak current card word
-    cheese = randFree();
-  }
-  draw();
-}
-let loop = setInterval(step, 420);
-$('#g-restart').addEventListener('click', ()=>{ mouse={x:2,y:2,dir:'R'}; cheese = randFree(); draw(); });
-
-// touch / swipe controls
-let touchStart=null;
-$('#board').addEventListener('touchstart', e=>{ touchStart = [...e.touches][0]; });
-$('#board').addEventListener('touchend', e=>{ if(!touchStart) return; const t = touchStart; touchStart=null; const up=[...e.changedTouches][0]; const dx=up.clientX-t.clientX, dy=up.clientY-t.clientY; const ax=Math.abs(dx), ay=Math.abs(dy); if(Math.max(ax,ay)<24){ // tap -> rotate towards cheese
-    const dx2 = cheese.x - mouse.x, dy2 = cheese.y - mouse.y; if(Math.abs(dx2)>Math.abs(dy2)) mouse.dir = dx2>0?'R':'L'; else mouse.dir = dy2>0?'D':'U'; return; }
-  if(ax>ay) mouse.dir = dx>0?'R':'L'; else mouse.dir = dy>0?'D':'U'; });
-
-resizeCanvas(); draw();
-
-// ======= PRONUNCIATION =======
-let pCurrent = chooseWord();
-const Rec = window.SpeechRecognition || window.webkitSpeechRecognition; let rec=null; let recEnabled=false;
-function setPword(){ $('#p-word').textContent = pCurrent.en; $('#p-ru').textContent = pCurrent.ru; $('#p-score').textContent='0%'; $('#p-typed').value=''; }
-setPword();
-
-function strSim(a,b){ // quick similarity 0..1
-  a=a.toLowerCase().trim(); b=b.toLowerCase().trim(); if(!a||!b) return 0; if(a===b) return 1; const m = new Set(a); const n=new Set(b); let inter=0; m.forEach(ch=>{ if(n.has(ch)) inter++; }); return inter/Math.max(a.length,b.length);
-}
-
-$('#p-listen').addEventListener('click', ()=> speak(pCurrent.en));
-$('#p-next').addEventListener('click', ()=>{ state.counts.pron++; save(); updateMenu(); pCurrent=chooseWord(); setPword(); });
-$('#p-check').addEventListener('click', ()=>{ const s = strSim($('#p-typed').value, pCurrent.en); $('#p-score').textContent = Math.round(s*100)+'%'; });
-
-// live speech recognition if available
-if(Rec){
-  rec = new Rec(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
-  rec.onstart = ()=> $('#micState').textContent='слушаю…';
-  rec.onend = ()=> $('#micState').textContent='стоп';
-  rec.onerror = ()=> $('#micState').textContent='ошибка';
-  rec.onresult = (e)=>{ const said = e.results[0][0].transcript || ''; const s = strSim(said, pCurrent.en); $('#p-score').textContent = Math.round(s*100)+'%'; };
-  recEnabled=true; $('#micState').textContent='готов';
-} else {
-  $('#micState').textContent='недоступно';
-}
-$('#p-say').addEventListener('click', ()=>{ try{ rec && rec.start(); }catch(err){ /* ignore */ } });
-
-// ===== INIT =====
-makeQuiz();
-
-// ensure CTA never falls under Telegram bar
-const scrollPad = document.createElement('div'); scrollPad.style.height='4px'; document.body.appendChild(scrollPad);
 </script>
 </body>
 </html>
