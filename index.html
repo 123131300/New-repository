@@ -1,359 +1,435 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>🐭 Mouse & Cheese — Mini</title>
-<style>
-  /* ---------- Design System (responsive, light/dark) ---------- */
-  :root{
-    --bg: #0b1220;           /* dark */
-    --elev: #111a2b;
-    --panel: #0f172a;
-    --text: #e6edf7;
-    --muted: #9fb1cc;
-    --primary: #4f8cff;
-    --primary-2: #6d5cff;
-    --good: #22c55e;
-    --bad: #ef4444;
-    --ring: #2b3b5f;
-    color-scheme: dark;
-  }
-  html.light{
-    --bg: #f6f8fc;           /* light */
-    --elev: #ffffff;
-    --panel: #ffffff;
-    --text: #0b1220;
-    --muted: #4a5568;
-    --primary: #2563eb;
-    --primary-2: #7c3aed;
-    --good: #16a34a;
-    --bad: #dc2626;
-    --ring: #dbe3f2;
-    color-scheme: light;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family: ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial; background:var(--bg); color:var(--text);}
-  .wrap{max-width:900px;margin:0 auto;padding:clamp(12px,2.5vw,20px);}
-  header{display:flex;align-items:center;gap:12px;justify-content:space-between;position:sticky;top:0;background:linear-gradient(180deg,var(--bg) 60%, transparent); padding-top:8px; z-index:5}
-  .title{display:flex;align-items:center;gap:10px;font-size:clamp(18px,3.8vw,26px);font-weight:800}
-  .chip{border:1px solid var(--ring); padding:.5em .9em;border-radius:999px;background:var(--elev);color:var(--text);font-weight:700; font-size:14px}
-  .chips{display:flex;gap:8px}
-  .hidden{display:none !important}
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-  /* Panels */
-  .panel{background:var(--panel);border-radius:18px; box-shadow:0 6px 24px rgba(0,0,0,.25); padding:clamp(14px,2.4vw,20px);}
-  .h1{font-size:clamp(22px,4.2vw,30px);font-weight:900;margin:12px 0}
-  .h2{font-size:clamp(16px,3.4vw,22px);font-weight:800;margin:6px 0 12px}
-  .p{color:var(--muted);font-size:clamp(13px,2.6vw,16px)}
-
-  /* Progress header */
-  .grid-header{display:grid;grid-template-columns: 1fr; gap:14px}
-  .progressCard{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
-  .ring{inline-size:96px; aspect-ratio:1; border-radius:50%; display:grid; place-items:center; background:
-        conic-gradient(var(--primary) var(--deg,10deg), var(--ring) 0);} 
-  .ring-inner{background:var(--bg); inline-size:76px; aspect-ratio:1; border-radius:50%; display:grid;place-items:center; color:var(--text); font-weight:900; font-size:34px; box-shadow:inset 0 0 0 10px var(--ring)}
-  .stats{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px}
-  .pill{background:var(--elev); border:1px solid var(--ring); border-radius:14px; padding:14px; text-align:center}
-  .pill .n{font-size:clamp(18px,3.6vw,22px); font-weight:900}
-  .pill .k{color:var(--muted); font-weight:700; letter-spacing:.2px}
-
-  /* Menu blocks */
-  .blocks{display:grid; gap:14px}
-  .block{display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 16px; background:var(--panel); border-radius:16px; border:1px solid var(--ring)}
-  .b-title{font-size:clamp(18px,3.4vw,22px); font-weight:900}
-  .b-sub{color:var(--muted)}
-  .btn{appearance:none;border:none; background:linear-gradient(135deg,var(--primary),var(--primary-2)); color:white; padding:12px 18px; border-radius:12px; font-weight:900; letter-spacing:.2px; box-shadow:0 6px 20px rgba(79,140,255,.35);}
-  .btn:active{transform:translateY(1px)}
-  .btn.outline{background:transparent;color:var(--text);border:1px solid var(--ring);box-shadow:none}
-  .btn.ghost{background:var(--elev)}
-
-  /* Tabs / sections */
-  section{display:none}
-  section.active{display:block}
-
-  /* Subscreens common */
-  .card{padding:18px; border:1px solid var(--ring); border-radius:18px; background:var(--panel)}
-  .row{display:flex; gap:12px; flex-wrap:wrap}
-  .row.center{justify-content:center}
-  .row.space{justify-content:space-between}
-  .word{font-size:clamp(42px,10vw,80px); font-weight:900; letter-spacing:.5px}
-  .word-ru{color:var(--muted); font-size:clamp(16px,4vw,22px); margin-top:4px}
-  .subhead{font-size:clamp(14px,3.2vw,16px); color:var(--muted); margin-bottom:8px; font-weight:700}
-
-  /* Quiz */
-  .quiz-grid{display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px}
-  .option{padding:14px 16px; border-radius:12px; border:1px solid var(--ring); background:var(--elev); font-weight:800; text-align:center}
-  .option.correct{background:rgba(34,197,94,.15);border-color:var(--good)}
-  .option.wrong{background:rgba(239,68,68,.15);border-color:var(--bad)}
-
-  /* Game */
-  .game-wrap{display:flex; flex-direction:column; gap:12px}
-  .board{position:relative; border:1px dashed var(--ring); border-radius:16px; overflow:hidden; background:linear-gradient(0deg, transparent 24px, var(--ring) 24px),
-          linear-gradient(90deg, transparent 24px, var(--ring) 24px); background-size:48px 48px; background-position: -1px -1px; min-block-size:320px; aspect-ratio: 4/5}
-  .sprite{position:absolute; font-size: clamp(28px,7vw,42px); transform:translate(-50%,-50%)}
-  .note{color:var(--muted)}
-
-  /* Accent (Pronunciation) */
-  .meter{padding:12px 14px; border:1px solid var(--ring); border-radius:12px; background:var(--elev); font-weight:700}
-  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
-
-  /* Bottom nav */
-  .tabbar{position:sticky; bottom:0; inset-inline:0; background:linear-gradient(180deg, transparent, rgba(0,0,0,.08) 30%, var(--bg)); padding-top:8px}
-  .tabs{display:grid; grid-template-columns: repeat(4,1fr); gap:8px}
-  .tab{padding:10px 8px; text-align:center; border-radius:12px; background:var(--elev); border:1px solid var(--ring); font-weight:900}
-  .tab.active{outline:2px solid var(--primary)}
-
-  @media (min-width:640px){
-    .grid-header{grid-template-columns: 320px 1fr}
-  }
-</style>
-</head>
-<body>
-<div class="wrap" id="app">
-  <header>
-    <div class="title">🐭 <span>Mouse & Cheese</span></div>
-    <div class="chips">
-      <button class="chip" id="themeBtn">Theme</button>
-      <button class="chip" data-go="home">Menu</button>
-    </div>
-  </header>
-
-  <!-- HOME -->
-  <section id="home" class="active">
-    <div class="grid-header">
-      <div class="panel progressCard">
-        <div class="ring" id="ring" style="--deg: 18deg"><div class="ring-inner" id="todayCounter">1</div></div>
-        <div>
-          <div class="h2" style="margin:0 0 6px">Goal: 20/day</div>
-          <div class="p">Move toward your goal — practice every day.</div>
-          <div class="stats" style="margin-top:12px">
-            <div class="pill"><div class="n" id="statCards">0</div><div class="k">Cards</div></div>
-            <div class="pill"><div class="n" id="statQuiz">0</div><div class="k">Quiz</div></div>
-            <div class="pill"><div class="n" id="statCheese">0</div><div class="k">Cheese</div></div>
-            <div class="pill"><div class="n" id="statAccent">0</div><div class="k">Accent</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="blocks">
-        <div class="block">
-          <div>
-            <div class="b-title">Quiz</div>
-            <div class="b-sub">Pick the correct translation</div>
-          </div>
-          <button class="btn" data-go="quiz">Open →</button>
-        </div>
-        <div class="block">
-          <div>
-            <div class="b-title">Cards</div>
-            <div class="b-sub">EN ⇄ RU. “Know” adds to learned</div>
-          </div>
-          <button class="btn" data-go="cards">Open →</button>
-        </div>
-        <div class="block">
-          <div>
-            <div class="b-title">Game</div>
-            <div class="b-sub">Eat cheese — beep + word</div>
-          </div>
-          <button class="btn" data-go="game">Open →</button>
-        </div>
-        <div class="block">
-          <div>
-            <div class="b-title">Accent</div>
-            <div class="b-sub">Say the word close to native</div>
-          </div>
-          <button class="btn" data-go="accent">Train →</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="tabbar">
-      <div class="tabs">
-        <button class="tab" data-go="quiz">🧠</button>
-        <button class="tab" data-go="cards">🃏</button>
-        <button class="tab" data-go="game">🎮</button>
-        <button class="tab" data-go="accent">💬</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- QUIZ -->
-  <section id="quiz">
-    <div class="card">
-      <div class="subhead">Quiz — choose the translation</div>
-      <div class="word" id="quizWord">word</div>
-      <div class="quiz-grid" id="quizOptions"></div>
-      <div class="row space" style="margin-top:12px">
-        <button class="btn outline" data-go="home">Menu</button>
-        <button class="btn" id="quizNext">Next</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- CARDS -->
-  <section id="cards">
-    <div class="card">
-      <div class="subhead">Cards</div>
-      <div class="word" id="cardWord">—</div>
-      <div class="word-ru" id="cardRu" style="opacity:.85">tap “Show RU”</div>
-      <div class="row center" style="margin-top:12px">
-        <button class="btn outline" id="cardShow">Show RU</button>
-        <button class="btn ghost" id="cardSpeak">Speak</button>
-        <button class="btn good" id="cardKnow" style="background:var(--good)">Know</button>
-        <button class="btn" id="cardNext">Next</button>
-      </div>
-      <div class="row center" style="margin-top:10px">
-        <button class="btn outline" data-go="home">Menu</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- GAME -->
-  <section id="game">
-    <div class="game-wrap">
-      <div class="row space">
-        <button class="btn outline" id="gRestart">Restart</button>
-        <button class="btn outline" data-go="home">Menu</button>
-      </div>
-      <div class="board" id="board">
-        <div class="sprite" id="mouse">🐭</div>
-        <div class="sprite" id="cheese">🧀</div>
-      </div>
-      <div class="note p">Swipe to move. Tap to turn towards cheese. Eat cheese — “beep” and the word.</div>
-    </div>
-  </section>
-
-  <!-- ACCENT -->
-  <section id="accent">
-    <div class="card">
-      <div class="subhead">Pronunciation • say the word as close as you can</div>
-      <div class="word" id="accWord">—</div>
-      <div class="word-ru" id="accRu">—</div>
-      <div class="row center" style="margin-top:10px">
-        <button class="btn outline" id="accListen">Listen</button>
-        <button class="btn" id="accSay">Say (browser)</button>
-      </div>
-      <div class="row center" style="margin-top:10px">
-        <button class="btn outline" data-go="home">Menu</button>
-        <button class="btn" id="accNext">Next</button>
-      </div>
-      <div class="meter" id="micState" style="margin-top:12px">Mic: —</div>
-      <div class="row space" style="margin-top:10px">
-        <div class="meter mono" style="flex:1" id="heard">Heard: —</div>
-        <div class="meter" style="min-width:160px" id="score">Match: 0%</div>
-      </div>
-    </div>
-  </section>
-
-</div>
-
-<script>
-// ---------- Data ----------
-const PAIRS = [
-  {en:'cheese', ru:'сыр'}, {en:'bread', ru:'хлеб'}, {en:'milk', ru:'молоко'}, {en:'water', ru:'вода'},
-  {en:'computer', ru:'компьютер'}, {en:'child', ru:'ребёнок'}, {en:'room', ru:'комната'}, {en:'right', ru:'право'},
-  {en:'left', ru:'лево'}, {en:'ticket', ru:'билет'}, {en:'help', ru:'помогать'}, {en:'friend', ru:'друг'},
-  {en:'hotel', ru:'отель'}, {en:'direction', ru:'направление'}, {en:'luggage', ru:'багаж'}
-];
-
-// Persistent progress
-const store = {
-  get known(){return JSON.parse(localStorage.getItem('known_v1')||'[]')},
-  set known(v){localStorage.setItem('known_v1', JSON.stringify(v))},
-  get stats(){return JSON.parse(localStorage.getItem('stats_v1')||'{"cards":0,"quiz":0,"cheese":0,"accent":0,"today":1}')},
-  set stats(v){localStorage.setItem('stats_v1', JSON.stringify(v))}
+// =============== helpers
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (n) => Math.floor(Math.random() * n);
+const speak = (text) => {
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch {}
 };
 
-// Utility
-const $ = sel => document.querySelector(sel);
-const $$ = sel => [...document.querySelectorAll(sel)];
-function show(id){ $$('section').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); }
-function speak(txt){
-  const u = new SpeechSynthesisUtterance(txt);
-  u.lang = 'en-US';
-  u.rate = 0.95; u.pitch = 1.02; u.volume = 1;
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+const levenshtein = (a, b) => {
+  a = (a || "").toLowerCase().trim();
+  b = (b || "").toLowerCase().trim();
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[m][n];
+};
+const similarity = (a, b) => {
+  const maxLen = Math.max((a || "").length, (b || "").length) || 1;
+  return Math.round((1 - levenshtein(a, b) / maxLen) * 100);
+};
+
+// ======= data
+const WORDS = [
+  { en: "cheese", ru: "сыр" },
+  { en: "right", ru: "право" },
+  { en: "room", ru: "комната" },
+  { en: "child", ru: "ребёнок" },
+  { en: "ticket", ru: "билет" },
+  { en: "left", ru: "лево" },
+  { en: "water", ru: "вода" },
+  { en: "bread", ru: "хлеб" },
+  { en: "school", ru: "школа" },
+  { en: "game", ru: "игра" },
+];
+
+// ======= UI Primitives
+const Card = ({ children, className = "" }) => (
+  <div className={`rounded-3xl shadow-lg ring-1 ring-black/5 bg-white/70 backdrop-blur p-5 ${className}`}>
+    {children}
+  </div>
+);
+const H = ({ children }) => (
+  <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+    <span role="img" aria-label="mouse">🐭</span>
+    Mouse & Cheese
+  </h1>
+);
+const TopBar = ({ onMenu, onTheme }) => (
+  <div className="flex items-center justify-between mb-4">
+    <H />
+    <div className="flex gap-3">
+      <button onClick={onTheme} className="px-4 py-2 rounded-full bg-white shadow hover:shadow-md">Theme</button>
+      <button onClick={onMenu} className="px-4 py-2 rounded-full bg-white shadow hover:shadow-md">Menu</button>
+    </div>
+  </div>
+);
+const Primary = ({ children, onClick, className = "" }) => (
+  <button onClick={onClick} className={`px-5 py-2 rounded-2xl text-white font-semibold shadow-lg hover:shadow-xl transition ring-1 ring-black/5 bg-gradient-to-r from-indigo-500 to-violet-500 ${className}`}>{children}</button>
+);
+const Soft = ({ children, onClick, className = "" }) => (
+  <button onClick={onClick} className={`px-5 py-2 rounded-2xl bg-white/80 ring-1 ring-black/5 shadow hover:shadow-md ${className}`}>{children}</button>
+);
+
+// ======= GAME
+function useSwipe(ref, handlers){
+  useEffect(()=>{
+    const el = ref.current;
+    if(!el) return;
+    let sx=0, sy=0, ex=0, ey=0, t0=0;
+    const ts = (e)=>{const t = e.touches[0]; sx=t.clientX; sy=t.clientY; t0=Date.now();};
+    const te = (e)=>{const t = e.changedTouches[0]; ex=t.clientX; ey=t.clientY; const dx=ex-sx, dy=ey-sy; const adx=Math.abs(dx), ady=Math.abs(dy); if(Math.max(adx,ady)<24 || Date.now()-t0>600){ handlers.tap&&handlers.tap({x:ex,y:ey}); return;} if(adx>ady){ handlers.swipe&&handlers.swipe(dx>0?"right":"left"); } else { handlers.swipe&&handlers.swipe(dy>0?"down":"up"); }};
+    el.addEventListener("touchstart", ts, {passive:true});
+    el.addEventListener("touchend", te);
+    return ()=>{ el.removeEventListener("touchstart", ts); el.removeEventListener("touchend", te); };
+  },[ref, handlers]);
 }
-function beep(){
-  const ctx = new (window.AudioContext||window.webkitAudioContext)();
-  const o = ctx.createOscillator(); const g = ctx.createGain();
-  o.type='sine'; o.frequency.setValueAtTime(880, ctx.currentTime);
-  g.gain.setValueAtTime(0.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.2);
-  o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.21);
+
+const OB_EMOJI = ["🕳️","🧊","🪵","🪨","🌵"];
+
+function Game({ onBack, onSpeakWord, word }){
+  const COLS = 14, ROWS = 9;
+  const MAX_LIVES = 3;
+  const wrapRef = useRef(null);
+  const [running, setRunning] = useState(true);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const [mouse, setMouse] = useState({ x: 1, y: 1 });
+  const [cheese, setCheese] = useState({ x: 6, y: 4 });
+  const [dir, setDir] = useState({ x: 1, y: 0 });
+  const [scale, setScale] = useState(1);
+  const [obstacles, setObstacles] = useState(()=>{
+    const set = new Set();
+    const arr = [];
+    while (arr.length < 6) {
+      const p = { x: rand(COLS), y: rand(ROWS) };
+      const key = p.x+","+p.y;
+      if ((p.x===1&&p.y===1) || (p.x===6&&p.y===4) || set.has(key)) continue;
+      set.add(key);
+      arr.push({ ...p, em: OB_EMOJI[rand(OB_EMOJI.length)] });
+    }
+    return arr;
+  });
+
+  // swipe / tap controls
+  useSwipe(wrapRef, {
+    swipe: (d)=>{
+      if (d === "up") setDir({ x: 0, y: -1 });
+      if (d === "down") setDir({ x: 0, y: 1 });
+      if (d === "left") setDir({ x: -1, y: 0 });
+      if (d === "right") setDir({ x: 1, y: 0 });
+    },
+    tap: ()=>{
+      const dx = cheese.x - mouse.x;
+      const dy = cheese.y - mouse.y;
+      if (Math.abs(dx) > Math.abs(dy)) setDir({ x: Math.sign(dx), y: 0 });
+      else setDir({ x: 0, y: Math.sign(dy) });
+    }
+  });
+
+  // auto movement
+  useEffect(()=>{
+    if(!running) return;
+    const id = setInterval(()=>{
+      setMouse(prev=>{
+        let nx = prev.x + dir.x, ny = prev.y + dir.y;
+        // collision with walls
+        if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) {
+          setLives(l=>l-1);
+          speak("ouch");
+          return prev; // stay, lose life
+        }
+        // obstacle
+        if (obstacles.some(o=>o.x===nx && o.y===ny)) {
+          setLives(l=>l-1);
+          speak("ouch");
+          return prev;
+        }
+        // cheese
+        if (nx===cheese.x && ny===cheese.y) {
+          // new cheese
+          setCheese({ x: rand(COLS), y: rand(ROWS) });
+          onSpeakWord && onSpeakWord();
+          setScale(s=>Math.min(1.6, s + 0.06));
+          setLives(l=>Math.min(MAX_LIVES, l+1));
+        }
+        return { x: nx, y: ny };
+      });
+    }, 260);
+    return ()=>clearInterval(id);
+  }, [dir, running, obstacles, cheese, onSpeakWord]);
+
+  // lives watcher
+  useEffect(()=>{ if (lives <= 0) setRunning(false); }, [lives]);
+
+  // restart
+  const restart = ()=>{
+    setLives(MAX_LIVES);
+    setMouse({ x: 1, y: 1 });
+    setCheese({ x: rand(COLS), y: rand(ROWS) });
+    setDir({ x: 1, y: 0 });
+    setScale(1);
+    setRunning(true);
+    // re-roll obstacles
+    const set = new Set();
+    const arr = [];
+    while (arr.length < 6) {
+      const p = { x: rand(COLS), y: rand(ROWS) };
+      const key = p.x+","+p.y;
+      if ((p.x===1&&p.y===1) || set.has(key)) continue;
+      set.add(key);
+      arr.push({ ...p, em: OB_EMOJI[rand(OB_EMOJI.length)] });
+    }
+    setObstacles(arr);
+  };
+
+  const cellSize = 38; // visual only
+  const gridStyle = { backgroundImage: `linear-gradient(#0001 1px, transparent 1px), linear-gradient(90deg, #0001 1px, transparent 1px)`, backgroundSize: `${cellSize}px ${cellSize}px` };
+
+  return (
+    <div>
+      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
+      <Card className="p-4">
+        <div className="flex justify-between items-center px-4">
+          <div className="text-xl font-semibold">Mouse & Cheese</div>
+          <div className="text-2xl select-none">{"❤️".repeat(lives)}{"🤍".repeat(Math.max(0, MAX_LIVES-lives))}</div>
+        </div>
+        <div ref={wrapRef} className="relative mx-auto mt-3 rounded-3xl bg-slate-200/60 ring-1 ring-black/5 shadow-inner overflow-hidden" style={{ width: COLS*cellSize + 40, height: ROWS*cellSize + 40 }}>
+          {/* grid */}
+          <div className="absolute inset-5 rounded-2xl" style={gridStyle}></div>
+          {/* mouse */}
+          {running && (
+            <div className="absolute transition-transform" style={{ left: 20 + mouse.x*cellSize, top: 20 + mouse.y*cellSize, transform: `translate(-50%, -50%) scale(${scale})` }}>
+              <span className="text-3xl">🐭</span>
+            </div>
+          )}
+          {/* cheese */}
+          {running && (
+            <div className="absolute" style={{ left: 20 + cheese.x*cellSize, top: 20 + cheese.y*cellSize, transform: 'translate(-50%, -50%)' }}>
+              <span className="text-3xl">🧀</span>
+            </div>
+          )}
+          {/* obstacles */}
+          {running && obstacles.map((o,i)=> (
+            <div key={i} className="absolute" style={{ left: 20 + o.x*cellSize, top: 20 + o.y*cellSize, transform: 'translate(-50%, -50%)' }}>
+              <span className="text-2xl">{o.em}</span>
+            </div>
+          ))}
+          {!running && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="px-6 py-3 rounded-2xl bg-white shadow">Game Over</div>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between px-2 mt-3">
+          <Soft onClick={restart}>Restart</Soft>
+          <div className="text-slate-600">Swipe to move. Tap to turn towards cheese. Eat cheese — “beep” and the word.</div>
+        </div>
+      </Card>
+    </div>
+  );
 }
-// Similarity (Jaro–Winkler simplified)
-function sim(a,b){a=a.toLowerCase(); b=b.toLowerCase(); const m=Math.min(a.length,b.length); if(!m)return 0; let matches=0, trans=0; const window=Math.floor(Math.max(a.length,b.length)/2)-1; const aFlag=[], bFlag=[]; for(let i=0;i<a.length;i++){const start=Math.max(0,i-window), end=Math.min(i+window+1,b.length); for(let j=start;j<end;j++){if(bFlag[j])continue; if(a[i]===b[j]){aFlag[i]=bFlag[j]=true; matches++; break;}}}
- if(!matches) return 0; let k=0; for(let i=0;i<a.length;i++){ if(!aFlag[i]) continue; while(!bFlag[k]) k++; if(a[i]!==b[k]) trans++; k++; }
- const j = (matches/a.length + matches/b.length + (matches-trans/2)/matches)/3; // jaro
- const p=0.1; let l=0; while(l<4 && a[l]===b[l]) l++; return (j + l*p*(1-j));
+
+// ======= QUIZ
+function Quiz({ onBack }){
+  const [idx, setIdx] = useState(0);
+  const word = WORDS[idx % WORDS.length];
+  const options = useMemo(()=>{
+    const rest = WORDS.filter(w=>w.ru!==word.ru).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.ru);
+    const arr = [...rest, word.ru].sort(()=>Math.random()-0.5);
+    return arr;
+  }, [word]);
+  const [chosen, setChosen] = useState(null);
+
+  useEffect(()=>{ setChosen(null); }, [idx]);
+
+  const choose = (ru)=>{
+    setChosen(ru);
+    if (ru===word.ru) speak(word.en);
+  };
+
+  return (
+    <div>
+      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
+      <Card>
+        <div className="flex items-center justify-between">
+          <div className="text-2xl font-semibold">Quiz — choose translation</div>
+          <div className="flex gap-2">
+            <Soft onClick={onBack}>Menu</Soft>
+            <Primary onClick={()=>setIdx(i=>i+1)}>Next</Primary>
+          </div>
+        </div>
+        <div className="text-[64px] font-black tracking-tight mt-3">{word.en}</div>
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          {options.map((ru,i)=>{
+            const isCorrect = chosen && ru===word.ru;
+            const isWrongPick = chosen===ru && ru!==word.ru;
+            const cls = isCorrect ? "bg-green-100" : isWrongPick ? "bg-red-100" : "bg-white";
+            return (
+              <button key={i} onClick={()=>choose(ru)} className={`rounded-2xl ring-1 ring-black/5 px-5 py-4 text-left font-semibold shadow ${cls}`}>{ru}</button>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
 }
 
-// Routing
-$$('[data-go]').forEach(b=>b.addEventListener('click', e=>{show(e.currentTarget.dataset.go)}));
-$('#themeBtn').addEventListener('click',()=>{document.documentElement.classList.toggle('light');});
+// ======= CARDS
+function Cards({ onBack }){
+  const [idx, setIdx] = useState(0);
+  const [showRu, setShowRu] = useState(false);
+  const word = WORDS[idx % WORDS.length];
+  useEffect(()=> setShowRu(false), [idx]);
 
-// ---------- Dashboard ----------
-function refreshStats(){
-  const s = store.stats; $('#statCards').textContent = s.cards; $('#statQuiz').textContent = s.quiz; $('#statCheese').textContent = s.cheese; $('#statAccent').textContent = s.accent; $('#todayCounter').textContent = s.today||1; const pct=Math.min(360,(s.cards+s.quiz+s.cheese+s.accent)/20*360); $('#ring').style.setProperty('--deg', pct+'deg');
+  return (
+    <div>
+      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
+      <Card>
+        <div className="flex items-center justify-between mb-2"><div className="text-2xl font-semibold">Cards</div></div>
+        <div className="text-[64px] font-black tracking-tight">{word.en}</div>
+        <div className="h-6 text-slate-500">{showRu ? word.ru : "\u00A0"}</div>
+        <div className="grid grid-cols-4 gap-3 mt-4">
+          <Soft onClick={()=>setShowRu(v=>!v)}>Show RU</Soft>
+          <Soft onClick={()=>speak(word.en)}>Speak</Soft>
+          <Primary onClick={()=>setIdx(i=>i+1)}>Know</Primary>
+          <Primary onClick={onBack}>Menu</Primary>
+        </div>
+      </Card>
+    </div>
+  );
 }
-refreshStats();
 
-// ---------- Cards ----------
-let idxCards = Math.floor(Math.random()*PAIRS.length);
-function setCard(){ const p = PAIRS[idxCards]; $('#cardWord').textContent=p.en; $('#cardRu').textContent='tap “Show RU”'; $('#cardRu').style.opacity=.85; }
-setCard();
-$('#cardShow').onclick = ()=>{ $('#cardRu').textContent = PAIRS[idxCards].ru; };
-$('#cardSpeak').onclick = ()=> speak(PAIRS[idxCards].en);
-$('#cardNext').onclick = ()=>{ idxCards = (idxCards+1)%PAIRS.length; setCard(); };
-$('#cardKnow').onclick = ()=>{ const k = store.known; const en=PAIRS[idxCards].en; if(!k.includes(en)) k.push(en); store.known = k; const s=store.stats; s.cards++; store.stats=s; refreshStats(); idxCards=(idxCards+1)%PAIRS.length; setCard(); };
+// ======= ACCENT (pronunciation)
+function Accent({ onBack }){
+  const [idx, setIdx] = useState(0);
+  const word = WORDS[idx % WORDS.length];
+  const [heard, setHeard] = useState("");
+  const [match, setMatch] = useState(0);
+  const [micState, setMicState] = useState("—");
+  const recRef = useRef(null);
 
-// ---------- Quiz ----------
-let qIndex = 0, qAnswer = '';
-function nextQuiz(){ const p=PAIRS[qIndex = (qIndex+1)%PAIRS.length]; $('#quizWord').textContent=p.en; qAnswer = p.ru; const opts = new Set([p.ru]); while(opts.size<4){ const r = PAIRS[Math.floor(Math.random()*PAIRS.length)].ru; opts.add(r)} const arr=[...opts].sort(()=>Math.random()-0.5); const box=$('#quizOptions'); box.innerHTML=''; arr.forEach(txt=>{ const b=document.createElement('button'); b.className='option'; b.textContent=txt; b.onclick=()=>{ if(b.dataset.lock)return; b.dataset.lock=1; [...box.children].forEach(c=>c.disabled=true); const ok = (txt===qAnswer); b.classList.add(ok?'correct':'wrong'); const s=store.stats; if(ok){ s.quiz++; store.stats=s; refreshStats(); beep(); speak(PAIRS[qIndex].en);} else { /*no stat on wrong*/ } }; box.appendChild(b); }); }
-$('#quizNext').onclick = ()=> nextQuiz();
-nextQuiz();
+  const setup = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){ setMicState("not supported"); return null; }
+    const r = new SR();
+    r.lang = "en-US";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.continuous = false;
+    r.onstart = ()=> setMicState("listening…");
+    r.onerror = (e)=> setMicState("error");
+    r.onend = ()=> setMicState("ready");
+    r.onresult = (ev)=>{
+      const text = ev.results[0][0].transcript || "";
+      setHeard(text);
+      setMatch(similarity(text, word.en));
+    };
+    setMicState("ready");
+    recRef.current = r;
+    return r;
+  };
 
-// ---------- Game ----------
-const board = $('#board'); const mouse = $('#mouse'); const cheese = $('#cheese');
-let m={x:50,y:50, size:1}, c={x:20,y:20};
-function place(sprite, obj){ sprite.style.left=obj.x+'%'; sprite.style.top=obj.y+'%'; sprite.style.transform=`translate(-50%,-50%) scale(${obj.size||1})`; }
-function rnd(){ return 10 + Math.random()*80; }
-function resetGame(){ m={x:50,y:50,size:1}; c={x:rnd(), y:rnd()}; place(mouse,m); place(cheese,c); }
-resetGame();
-$('#gRestart').onclick=resetGame;
+  useEffect(()=>{ setup(); return ()=>{ try{recRef.current && recRef.current.abort();}catch{}}; },[]);
+  useEffect(()=>{ setHeard(""); setMatch(0); }, [idx]);
 
-function step(dx,dy){ m.x=Math.max(5,Math.min(95,m.x+dx)); m.y=Math.max(5,Math.min(95,m.y+dy)); place(mouse,m); const dist=Math.hypot(m.x-c.x, m.y-c.y); if(dist<6){ // eat
-   beep(); const w = PAIRS[Math.floor(Math.random()*PAIRS.length)].en; speak(w); const s=store.stats; s.cheese++; store.stats=s; refreshStats(); m.size=Math.min(1.8, m.size+0.05); place(mouse,m); c={x:rnd(),y:rnd()}; place(cheese,c);
- }}
-// Touch controls
-let t0=null; board.addEventListener('touchstart',e=>{t0=e.touches[0]});
-board.addEventListener('touchmove',e=>{ if(!t0) return; const t=e.touches[0]; const dx=t.clientX-t0.clientX, dy=t.clientY-t0.clientY; const ax=Math.abs(dx), ay=Math.abs(dy); if(ax>20||ay>20){ if(ax>ay) step(dx>0?3:-3,0); else step(0, dy>0?3:-3); t0=t; } });
-board.addEventListener('touchend',()=>t0=null);
-// Tap: face the cheese by snapping closer
-board.addEventListener('click',()=>{ const dx = c.x>m.x?3:-3; const dy = c.y>m.y?3:-3; step(dx,dy) });
+  const say = ()=>{ const r = recRef.current || setup(); if(!r) return; try{ r.abort(); r.start(); }catch{} };
 
-// ---------- Accent (Pronunciation) ----------
-let aIndex = Math.floor(Math.random()*PAIRS.length);
-function setAccent(){ const p=PAIRS[aIndex]; $('#accWord').textContent=p.en; $('#accRu').textContent=p.ru; $('#heard').textContent='Heard: —'; $('#score').textContent='Match: 0%'; }
-setAccent();
-$('#accNext').onclick = ()=>{ aIndex=(aIndex+1)%PAIRS.length; setAccent(); };
-$('#accListen').onclick = ()=> speak(PAIRS[aIndex].en);
+  return (
+    <div>
+      <TopBar onMenu={onBack} onTheme={()=>document.documentElement.classList.toggle('dark')} />
+      <Card>
+        <div className="flex items-center justify-between"><div className="text-2xl font-semibold">Accent • say the word as close to original</div></div>
+        <div className="text-[64px] font-black tracking-tight">{word.en}</div>
+        <div className="h-6 text-slate-500">{word.ru}</div>
+        <div className="flex gap-3 mt-4">
+          <Soft onClick={()=>speak(word.en)}>Listen</Soft>
+          <Primary onClick={say}>Say (browser)</Primary>
+          <Primary className="from-emerald-500 to-teal-500" onClick={()=>setIdx(i=>i+1)}>Next</Primary>
+          <Soft onClick={onBack}>Menu</Soft>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="rounded-2xl bg-white/80 ring-1 ring-black/5 px-4 py-2">Microphone access: {micState}</div>
+          <div className="rounded-2xl bg-white/80 ring-1 ring-black/5 px-4 py-2">Heard: {heard || "—"} • Match: {match}%</div>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
-// STT via Web Speech (browser)
-let recog, micReady=false; function ensureRecog(){ try{ const WSR = window.SpeechRecognition||window.webkitSpeechRecognition; if(!WSR) return null; if(!recog){ recog = new WSR(); recog.lang='en-US'; recog.interimResults=false; recog.maxAlternatives=1; recog.onresult = (e)=>{ const heard = e.results[0][0].transcript; $('#heard').textContent = 'Heard: '+heard; const target = PAIRS[aIndex].en; const pct = Math.round(sim(heard, target)*100); $('#score').textContent = 'Match: '+pct+'%'; if(pct>=65){ const s=store.stats; s.accent++; store.stats=s; refreshStats(); }
-      };
-      recog.onstart=()=>{$('#micState').textContent='Mic: listening…'}; recog.onend=()=>{$('#micState').textContent='Mic: ready'}; }
-    micReady=true; $('#micState').textContent='Mic: ready'; return recog; }catch(err){ console.warn(err); $('#micState').textContent='Mic: not available'; return null; }}
+// ======= MENU
+function Menu({ onGo }){
+  const Item = ({ title, desc, action }) => (
+    <Card>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-xl font-semibold">{title}</div>
+          <div className="text-slate-600">{desc}</div>
+        </div>
+        <Primary onClick={action}>Open →</Primary>
+      </div>
+    </Card>
+  );
+  return (
+    <div>
+      <TopBar onMenu={()=>{}} onTheme={()=>document.documentElement.classList.toggle('dark')} />
+      <div className="grid gap-4">
+        <Item title="Quiz" desc="Pick the correct translation" action={()=>onGo('quiz')} />
+        <Item title="Cards" desc="EN ⇄ RU. ‘Know’ adds to learned" action={()=>onGo('cards')} />
+        <Item title="Game" desc="Eat cheese — beep + word" action={()=>onGo('game')} />
+        <Item title="Accent" desc="Say the word close to native" action={()=>onGo('accent')} />
+      </div>
+      <div className="fixed inset-x-0 bottom-3 flex justify-center gap-6 opacity-90">
+        <button onClick={()=>onGo('quiz')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">🧠</button>
+        <button onClick={()=>onGo('cards')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">🎴</button>
+        <button onClick={()=>onGo('game')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">🎮</button>
+        <button onClick={()=>onGo('accent')} className="w-11 h-11 rounded-2xl bg-white shadow ring-1 ring-black/5 flex items-center justify-center">💬</button>
+      </div>
+    </div>
+  );
+}
 
-$('#accSay').onclick = ()=>{ const r=ensureRecog(); if(r){ r.stop(); r.start(); } };
+// ======= APP
+export default function App(){
+  const [route, setRoute] = useState('menu');
+  const [quizKey, setQuizKey] = useState(0);
 
-// ---------- Nav helpers ----------
-function activateTabBySection(){ const sec = $$('section').find(s=>s.classList.contains('active')); $$('.tab').forEach(t=>t.classList.remove('active')); if(!sec||sec.id==='home') return; const map={quiz:0,cards:1,game:2,accent:3}; const i=map[sec.id]; if(i!=null) $$('.tab')[i].classList.add('active'); }
-window.addEventListener('click', activateTabBySection, true);
+  // for game — provide current word index to TTS when cheese eaten
+  const [wordIdx, setWordIdx] = useState(0);
+  const currentWord = WORDS[wordIdx % WORDS.length];
+  const speakCurrent = ()=> speak(currentWord.en);
 
-// Start with light theme if OS prefers
-if(matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.classList.add('light');
+  useEffect(()=>{
+    // advance index periodically when user is in quiz/cards/next etc.
+    if(route==='quiz' || route==='cards' || route==='accent') return; // game drives itself
+  },[route]);
 
-</script>
-</body>
-</html>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 p-4">
+      {route==='menu' && <Menu onGo={setRoute} />}
+      {route==='quiz' && <Quiz key={quizKey} onBack={()=>setRoute('menu')} />}
+      {route==='cards' && <Cards onBack={()=>setRoute('menu')} />}
+      {route==='accent' && <Accent onBack={()=>setRoute('menu')} />}
+      {route==='game' && (
+        <Game
+          word={currentWord}
+          onBack={()=>setRoute('menu')}
+          onSpeakWord={()=>{
+            // after eating cheese, speak and advance the word index
+            speakCurrent();
+            setWordIdx(i=>i+1);
+          }}
+        />
+      )}
+    </div>
+  );
+}
