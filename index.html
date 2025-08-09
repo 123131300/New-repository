@@ -31,9 +31,9 @@
       --cy-tile:#ffffff;--cy-border:#cfe8e4;--cy-glow:0 0 8px rgba(9,203,183,.18),0 0 18px rgba(215,168,0,.12);
     }
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:linear-gradient(180deg,var(--bg1),var(--bg2))}
+    html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:linear-gradient(180deg,var(--bg1),var(--bg2));overflow-x:hidden}
     #root{min-height:100vh;display:flex;justify-content:center;padding:18px}
-    .wrap{width:min(1100px,100%)}
+    .wrap{width:min(1100px,100%);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
     h1{margin:0 0 14px;display:flex;align-items:center;gap:10px;font-size:28px}
     .topbar{display:flex;gap:10px;justify-content:flex-end}
     .btn{appearance:none;border:1px solid var(--cy-border);background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));color:var(--cy-ink);border-radius:999px;padding:10px 18px;font-weight:700;letter-spacing:.3px;font-family:'Rajdhani',system-ui;box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease, box-shadow .12s ease}
@@ -53,9 +53,6 @@
     .pill{background:var(--chip);border-radius:999px;padding:10px 16px}
     .cta{padding:12px 18px;border-radius:14px}
 
-    .nav{position:sticky;bottom:8px;display:flex;justify-content:space-between;gap:12px}
-    .nav button{flex:1;padding:12px;border-radius:14px;background:var(--panel);box-shadow:var(--shadow)}
-
     /* QUIZ */
     .quiz-word{font-size:64px;font-weight:900;margin:8px 0 16px;color:var(--cy-ink);font-family:'Orbitron',system-ui}
     .ans{padding:16px 18px;border-radius:14px;border:1px solid var(--cy-border);background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.03));color:var(--cy-ink);cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease, background .12s ease; font-family:'Rajdhani',system-ui; font-weight:700}
@@ -72,7 +69,7 @@
     .stat{background:var(--chip);border-radius:14px;padding:12px 14px;margin-top:8px}
 
     /* GAME */
-    .arena{aspect-ratio:16/9;background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;width:100%}
+    .arena{aspect-ratio:16/9;background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%}
     .cell{position:absolute;border:1px solid rgba(0,0,0,.04)}
     .sprite{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))}
     .lives{position:absolute;top:10px;right:16px;font-size:20px}
@@ -83,7 +80,7 @@
     .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2));width:0}
 
     /* === CYBER MENU (scoped) === */
-    .cyber{background:radial-gradient(1200px 600px at 10% -10%, rgba(24,255,227,.06), transparent 60%), radial-gradient(1000px 600px at 100% 0, rgba(255,216,0,.06), transparent 60%), var(--cy-bg); color:var(--cy-ink); border-radius:22px; padding:18px; box-shadow:0 12px 50px rgba(0,0,0,.35); border:1px solid var(--cy-border)}
+    .cyber{background:radial-gradient(1200px 600px at 10% -10%, rgba(24,255,227,.06), transparent 60%), radial-gradient(1000px 600px at 100% 0, rgba(255,216,0,.06), transparent 60%), var(--cy-bg); color:var(--cy-ink); border-radius:22px; padding:18px; box-shadow:0 12px 50px rgba(0,0,0,.35); border:1px solid var(--cy-border); max-width:100%; overflow:hidden}
     .cy-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
     .cy-logo{display:flex;align-items:center;gap:10px;font-family:'Orbitron',system-ui;font-weight:800;letter-spacing:.5px;font-size:20px}
     .cy-logo i{display:none}
@@ -103,7 +100,7 @@
 
     .cy-actions{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:18px}
     /* bottom cyber nav */
-    .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+    .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px;padding-bottom: env(safe-area-inset-bottom)}
     .cy-foot .cy-foot-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);color:var(--cy-cyan);box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease}
     .cy-foot .cy-foot-btn:hover{transform:translateY(-1px)}
     .cy-foot .cy-foot-btn span{display:none}
@@ -116,7 +113,7 @@
     .cy-foot .cy-icon-img{width:22px;height:22px;filter:drop-shadow(0 0 6px rgba(24,255,227,.45))}
 
     /* reusable cyber panel for subpages */
-    .cy-panel{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);box-shadow:var(--cy-glow);border-radius:18px;padding:18px;margin:18px 0;color:var(--cy-ink)}
+    .cy-panel{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);box-shadow:var(--cy-glow);border-radius:18px;padding:18px;margin:18px 0;color:var(--cy-ink);max-width:100%;overflow:hidden}
     .cy-title{font-family:'Orbitron',system-ui;font-weight:800;color:var(--cy-cyan);font-size:20px}
     .cy-sub{color:var(--cy-muted)}
     .cy-big{font-family:'Orbitron',system-ui;font-size:56px;color:var(--cy-ink);text-shadow:0 0 10px rgba(24,255,227,.18)}
@@ -124,6 +121,9 @@
     .cy-panel select,.cy-panel textarea,.cy-panel input[type=file]{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));border:1px solid var(--cy-border);color:var(--cy-ink);border-radius:12px;box-shadow:var(--cy-glow)}
     .lives{color:#e9fffb;text-shadow:0 0 6px rgba(24,255,227,.4)}
     .cy-panel .subtitle{color:var(--cy-ink);opacity:.9}
+
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start}
+    .cy-panel input[type=file]{width:100%}
 
     @media (max-width:720px){
       .quiz-word,.big,.cy-big{font-size:44px}
@@ -216,26 +216,29 @@
     useEffect(()=>{
       const fit=()=>{
         const el=wrapRef.current; if(!el) return;
-        const parent=el.parentElement || el;
-        const vp=window.visualViewport; const vpH=vp?vp.height:window.innerHeight;
-        const nav=document.querySelector('.cy-foot'); const navH=nav?nav.getBoundingClientRect().height+16:0;
-        const parentTop=parent.getBoundingClientRect().top;
-        const availableW=Math.max(220,parent.clientWidth-2);
-        const availableH=Math.max(220, Math.floor(vpH - parentTop - navH - 28));
-        const size=Math.max(24, Math.floor(Math.min(availableW/COLS, availableH/ROWS)));
+        const panel=el.closest('.cy-panel')||el.parentElement||document.body;
+        const rect=panel.getBoundingClientRect();
+        const cs=getComputedStyle(panel);
+        const padX=parseFloat(cs.paddingLeft||'0')+parseFloat(cs.paddingRight||'0');
+        const padTop=parseFloat(cs.paddingTop||'0');
+        const contentW=Math.max(220, rect.width - padX);
+        const vp=window.visualViewport; 
+        const nav=document.querySelector('.cy-foot'); 
+        const navH=nav?nav.getBoundingClientRect().height+16:0;
+        const vh=vp?vp.height:window.innerHeight;
+        const availableH=Math.max(220, Math.floor(vh - (rect.top + padTop) - navH - 12));
+        const size=Math.max(24, Math.floor(Math.min(contentW/COLS, availableH/ROWS)));
         setCell(size);
-        // ensure container size matches computed cells
-        el.style.width = (size*COLS)+"px";
-        el.style.height = (size*ROWS)+"px";
+        el.style.width=(size*COLS)+'px';
+        el.style.height=(size*ROWS)+'px';
       };
+      const onResize=()=>{ window.requestAnimationFrame(fit); };
       fit();
-      const ro=new ResizeObserver(()=>fit());
-      const target=wrapRef.current?.parentElement || document.body;
-      ro.observe(target);
-      const vv=window.visualViewport;
-      if(vv){ vv.addEventListener('resize',fit); vv.addEventListener('scroll',fit); }
-      window.addEventListener('resize',fit);
-      return ()=>{ ro.disconnect(); if(vv){vv.removeEventListener('resize',fit); vv.removeEventListener('scroll',fit);} window.removeEventListener('resize',fit); };
+      const ro=new ResizeObserver(onResize); ro.observe(document.body);
+      const vv=window.visualViewport; vv?.addEventListener('resize',onResize); vv?.addEventListener('scroll',onResize);
+      window.addEventListener('resize',onResize);
+      window.addEventListener('orientationchange',onResize);
+      return ()=>{ ro.disconnect(); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); };
     },[]);
 
     // Tap steering (← ↑ → ↓)
@@ -316,7 +319,7 @@
   function Quiz({onBack,onStat}){
     const WORDS=getWords(); const [i,setI]=useState(0); const [picked,setPicked]=useState(null); const q=WORDS[i%WORDS.length];
     const opts=useMemo(()=>{ const pool=[q.ru]; while(pool.length<4){ const r=WORDS[rand(WORDS.length)].ru; if(!pool.includes(r)) pool.push(r);} return pool.sort(()=>Math.random()-0.5); },[i]);
-    const choose=v=>{ const is=v===q.ru; setPicked(v); if(is){ audio.speak(q.en); onStat&&onStat('quiz'); } else { audio.speak(q.en); } };
+    const choose=v=>{ const is=v===q.ru; setPicked(v); audio.speak(q.en); if(is){ onStat&&onStat('quiz'); } };
     const next=()=>{ setPicked(null); setI(v=>v+1); };
     return (
       <div className="cy-panel">
@@ -388,8 +391,8 @@
     return (
       <div className="cy-panel">
         <div className="row"><div className="cy-title">Settings</div><Btn onClick={onBack}>Menu</Btn></div>
-        <div className="row" style={{alignItems:'flex-start'}}>
-          <div style={{flex:1}}>
+        <div className="settings-grid">
+          <div>
             <div className="subtitle">Voice — language</div>
             <select value={lang} onChange={e=>setLang(e.target.value)} style={{marginTop:8,padding:'10px',borderRadius:12,width:'100%'}}>
               {[...new Set(voices.map(v=>v.lang))].map(l=> <option key={l} value={l}>{l}</option>)}
@@ -404,7 +407,7 @@
             </div>
             {!ttsOk && <div className="subtitle" style={{marginTop:8}}>TTS not supported here.</div>}
           </div>
-          <div style={{flex:1}}>
+          <div>
             <div className="subtitle">Import word pack</div>
             <textarea value={json} onChange={e=>setJson(e.target.value)} placeholder='[{"en":"cat","ru":"кот"}]' style={{marginTop:8,width:'100%',height:110,borderRadius:12,padding:10}} />
             <div className="card-row" style={{marginTop:10}}>
@@ -414,7 +417,7 @@
             <div className="subtitle" style={{marginTop:10}}>Or upload CSV (columns: en,ru)</div>
             <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{marginTop:8}}/>
           </div>
-          <div style={{flex:1}}>
+          <div>
             <div className="subtitle">Custom icons (PNG/SVG, 128–256px)</div>
             <div className="card-row" style={{marginTop:10}}>
               <div>
@@ -536,7 +539,7 @@
     const go=useCallback((s)=>setScreen(s),[]);
     const [wordI,setWordI]=useState(0);
 
-    // Telegram WebApp safe init (optional)
+    /* Telegram WebApp safe init (optional) */
     useEffect(()=>{ try{ window.Telegram?.WebApp?.ready?.(); }catch(_){} },[]);
 
     return (
@@ -554,202 +557,29 @@
 
   ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
-  // Self-checks (unit-style)
+  // ===== Self-checks (unit-style) =====
   window.__MNC__={clamp, similarity, parseCSV, AudioManager, randomFreeCell, heartsMask, dirFromTap};
   try{
-    console.assert(clamp(-1,0,10)===0);
-    console.assert(clamp(11,0,10)===10);
-    console.assert(similarity('cheese','cheese')===100);
+    console.assert(clamp(-1,0,10)===0,'clamp low');
+    console.assert(clamp(11,0,10)===10,'clamp high');
+    console.assert(similarity('cheese','cheese')===100,'similarity full');
     const t=parseCSV('en,ru\ncat,кот\n');
-    console.assert(Array.isArray(t)&&t.length===1);
+    console.assert(Array.isArray(t)&&t.length===1 && t[0].en==='cat' && t[0].ru==='кот','csv basic');
+    const t2=parseCSV('english;russian\n"ice cream";мороженое');
+    console.assert(t2[0].en==='ice cream' && t2[0].ru==='мороженое','csv semicolon+quotes');
     const am=new AudioManager(); Promise.resolve(am.speak('')).then(()=>{});
     const occ=[{x:0,y:0},{x:1,y:1}], m={x:2,y:2};
     const rc=randomFreeCell(occ,m,18,12,1,()=>0.99);
-    console.assert(rc.x>=1&&rc.x<=16&&rc.y>=1&&rc.y<=10);
-    console.assert(heartsMask(3,3).length>0);
-    const obsTest=genObstacles(18,12,6); console.assert(obsTest.length===6 && obsTest.every(o=>o.x>0&&o.x<17&&o.y>0&&o.y<11));
+    console.assert(rc.x>=1&&rc.x<=16&&rc.y>=1&&rc.y<=10,'randomFreeCell bounds');
+    console.assert(heartsMask(3,3).length>0,'hearts mask');
     const __cell=40; const __mouse={x:5,y:5};
-    console.assert(dirFromTap(__mouse,{x:(__mouse.x+1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===1);
-    console.assert(dirFromTap(__mouse,{x:(__mouse.x-1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===-1);
-    console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y-1.6)*__cell},__cell).y===-1);
-    console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y+1.6)*__cell},__cell).y===1);
-    console.assert(isValidIcon('data:image/png;base64,AA')===true);
-    console.assert(isValidIcon('data:text/plain;base64,AA')===false);
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x+1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===1,'dir right');
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x-1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===-1,'dir left');
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y-1.6)*__cell},__cell).y===-1,'dir up');
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y+1.6)*__cell},__cell).y===1,'dir down');
+    console.assert(isValidIcon('data:image/png;base64,AA')===true,'valid icon data');
+    console.assert(isValidIcon('data:text/plain;base64,AA')===false,'invalid icon data');
   }catch(e){ console.warn('self-checks skipped',e); }
   </script>
-
-  <!--
-  ==========================
-  Netlify Function (TypeScript)
-  File: netlify/functions/progress.ts
-  ==========================
-  import type { Handler } from '@netlify/functions'
-  import { createClient } from '@supabase/supabase-js'
-  
-  type EventBody = { type: 'quiz'|'cards'|'cheese'|'accent', payload?: any, userId?: string }
-  
-  const SUPABASE_URL = process.env.SUPABASE_URL!
-  const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE!
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN // optional: to verify initData
-  
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } })
-  
-  const ok = (body:any, status=200) => ({ statusCode: status, headers: {'Content-Type':'application/json','Cache-Control':'no-store'}, body: JSON.stringify(body) })
-  const bad = (msg:string, status=400) => ok({error: msg}, status)
-  
-  // (optional) Telegram initData verification
-  import crypto from 'crypto'
-  function verifyTelegram(initData:string){
-    try{
-      if(!TELEGRAM_BOT_TOKEN) return null
-      const params = new URLSearchParams(initData)
-      const hash = params.get('hash')
-      params.delete('hash')
-      const dataCheckString = [...params.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${k}=${v}`).join('\n')
-      const secretKey = crypto.createHmac('sha256', 'WebAppData').update(TELEGRAM_BOT_TOKEN).digest()
-      const calcHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
-      if (calcHash !== hash) return null
-      const user = params.get('user')
-      return user ? JSON.parse(user) : null
-    }catch{ return null }
-  }
-  
-  export const handler: Handler = async (event) => {
-    const { httpMethod, queryStringParameters } = event
-    const op = (queryStringParameters?.op||'').toLowerCase()
-    if(op==='ping') return ok({ ok: true })
-
-    if(httpMethod==='POST' && op==='write'){
-      const body: EventBody = JSON.parse(event.body||'{}')
-      if(!body?.type) return bad('type required')
-      // resolve userId: telegram initData or provided or anon
-      let userId = body.userId || 'anon'
-      const initData = event.headers['x-telegram-initdata'] || queryStringParameters?.initData
-      const tg = typeof initData==='string' ? verifyTelegram(initData) : null
-      if(tg?.id) userId = String(tg.id)
-
-      const { error } = await supabase.from('events').insert({ user_id: userId, type: body.type, payload: body.payload||null })
-      if(error) return bad(error.message, 500)
-      return ok({ ok: true })
-    }
-
-    if(httpMethod==='GET' && op==='stats'){
-      const userId = queryStringParameters?.userId || 'anon'
-      const { data, error } = await supabase
-        .from('events')
-        .select('type, count:count(*)')
-        .eq('user_id', userId)
-        .group('type')
-      if(error) return bad(error.message, 500)
-      const stats = { quiz:0, cards:0, cheese:0, accent:0 }
-      for(const row of (data||[])) stats[row.type as keyof typeof stats] = Number((row as any).count||0)
-      return ok({ stats })
-    }
-
-    return bad('unsupported', 404)
-  }
-
-  // ========= Supabase schema (SQL) =========
-  // create table if not exists
-  // create table public.events (
-  //   id bigserial primary key,
-  //   user_id text not null,
-  //   type text not null check (type in ('quiz','cards','cheese','accent')),
-  //   payload jsonb,
-  //   created_at timestamptz default now()
-  // );
-  // alter table public.events enable row level security;
-  // -- Optional RLS: only allow service role by function; no anon direct access
-  // create policy "service only" on public.events for all using (false) with check (false);
-
-  ==========================
-  Netlify headers (file: _headers)
-  ==========================
-  /*
-    Content-Security-Policy: default-src 'self' https:; connect-src 'self' https:; img-src 'self' https: data:; font-src https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net 'unsafe-inline'; frame-ancestors https://web.telegram.org https://*.telegram.org;
-    Referrer-Policy: no-referrer
-    X-Content-Type-Options: nosniff
-    X-Frame-Options: DENY
-    Permissions-Policy: microphone=*, fullscreen=*, clipboard-write=(self)
-  */
-
-  ==========================
-  package.json (tests/dev)
-  ==========================
-  {
-    "name":"telegram-miniapp",
-    "private": true,
-    "scripts": {
-      "dev": "npx serve .",
-      "test": "vitest run",
-      "e2e": "playwright test"
-    },
-    "devDependencies": {
-      "vitest": "^1.6.0",
-      "@playwright/test": "^1.46.0",
-      "@supabase/supabase-js": "^2.45.0"
-    }
-  }
-
-  ==========================
-  vitest.config.ts (optional minimal)
-  ==========================
-  import { defineConfig } from 'vitest/config'
-  export default defineConfig({ test: { environment: 'jsdom' } })
-
-  ==========================
-  tests/unit.spec.ts
-  ==========================
-  import { describe, it, expect } from 'vitest'
-  // In browser app exposes helpers on window.__MNC__ — here we reimplement minimal copies for unit
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v))
-  function similarity(a,b){ a=(a||'').toLowerCase(); b=(b||'').toLowerCase(); if(!a||!b) return 0; const m=Math.max(a.length,b.length); let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===b[i]) s++; } return Math.round((s/m)*100); }
-  function parseCSV(text){ const lines=String(text||'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; for(let i=start;i<lines.length;i++){ const cols=lines[i].split(sep); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
-  
-  describe('helpers',()=>{
-    it('clamp',()=>{ expect(clamp(-1,0,10)).toBe(0); expect(clamp(11,0,10)).toBe(10) })
-    it('similarity',()=>{ expect(similarity('cheese','cheese')).toBe(100) })
-    it('parseCSV',()=>{ expect(parseCSV('en,ru\ncat,кот')).toEqual([{en:'cat',ru:'кот'}]) })
-  })
-
-  ==========================
-  tests/e2e.spec.ts (Playwright)
-  ==========================
-  import { test, expect } from '@playwright/test'
-  test.beforeEach(async ({ page }) => { await page.goto('http://localhost:3000/index.html') })
-  test('Quiz: colors + Next', async ({ page }) => {
-    await page.getByRole('button', { name: 'Quiz' }).click()
-    const opts = page.locator('.ans')
-    const count = await opts.count()
-    await opts.nth(0).click()
-    await expect(opts.nth(0)).toHaveClass(/(ok|bad)/)
-    await page.getByRole('button', { name: 'Next' }).click()
-    await expect(opts.nth(0)).not.toHaveClass(/(ok|bad)/)
-  })
-  test('Game: restart resets lives', async ({ page }) => {
-    await page.getByRole('button', { name: 'Game' }).click()
-    await page.getByRole('button', { name: 'Restart' }).click()
-    await expect(page.locator('.lives')).toContainText('❤')
-  })
-  test('Settings present in menu and footer', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Settings' })).toBeVisible()
-    await page.getByRole('button', { name: 'Settings' }).click()
-    await expect(page.getByText('Supabase link')).toBeVisible()
-  })
-
-  ==========================
-  playwright.config.ts (basic)
-  ==========================
-  import { defineConfig } from '@playwright/test'
-  export default defineConfig({ webServer: { command: 'npx serve -l 3000 .', port: 3000, reuseExistingServer: !process.env.CI } })
-
-  ==========================
-  Env (.env on Netlify)
-  ==========================
-  SUPABASE_URL=...
-  SUPABASE_SERVICE_ROLE=...
-  TELEGRAM_BOT_TOKEN=... # optional for initData verification
-
-  -->
 </body>
 </html>
