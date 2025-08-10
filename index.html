@@ -123,6 +123,12 @@
     .lives{color:#e9fffb;text-shadow:0 0 6px rgba(24,255,227,.4)}
     .cy-panel .subtitle{color:var(--cy-ink);opacity:.9}
 
+    /* fullscreen game mode */
+    body.fs-game{overflow:hidden}
+    body.fs-game .wrap{padding:0}
+    body.fs-game .cy-panel{margin:0;border-radius:0;border:none;padding:8px}
+    .fs-hud{position:absolute;top:8px;left:8px;z-index:5;display:flex;gap:8px}
+
     .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start}
     .cy-panel input[type=file]{width:100%}
 
@@ -197,6 +203,7 @@
     const wrapRef=useRef(null);
     const rafRef=useRef(0), lastRef=useRef(0), accRef=useRef(0);
     const [cell,setCell]=useState(38);
+    const [fs,setFs]=useState(false);
 
     const [running,setRunning]=useState(true);
     const [mouse,setMouse]=useState({x:1,y:1});
@@ -213,10 +220,47 @@
       setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
     },[obstacles,mouse]);
 
+    // fullscreen toggle & lifecycle
+    const toggleFS=useCallback(async()=>{
+      if(!fs){
+        try{
+          const panel=wrapRef.current?.closest('.cy-panel');
+          const target=panel||document.documentElement;
+          if(target.requestFullscreen){ await target.requestFullscreen(); }
+          else if(target.webkitRequestFullscreen){ target.webkitRequestFullscreen(); }
+        }catch(_){ }
+        document.body.classList.add('fs-game');
+        setFs(true);
+      }else{
+        try{ if(document.fullscreenElement){ await document.exitFullscreen?.(); } }catch(_){ }
+        document.body.classList.remove('fs-game');
+        setFs(false);
+      }
+      setTimeout(()=>window.dispatchEvent(new Event('resize')),0);
+    },[fs]);
+
+    useEffect(()=>()=>{ document.body.classList.remove('fs-game'); setFs(false); },[]);
+    useEffect(()=>{
+      const handler=()=>{ const active=!!document.fullscreenElement; if(!active && fs){ document.body.classList.remove('fs-game'); setFs(false); } window.requestAnimationFrame(()=>window.dispatchEvent(new Event('resize'))); };
+      document.addEventListener('fullscreenchange',handler);
+      return ()=>document.removeEventListener('fullscreenchange',handler);
+    },[fs]);
+
     // Fit grid to visible viewport (WebView-safe)
     useEffect(()=>{
       const fit=()=>{
         const el=wrapRef.current; if(!el) return;
+        // fullscreen branch uses whole visual viewport
+        if(document.body.classList.contains('fs-game')){
+          const vv=window.visualViewport; const vw=Math.floor(vv?.width ?? window.innerWidth); const vh=Math.floor(vv?.height ?? window.innerHeight);
+          const contentW=Math.max(220, vw - 16); // margins
+          const availableH=Math.max(220, vh - 16);
+          const size=Math.max(18, Math.min(contentW/18, availableH/12));
+          el.style.width=(size*18)+'px';
+          el.style.height=(size*12)+'px';
+          setCell(size);
+          return;
+        }
         const panel=el.closest('.cy-panel')||el.parentElement||document.body;
         const cs=getComputedStyle(panel);
         const padL=parseFloat(cs.paddingLeft)||0;
@@ -230,7 +274,7 @@
         const availableH=Math.max(220, Math.floor(vh - (rect.top + padT) - navH - 12));
         const unitW=contentW/18; // COLS
         const unitH=availableH/12; // ROWS
-        const size=Math.max(16, Math.min(unitW, unitH)); // allow float cell size to avoid truncation
+        const size=Math.max(16, Math.min(unitW, unitH));
         const w=size*18, h=size*12;
         el.style.width=w+'px';
         el.style.height=h+'px';
@@ -243,7 +287,7 @@
       window.addEventListener('orientationchange',onResize);
       const vv=window.visualViewport; vv?.addEventListener('resize',onResize); vv?.addEventListener('scroll',onResize);
       return ()=>{ ro.disconnect(); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); };
-    },[]);
+    },[fs]);
 
     // Tap steering (← ↑ → ↓)
     useEffect(()=>{
@@ -299,7 +343,7 @@
 
     return (
       <div className="cy-panel">
-        <div className="row"><div className="cy-title">Mouse & Cheese</div><Btn onClick={onBack}>Menu</Btn></div>
+        {!fs && <div className="row"><div className="cy-title">Mouse & Cheese</div><div className="card-row"><Btn onClick={toggleFS}>Fullscreen</Btn><Btn onClick={onBack}>Menu</Btn></div></div>}
         <div ref={wrapRef} className="arena">
           <div className="lives">{livesMask}</div>
           {grid.map(c=> (
@@ -311,11 +355,12 @@
             <div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:24}}>{o.em}</div>
           ))}
           {!running && <div className="gameover">Game Over</div>}
+          {fs && <div className="fs-hud"><Btn onClick={toggleFS}>Exit</Btn><Btn onClick={onBack}>Menu</Btn></div>}
         </div>
-        <div className="row" style={{marginTop:10,justifyContent:'space-between'}}>
+        {!fs && <div className="row" style={{marginTop:10,justifyContent:'space-between'}}>
           <Btn onClick={()=>{ const obs=genObs(); setObstacles(obs); const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1); const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y}); setRunning(true); }}>Restart</Btn>
           <div className="subtitle">Tap to steer (← ↑ → ↓). Eat cheese — word speaks.</div>
-        </div>
+        </div>}
       </div>
     );
   }
