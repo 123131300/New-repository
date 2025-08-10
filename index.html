@@ -70,7 +70,7 @@
     .stat{background:var(--chip);border-radius:14px;padding:12px 14px;margin-top:8px}
 
     /* GAME */
-    .arena{aspect-ratio:16/9;background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%;box-sizing:content-box}
+    .arena{background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;width:100%;height:auto;flex:0 0 auto}
     .cell{position:absolute;border:1px solid rgba(0,0,0,.04)}
     .sprite{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))}
     .lives{position:absolute;top:10px;right:16px;font-size:20px}
@@ -196,7 +196,6 @@
     const COLS=18, ROWS=12, SPEED=280, MAX_LIVES=3;
     const wrapRef=useRef(null);
     const rafRef=useRef(0), lastRef=useRef(0), accRef=useRef(0);
-    const collideRef=useRef(false);
     const [cell,setCell]=useState(38);
 
     const [running,setRunning]=useState(true);
@@ -223,42 +222,27 @@
         const padL=parseFloat(cs.paddingLeft)||0;
         const padR=parseFloat(cs.paddingRight)||0;
         const padT=parseFloat(cs.paddingTop)||0;
-        const padB=parseFloat(cs.paddingBottom)||0;
-        const borderT=parseFloat(cs.borderTopWidth)||0;
-        const borderB=parseFloat(cs.borderBottomWidth)||0;
-        const rect=panel.getBoundingClientRect();
-        // inner content width of the panel (exclude paddings & borders via clientWidth)
         const contentW=Math.max(220, Math.floor(panel.clientWidth - padL - padR));
-        const vp=window.visualViewport; 
-        const vh = vp ? Math.floor(vp.height) : window.innerHeight;
+        const rect=panel.getBoundingClientRect();
+        const vh=Math.floor((window.visualViewport?.height ?? window.innerHeight));
         const nav=document.querySelector('.cy-foot');
         const navH=(nav && nav.offsetParent)? Math.floor(nav.getBoundingClientRect().height)+12 : 0;
-        // Y of content box top
-        const contentTop = rect.top + borderT + padT;
-        // account for visual viewport scroll offset
-        const vTop = vp ? Math.floor(vp.offsetTop||0) : Math.floor(window.scrollY||0);
-        const visibleBottom = vTop + vh;
-        // available height inside panel content, minus bottom nav and bottom padding+border
-        const availableH=Math.max(160, Math.floor(visibleBottom - contentTop - navH - padB - borderB - 12));
-        // add arena borders so padding-box equals grid
-        const es=getComputedStyle(el);
-        const bW=(parseFloat(es.borderLeftWidth)||0)+(parseFloat(es.borderRightWidth)||0);
-        const bH=(parseFloat(es.borderTopWidth)||0)+(parseFloat(es.borderBottomWidth)||0);
-        const sizeW=Math.floor((contentW - bW)/18); // COLS
-        const sizeH=Math.floor((availableH - bH)/12); // ROWS
-        const size=Math.max(24, Math.min(sizeW,sizeH));
-        el.style.width=(size*18 + bW)+'px';
-        el.style.height=(size*12 + bH)+'px';
+        const availableH=Math.max(220, Math.floor(vh - (rect.top + padT) - navH - 12));
+        const unitW=contentW/18; // COLS
+        const unitH=availableH/12; // ROWS
+        const size=Math.max(16, Math.min(unitW, unitH)); // allow float cell size to avoid truncation
+        const w=size*18, h=size*12;
+        el.style.width=w+'px';
+        el.style.height=h+'px';
         setCell(size);
       };
       const onResize=()=>window.requestAnimationFrame(fit);
       fit();
-      const ro = window.ResizeObserver ? new ResizeObserver(onResize) : null;
-      ro?.observe(document.body);
+      const ro=new ResizeObserver(onResize); ro.observe(document.body);
       window.addEventListener('resize',onResize);
       window.addEventListener('orientationchange',onResize);
       const vv=window.visualViewport; vv?.addEventListener('resize',onResize); vv?.addEventListener('scroll',onResize);
-      return ()=>{ ro?.disconnect(); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); };
+      return ()=>{ ro.disconnect(); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); };
     },[]);
 
     // Tap steering (← ↑ → ↓)
@@ -281,32 +265,25 @@
       const step=t=>{
         accRef.current+=t-lastRef.current; lastRef.current=t;
         while(accRef.current>=SPEED){
-          collideRef.current=false;
           setMouse(prev=>{
             let nx=prev.x+dir.x, ny=prev.y+dir.y;
-            if(nx<0||ny<0||nx>=COLS||ny>=ROWS){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; }
-            if(obstacles.some(o=>o.x===nx && o.y===ny)){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; }
+            if(nx<0||ny<0||nx>=COLS||ny>=ROWS){ setLives(v=>Math.max(0,v-1)); return prev; }
+            if(obstacles.some(o=>o.x===nx && o.y===ny)){ setLives(v=>Math.max(0,v-1)); return prev; }
             if(nx===cheese.x && ny===cheese.y){
-              const c=randomFreeCell(obstacles,{x:nx,y:ny},COLS,ROWS,1);
-              setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
+              spawnCheese();
               setLives(v=>clamp(v+1,0,MAX_LIVES));
               setScale(s=>Math.min(1.8,s+0.08));
               onEat && onEat(word);
             }
             return {x:nx,y:ny};
           });
-          if(collideRef.current){
-            accRef.current=0;
-            setDir({x:0,y:0});
-            break;
-          }
           accRef.current-=SPEED;
         }
         rafRef.current=requestAnimationFrame(step);
       };
       rafRef.current=requestAnimationFrame(step);
       return ()=>cancelAnimationFrame(rafRef.current);
-    },[dir,cheese,obstacles,running,word,onEat]);
+    },[dir,cheese,obstacles,running,word,spawnCheese,onEat]);
 
     useEffect(()=>{ if(lives<=0){ setRunning(false); } },[lives]);
 
@@ -320,25 +297,18 @@
     const grid=Array.from({length:COLS*ROWS},(_,i)=>({x:i%COLS,y:Math.floor(i/COLS)}));
     const livesMask=heartsMask(lives,MAX_LIVES);
 
-    // ensure visuals fit within a cell to avoid clipping near edges
-    const emojiSize = Math.floor(Math.min(cell*0.8, 28));
-    const cheeseSize = Math.floor(Math.min(cell*0.75, 26));
-    const obstacleSize = Math.floor(Math.min(cell*0.7, 24));
-    const scaleMax = (cell*0.95)/Math.max(1, emojiSize);
-    const effScale = Math.min(scale, scaleMax);
-
     return (
       <div className="cy-panel">
         <div className="row"><div className="cy-title">Mouse & Cheese</div><Btn onClick={onBack}>Menu</Btn></div>
-        <div ref={wrapRef} className="arena" style={{aspectRatio:`${COLS}/${ROWS}`}}>
+        <div ref={wrapRef} className="arena">
           <div className="lives">{livesMask}</div>
           {grid.map(c=> (
             <div key={`${c.x}-${c.y}`} className="cell" style={{left:c.x*cell,top:c.y*cell,width:cell,height:cell}}></div>
           ))}
-          {running && <div className="sprite" style={{left:(mouse.x+.5)*cell, top:(mouse.y+.5)*cell, fontSize:emojiSize, transform:`translate(-50%,-50%) scale(${effScale})`}}>🐭</div>}
-          <div className="sprite" style={{left:(cheese.x+.5)*cell, top:(cheese.y+.5)*cell, fontSize:cheeseSize}}>🧀</div>
+          {running && <div className="sprite" style={{left:(mouse.x+.5)*cell, top:(mouse.y+.5)*cell, fontSize:28, transform:`translate(-50%,-50%) scale(${scale})`}}>🐭</div>}
+          <div className="sprite" style={{left:(cheese.x+.5)*cell, top:(cheese.y+.5)*cell, fontSize:26}}>🧀</div>
           {obstacles.map((o,i)=> (
-            <div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:obstacleSize}}>{o.em}</div>
+            <div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:24}}>{o.em}</div>
           ))}
           {!running && <div className="gameover">Game Over</div>}
         </div>
@@ -408,7 +378,7 @@
     const [voices,setVoices]=useState([]); const [lang,setLang]=useState(audio.voicePref||'en-US'); const [voiceId,setVoiceId]=useState(audio.voiceId||''); const [json,setJson]=useState(''); const fileRef=useRef();
     useEffect(()=>{ const update=()=>{ const v=window?.speechSynthesis?.getVoices?.()||[]; setVoices(v); }; update(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',update);}catch(_){ } return ()=>{ try{window?.speechSynthesis?.removeEventListener?.('voiceschanged',update);}catch(_){ } }; },[]);
     const voicesByLang=voices.filter(v=>v.lang===lang);
-    useEffect(()=>{ if(voicesByLang.length && !voiceId){ setVoiceId(voicesByLang[0].name+'|'+voicesByLang[0].lang); } },[lang,voicesByLang,voiceId]);
+    useEffect(()=>{ if(voicesByLang.length&&!voiceId){ setVoiceId(voicesByLang[0].name+'|'+voicesByLang[0].lang); } },[lang,voicesByLang.length]);
     const saveVoice=()=>{ audio.setVoiceLang(lang); audio.setVoiceById(voiceId); alert('Voice saved'); };
     const importPackJSON=()=>{ try{ const arr=JSON.parse(json); if(!Array.isArray(arr)) throw 0; const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert('Pack imported.'); setJson(''); } catch(_){ alert('JSON must be an array of {en,ru}'); } };
     const importCSV=text=>{ const arr=parseCSV(text); const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert(`CSV imported: +${arr.length} words.`); };
