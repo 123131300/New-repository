@@ -71,7 +71,7 @@
     .stat{background:var(--chip);border-radius:14px;padding:12px 14px;margin-top:8px}
 
     /* GAME */
-    .arena{background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%}
+    .arena{background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%;z-index:1}
     .cell{position:absolute;border:1px solid rgba(0,0,0,.04)}
     .sprite{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))}
     .lives{position:absolute;top:10px;right:16px;font-size:20px}
@@ -129,7 +129,7 @@
 
     /* === FULLSCREEN OVERLAY === */
     .fs-overlay{position:fixed;inset:0;padding: max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left)); background:var(--cy-bg); z-index:9999;display:flex;align-items:center;justify-content:center}
-    .fs-header{position:absolute;left: max(12px, env(safe-area-inset-left)); top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px}
+    .fs-header{position:absolute;left: max(12px, env(safe-area-inset-left)); top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px; z-index:3}
 
     @media (max-width:720px){
       .quiz-word,.big,.cy-big{font-size:44px}
@@ -195,12 +195,15 @@
     return {cols,rows};
   }
 
+  // Speed utilities (pure)
+  function nextStepMs(cur, min=140){ return Math.max(min, Math.round(cur*0.95)); }
+
   // ========= AudioManager =========
   class AudioManager{ constructor(){ this.queue=Promise.resolve(); this.voicePref=(typeof localStorage!=='undefined'&&localStorage.getItem('voicePref'))||'en-US'; this.voiceId=(typeof localStorage!=='undefined'&&localStorage.getItem('voiceId'))||''; this.voices=[]; this._loadVoices(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',()=>this._loadVoices());}catch(_){} } _loadVoices(){ try{ this.voices=window?.speechSynthesis?.getVoices?.()||[];}catch(_){this.voices=[];} } getVoice(){ const byId=this.voices.find(v=>(v.name+'|'+v.lang)===this.voiceId); if(byId) return byId; return this.voices.find(v=>v.lang===this.voicePref)||this.voices.find(v=>v.lang?.startsWith('en'))||null; } setVoiceLang(lang){ this.voicePref=lang; try{localStorage.setItem('voicePref',lang);}catch(_){}} setVoiceById(id){ this.voiceId=id; try{localStorage.setItem('voiceId',id);}catch(_){}} speak(text,{lang}={}){ if(!window?.speechSynthesis||!window?.SpeechSynthesisUtterance) return Promise.resolve(); const u=new SpeechSynthesisUtterance(text); const v=this.getVoice(); u.lang=lang||v?.lang||this.voicePref||'en-US'; if(v) u.voice=v; u.rate=0.95; return this._enqueue(u);} _enqueue(utter){ this.queue=this.queue.finally(()=>new Promise(res=>{ try{window?.speechSynthesis?.cancel();}catch(_){ } utter.onend=()=>res(); try{window?.speechSynthesis?.speak?.(utter);}catch(_){res();} })); return this.queue; } }
   const audio=new AudioManager();
 
   function similarity(a,b){ a=(a||'').toLowerCase(); b=(b||'').toLowerCase(); if(!a||!b) return 0; const m=Math.max(a.length,b.length); let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===b[i]) s++; } return Math.round((s/m)*100); }
-  function parseCSV(text){ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; const splitter=new RegExp(`${sep}(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)`); for(let i=start;i<lines.length;i++){ const cols=lines[i].split(splitter).map(s=>s.replace(/^\"|\"$/g,'').trim()); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
+  function parseCSV(text){ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; const splitter=new RegExp(`${sep}(?=(?:[^\\"]*\\"[^\\"]*\\")*[^\\"]*$)`); for(let i=start;i<lines.length;i++){ const cols=lines[i].split(splitter).map(s=>s.replace(/^\"|\"$/g,'').trim()); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
   function genObstacles(COLS,ROWS,K=6){ const pool=['🌵','🪵','🪨','🕳️','🧊']; const used=new Set(); const a=[]; while(a.length<K){ const x=1+rand(COLS-2), y=1+rand(ROWS-2); const k=`${x},${y}`; if(used.has(k)) continue; used.add(k); a.push({x,y,em:pool[rand(pool.length)]}); } return a; }
   function isValidIcon(u){ return typeof u==='string' && (u.startsWith('data:image/') || u.startsWith('http://') || u.startsWith('https://')); }
 
@@ -211,7 +214,7 @@
 
   // ===== Game =====
   function Game({onBack,word,onEat,fs,setFs}){
-    const BASE={COLS:18,ROWS:12}, SPEED=280, MAX_LIVES=3;
+    const BASE={COLS:18,ROWS:12}, SPEED=280, MIN_SPEED=140, MAX_LIVES=3;
     const wrapRef=useRef(null);
     const rafRef=useRef(0), lastRef=useRef(0), accRef=useRef(0);
     const collideRef=useRef(false);
@@ -227,6 +230,10 @@
     const [dir,setDir]=useState({x:1,y:0});
     const [lives,setLives]=useState(MAX_LIVES);
     const [scale,setScale]=useState(1);
+
+    // variable step time (speed)
+    const [stepMs,setStepMs]=useState(SPEED);
+    const stepRef=useRef(SPEED);
 
     const genObs=useCallback((c,r)=>genObstacles(c,r,6),[]);
     const [obstacles,setObstacles]=useState(()=>genObs(COLS,ROWS));
@@ -288,6 +295,7 @@
       setObstacles(obs);
       const start={x:1,y:1};
       setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1);
+      setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0;
       const c=randomFreeCell(obs,start,COLS,ROWS,1);
       setCheese({x:c.x,y:c.y});
     },[COLS,ROWS,genObs]);
@@ -305,13 +313,13 @@
       return ()=>{ el.removeEventListener('pointerdown',onPtr); };
     },[mouse,cell]);
 
-    // Game loop (rAF, fixed step)
+    // Game loop (rAF, fixed step with variable speed)
     useEffect(()=>{
       if(!running) return;
       lastRef.current=performance.now();
       const step=t=>{
         accRef.current+=t-lastRef.current; lastRef.current=t;
-        while(accRef.current>=SPEED){
+        while(accRef.current>=stepRef.current){
           collideRef.current=false;
           setMouse(prev=>{
             let nx=prev.x+dir.x, ny=prev.y+dir.y;
@@ -322,6 +330,8 @@
               setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
               setLives(v=>clamp(v+1,0,MAX_LIVES));
               setScale(s=>Math.min(1.8,s+0.08));
+              // speed up a bit each time
+              setStepMs(s=>{ const ns=nextStepMs(s,MIN_SPEED); stepRef.current=ns; return ns; });
               onEat && onEat(word);
             }
             return {x:nx,y:ny};
@@ -331,7 +341,7 @@
             setDir({x:0,y:0});
             break;
           }
-          accRef.current-=SPEED;
+          accRef.current-=stepRef.current;
         }
         rafRef.current=requestAnimationFrame(step);
       };
@@ -351,6 +361,14 @@
     const grid=useMemo(()=>Array.from({length:COLS*ROWS},(_,i)=>({x:i%COLS,y:Math.floor(i/COLS)})),[COLS,ROWS]);
     const livesMask=heartsMask(lives,MAX_LIVES);
 
+    const restart=useCallback(()=>{
+      const obs=genObs(COLS,ROWS); setObstacles(obs);
+      const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1);
+      setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0;
+      const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y});
+      setRunning(true);
+    },[COLS,ROWS,genObs]);
+
     const headerBtns=(
       <div className="row"><div className="cy-title">Mouse & Cheese</div>
         {!fs && <Btn onClick={()=>setFs(true)} variant="grad">Fullscreen</Btn>}
@@ -369,7 +387,16 @@
         {obstacles.map((o,i)=> (
           <div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:24}}>{o.em}</div>
         ))}
-        {!running && <div className="gameover">Game Over</div>}
+        {!running && <div className="gameover" role="alert">
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:32,fontWeight:800,marginBottom:12}}>Game Over</div>
+            <div className="card-row" style={{justifyContent:'center'}}>
+              <Btn variant="ok" onClick={restart}>Try again</Btn>
+              <Btn onClick={onBack}>Menu</Btn>
+              {fs && <Btn onClick={()=>setFs(false)}>Exit FS</Btn>}
+            </div>
+          </div>
+        </div>}
       </div>
     );
 
@@ -390,7 +417,7 @@
         {headerBtns}
         {arena}
         <div className="row" style={{marginTop:10,justifyContent:'space-between'}}>
-          <Btn onClick={()=>{ const obs=genObs(COLS,ROWS); setObstacles(obs); const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1); const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y}); setRunning(true); }}>Restart</Btn>
+          <Btn onClick={restart}>Restart</Btn>
           <div className="subtitle">Tap to steer (← ↑ → ↓). Eat cheese — word speaks.</div>
         </div>
       </div>
@@ -643,7 +670,7 @@
   ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
   // ===== Self-checks (unit-style) =====
-  window.__MNC__={clamp, similarity, parseCSV, AudioManager, randomFreeCell, heartsMask, dirFromTap, computeGridDims};
+  window.__MNC__={clamp, similarity, parseCSV, AudioManager, randomFreeCell, heartsMask, dirFromTap, computeGridDims, nextStepMs};
   try{
     console.assert(clamp(-1,0,10)===0,'clamp low');
     console.assert(clamp(11,0,10)===10,'clamp high');
@@ -670,6 +697,10 @@
     const dLandscape=computeGridDims(1024,600); console.assert(dLandscape.cols>dLandscape.rows,'landscape cols dominate');
     const asp=(w,h)=>w/h; const near=(a,b)=>Math.abs(a-b)<0.35; // not too strict due to clamping
     console.assert(near(dPortrait.cols/dPortrait.rows, asp(375,740)),'portrait aspect approx');
+
+    // NEW: speed-up tests
+    console.assert(nextStepMs(280)<=280 && nextStepMs(280)>=140,'speed decreases but not below min');
+    console.assert(nextStepMs(150,140)>=140,'min clamp');
 
     // DOM-size sanity check after mount
     setTimeout(()=>{ const el=document.querySelector('.arena'); if(el){ const sw=parseInt(el.style.width)||0; const sh=parseInt(el.style.height)||0; console.assert(sw>0&&sh>0,'arena sized'); } }, 120);
