@@ -7,43 +7,96 @@
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    :root{ --bg1:#f6f8fc;--bg2:#eef1f7;--panel:#ffffff;--ink:#111827;--muted:#5b6575;--ring:#e5e9f2; --accent1:#5865f2;--accent2:#7c3aed;--ok:#10b981;--warn:#f59e0b;--err:#ef4444; --chip:#f4f6fb;--shadow:0 10px 30px rgba(16,24,40,.08); --radius:18px;--rsm:12px; --cy-bg:#0c0f19;--cy-ink:#e9fffb;--cy-muted:#7ad7c7;--cy-yellow:#ffd800;--cy-cyan:#18ffe3; --cy-tile:#0f1423;--cy-border:#1d2440;--cy-glow:0 0 10px rgba(24,255,227,.35),0 0 28px rgba(255,216,0,.25);} 
-    body.dark{ --bg1:#0b0e1a;--bg2:#0f1220;--panel:#151a33;--ink:#e9ecfb;--muted:#b6bfd8;--ring:#2a2f55; --accent1:#7c3aed;--accent2:#5865f2;--chip:#1a1f3f;--shadow:0 10px 30px rgba(0,0,0,.35); --cy-bg:#0c0f19;--cy-ink:#e9fffb;--cy-muted:#7ad7c7;--cy-yellow:#ffd800;--cy-cyan:#18ffe3; --cy-tile:#0f1423;--cy-border:#1d2440;--cy-glow:0 0 10px rgba(24,255,227,.35),0 0 28px rgba(255,216,0,.25);} 
-    body:not(.dark){ --cy-bg:#eefaf8;--cy-ink:#0b1320;--cy-muted:#2f7a6d;--cy-yellow:#d7a800;--cy-cyan:#09cbb7; --cy-tile:#ffffff;--cy-border:#cfe8e4;--cy-glow:0 0 8px rgba(9,203,183,.18),0 0 18px rgba(215,168,0,.12);} 
-    *{box-sizing:border-box} html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:linear-gradient(180deg,var(--bg1),var(--bg2));overflow-x:hidden}
+    :root{--bg1:#f6f8fc;--bg2:#eef1f7;--panel:#ffffff;--ink:#111827;--muted:#5b6575;--ring:#e5e9f2;--accent1:#5865f2;--accent2:#7c3aed;--ok:#10b981;--warn:#f59e0b;--err:#ef4444;--chip:#f4f6fb;--shadow:0 10px 30px rgba(16,24,40,.08);--radius:18px;--rsm:12px;--cy-bg:#0c0f19;--cy-ink:#e9fffb;--cy-muted:#7ad7c7;--cy-yellow:#ffd800;--cy-cyan:#18ffe3;--cy-tile:#0f1423;--cy-border:#1d2440;--cy-glow:0 0 10px rgba(24,255,227,.35),0 0 28px rgba(255,216,0,.25)}
+    body.dark{--bg1:#0b0e1a;--bg2:#0f1220;--panel:#151a33;--ink:#e9ecfb;--muted:#b6bfd8;--ring:#2a2f55;--accent1:#7c3aed;--accent2:#5865f2;--chip:#1a1f3f;--shadow:0 10px 30px rgba(0,0,0,.35);--cy-bg:#0c0f19;--cy-ink:#e9fffb;--cy-muted:#7ad7c7;--cy-yellow:#ffd800;--cy-cyan:#18ffe3;--cy-tile:#0f1423;--cy-border:#1d2440;--cy-glow:0 0 10px rgba(24,255,227,.35),0 0 28px rgba(255,216,0,.25)}
+    body:not(.dark){--cy-bg:#eefaf8;--cy-ink:#0b1320;--cy-muted:#2f7a6d;--cy-yellow:#d7a800;--cy-cyan:#09cbb7;--cy-tile:#ffffff;--cy-border:#cfe8e4;--cy-glow:0 0 8px rgba(9,203,183,.18),0 0 18px rgba(215,168,0,.12)}
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:linear-gradient(180deg,var(--bg1),var(--bg2));overflow-x:hidden}
     #root{min-height:100vh;display:flex;justify-content:center;padding:18px}
     .wrap{width:min(1100px,100%);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
-    body.no-foot .wrap{padding-bottom: env(safe-area-inset-bottom)} body.fs{overflow:hidden}
+    body.no-foot .wrap{padding-bottom: env(safe-area-inset-bottom)}
+    body.fs{overflow:hidden}
+
     h1{margin:0 0 14px;display:flex;align-items:center;gap:10px;font-size:28px}
     .topbar{display:flex;gap:10px;justify-content:flex-end}
     .btn{appearance:none;border:1px solid var(--cy-border);background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));color:var(--cy-ink);border-radius:999px;padding:10px 18px;font-weight:700;letter-spacing:.3px;font-family:'Rajdhani',system-ui;box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease, box-shadow .12s ease}
-    .btn:active{transform:translateY(1px)} .btn--grad{color:#0b1320;background:linear-gradient(90deg,var(--cy-yellow),var(--cy-cyan));border-color:transparent;box-shadow:var(--cy-glow)} .btn--ok{color:#0b1320;background:linear-gradient(90deg,#10b981,#22d3ee);border-color:transparent;box-shadow:var(--cy-glow)} .btn--ghost{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));color:var(--cy-ink)}
+    .btn:active{transform:translateY(1px)}
+    .btn--grad{color:#0b1320;background:linear-gradient(90deg,var(--cy-yellow),var(--cy-cyan));border-color:transparent;box-shadow:var(--cy-glow)}
+    .btn--ok{color:#0b1320;background:linear-gradient(90deg,#10b981,#22d3ee);border-color:transparent;box-shadow:var(--cy-glow)}
+    .btn--ghost{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));color:var(--cy-ink)}
     .panel{background:var(--panel);box-shadow:var(--shadow);border-radius:var(--radius);padding:22px;margin:18px 0}
     .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-    .metric{background:var(--chip);border-radius:16px;padding:12px;text-align:center} .metric b{font-size:22px}
+    .metric{background:var(--chip);border-radius:16px;padding:12px;text-align:center}
+    .metric b{font-size:22px}
     .row{display:flex;align-items:center;justify-content:space-between;gap:14px}
-    .title{font-size:22px;font-weight:800;margin:0 0 12px} .title-sm{font-size:16px;font-weight:800;margin:0 0 8px;color:var(--muted)} .subtitle{color:var(--muted);margin:6px 0 0} .card-row{display:flex;gap:12px;flex-wrap:wrap} .pill{background:var(--chip);border-radius:999px;padding:10px 16px} .cta{padding:12px 18px;border-radius:14px}
+    .title{font-size:22px;font-weight:800;margin:0 0 12px}
+    .title-sm{font-size:16px;font-weight:800;margin:0 0 8px;color:var(--muted)}
+    .subtitle{color:var(--muted);margin:6px 0 0}
+    .card-row{display:flex;gap:12px;flex-wrap:wrap}
+    .pill{background:var(--chip);border-radius:999px;padding:10px 16px}
+    .cta{padding:12px 18px;border-radius:14px}
+
     .quiz-word{font-size:64px;font-weight:900;margin:8px 0 16px;color:var(--cy-ink);font-family:'Orbitron',system-ui}
-    .ans{padding:16px 18px;border-radius:14px;border:1px solid var(--cy-border);background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.03));color:var(--cy-ink);cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease, background .12s ease; font-family:'Rajdhani',system-ui; font-weight:700}
-    .ans:active{transform:translateY(1px)} .ans.ok{background:#d1fae5;border-color:#34d399} .ans.bad{background:#fee2e2;border-color:#fca5a1}
+    .ans{padding:16px 18px;border-radius:14px;border:1px solid var(--cy-border);background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.03));color:var(--cy-ink);cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease, background .12s ease;font-family:'Rajdhani',system-ui;font-weight:700}
+    .ans:active{transform:translateY(1px)}
+    .ans.ok{background:#d1fae5;border-color:#34d399}
+    .ans.bad{background:#fee2e2;border-color:#fca5a1}
+
     .big{font-size:64px;font-weight:900;margin:8px 0 6px}
-    .cy-ru{margin-top:6px;font-family:'Rajdhani',system-ui;font-weight:700;font-size:26px;color:var(--cy-yellow);text-shadow:0 0 10px rgba(255,216,0,.25)} .stat{background:var(--chip);border-radius:14px;padding:12px 14px;margin-top:8px}
-    .arena{background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%;z-index:1} .cell{position:absolute;border:1px solid rgba(0,0,0,.04)} .sprite{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))} .lives{position:absolute;top:10px;right:16px;font-size:20px} .gameover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:28px;color:#111827;background:rgba(255,255,255,.65);backdrop-filter:saturate(1.2) blur(2px)}
-    .progress{height:10px;border-radius:999px;background:#eef2f7;overflow:hidden} .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2));width:0}
+    .cy-ru{margin-top:6px;font-family:'Rajdhani',system-ui;font-weight:700;font-size:26px;color:var(--cy-yellow);text-shadow:0 0 10px rgba(255,216,0,.25)}
+    .stat{background:var(--chip);border-radius:14px;padding:12px 14px;margin-top:8px}
+
+    .arena{background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%;z-index:1}
+    .cell{position:absolute;border:1px solid rgba(0,0,0,.04)}
+    .sprite{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))}
+    .lives{position:absolute;top:10px;right:16px;font-size:20px}
+    .gameover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:28px;color:#111827;background:rgba(255,255,255,.65);backdrop-filter:saturate(1.2) blur(2px)}
+
+    .progress{height:10px;border-radius:999px;background:#eef2f7;overflow:hidden}
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2));width:0}
+
     .cyber{background:radial-gradient(1200px 600px at 10% -10%, rgba(24,255,227,.06), transparent 60%), radial-gradient(1000px 600px at 100% 0, rgba(255,216,0,.06), transparent 60%), var(--cy-bg); color:var(--cy-ink); border-radius:22px; padding:18px; box-shadow:0 12px 50px rgba(0,0,0,.35); border:1px solid var(--cy-border); max-width:100%; overflow:hidden}
     .cy-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .cy-logo{display:flex;align-items:center;gap:10px;font-family:'Orbitron',system-ui;font-weight:800;letter-spacing:.5px;font-size:20px} .cy-logo i{display:none} .cy-logo svg{width:36px;height:36px;filter:drop-shadow(0 0 10px rgba(24,255,227,.6))}
+    .cy-logo{display:flex;align-items:center;gap:10px;font-family:'Orbitron',system-ui;font-weight:800;letter-spacing:.5px;font-size:20px}
+    .cy-logo svg{width:36px;height:36px;filter:drop-shadow(0 0 10px rgba(24,255,227,.6))}
     .cy-head .btn{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));color:var(--cy-ink);border:1px solid var(--cy-border)}
-    .cy-goal{padding:16px;border-radius:16px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.05));border:1px solid var(--cy-border);box-shadow:var(--cy-glow)} .cy-goal h2{margin:0;font-family:'Orbitron',system-ui;font-size:22px;color:var(--cy-cyan)} .cy-goal .sub{margin-top:6px;color:var(--cy-muted)} .cy-goal .bar{margin-top:10px;height:12px;border-radius:999px;background:rgba(12,17,32,.25);border:1px solid var(--cy-border);overflow:hidden} .cy-goal .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy-yellow),var(--cy-cyan));width:0;box-shadow:var(--cy-glow);transition:width .6s ease}
-    .cy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px} .cy-tile{background:var(--cy-tile);border:1px solid var(--cy-border);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--cy-glow)} .cy-tile b{font-family:'Orbitron',system-ui;font-size:26px;color:var(--cy-yellow);display:block} .cy-tile span{color:var(--cy-muted);font-weight:700;letter-spacing:.6px}
+
+    .cy-goal{padding:16px;border-radius:16px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.05));border:1px solid var(--cy-border);box-shadow:var(--cy-glow)}
+    .cy-goal h2{margin:0;font-family:'Orbitron',system-ui;font-size:22px;color:var(--cy-cyan)}
+    .cy-goal .sub{margin-top:6px;color:var(--cy-muted)}
+    .cy-goal .bar{margin-top:10px;height:12px;border-radius:999px;background:rgba(12,17,32,.25);border:1px solid var(--cy-border);overflow:hidden}
+    .cy-goal .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy-yellow),var(--cy-cyan));width:0;box-shadow:var(--cy-glow);transition:width .6s ease}
+
+    .cy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
+    .cy-tile{background:var(--cy-tile);border:1px solid var(--cy-border);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--cy-glow)}
+    .cy-tile b{font-family:'Orbitron',system-ui;font-size:26px;color:var(--cy-yellow);display:block}
+    .cy-tile span{color:var(--cy-muted);font-weight:700;letter-spacing:.6px}
+
     .cy-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
-    .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px;padding-bottom: env(safe-area-inset-bottom)} .cy-foot .cy-foot-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);color:var(--cy-cyan);box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease} .cy-foot .cy-foot-btn:hover{transform:translateY(-1px)} .cy-foot .cy-foot-btn span{display:none} .cy-foot .cy-foot-btn svg{width:22px;height:22px;color:var(--cy-cyan);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round} .cy-btn{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);border-radius:18px;padding:16px 10px;cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease} .cy-btn:hover{transform:translateY(-1px)} .cy-btn svg{width:32px;height:32px;color:var(--cy-cyan);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))} .cy-btn span{color:var(--cy-ink);font-family:'Rajdhani',system-ui;font-weight:700;letter-spacing:.6px;opacity:.95}
-    .cy-icon-img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))} .cy-foot .cy-icon-img{width:22px;height:22px;filter:drop-shadow(0 0 6px rgba(24,255,227,.45))}
+
+    .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px;padding-bottom: env(safe-area-inset-bottom)}
+    .cy-foot .cy-foot-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);color:var(--cy-cyan);box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease}
+    .cy-foot .cy-foot-btn:hover{transform:translateY(-1px)}
+    .cy-foot .cy-foot-btn svg{width:22px;height:22px;color:var(--cy-cyan);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+    .cy-btn{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);border-radius:18px;padding:16px 10px;cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease}
+    .cy-btn:hover{transform:translateY(-1px)}
+    .cy-btn svg{width:32px;height:32px;color:var(--cy-cyan);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))}
+    .cy-btn span{color:var(--cy-ink);font-family:'Rajdhani',system-ui;font-weight:700;letter-spacing:.6px;opacity:.95}
+
+    .cy-icon-img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))}
+    .cy-foot .cy-icon-img{width:22px;height:22px;filter:drop-shadow(0 0 6px rgba(24,255,227,.45))}
+
     .cy-panel{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);box-shadow:var(--cy-glow);border-radius:18px;padding:18px;margin:18px 0;color:var(--cy-ink);max-width:100%;overflow:hidden}
-    .cy-title{font-family:'Orbitron',system-ui;font-weight:800;color:var(--cy-cyan);font-size:20px} .cy-sub{color:var(--cy-muted)} .cy-big{font-family:'Orbitron',system-ui;font-size:56px;color:var(--cy-ink);text-shadow:0 0 10px rgba(24,255,227,.18)} .cy-panel .stat{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));border:1px solid var(--cy-border);box-shadow:var(--cy-glow);color:var(--cy-ink)} .cy-panel select,.cy-panel textarea,.cy-panel input[type=file]{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));border:1px solid var(--cy-border);color:var(--cy-ink);border-radius:12px;box-shadow:var(--cy-glow)} .lives{color:#e9fffb;text-shadow:0 0 6px rgba(24,255,227,.4)} .cy-panel .subtitle{color:var(--cy-ink);opacity:.9}
-    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start} .cy-panel input[type=file]{width:100%}
-    .fs-overlay{position:fixed;inset:0;padding: max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left)); background:var(--cy-bg); z-index:9999;display:flex;align-items:center;justify-content:center} .fs-header{position:absolute;left: max(12px, env(safe-area-inset-left)); top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px; z-index:3}
-    @media (max-width:720px){ .quiz-word,.big,.cy-big{font-size:44px} .grid4{grid-template-columns:repeat(2,1fr)} .cy-grid{grid-template-columns:repeat(2,1fr)} .cy-actions{grid-template-columns:repeat(2,1fr)} .cy-foot{grid-template-columns:repeat(5,1fr)} }
+    .cy-title{font-family:'Orbitron',system-ui;font-weight:800;color:var(--cy-cyan);font-size:20px}
+    .cy-panel .stat{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));border:1px solid var(--cy-border);box-shadow:var(--cy-glow);color:var(--cy-ink)}
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start}
+    .cy-panel select,.cy-panel textarea,.cy-panel input[type=file]{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));border:1px solid var(--cy-border);color:var(--cy-ink);border-radius:12px;box-shadow:var(--cy-glow)}
+
+    .fs-overlay{position:fixed;inset:0;padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));background:var(--cy-bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+    .fs-header{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));display:flex;gap:10px;z-index:3}
+
+    @media (max-width:720px){.quiz-word,.big,.cy-big{font-size:44px}.grid4{grid-template-columns:repeat(2,1fr)}.cy-grid{grid-template-columns:repeat(2,1fr)}.cy-actions{grid-template-columns:repeat(2,1fr)}.cy-foot{grid-template-columns:repeat(5,1fr)}}
   </style>
 </head>
 <body>
@@ -52,23 +105,70 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script>(function(){function load(s){return new Promise(function(r){var e=document.createElement('script');e.src=s;e.crossOrigin='anonymous';e.onload=r;e.onerror=r;document.head.appendChild(e);});}(async function(){if(typeof React==='undefined'){await load('https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js');}if(typeof ReactDOM==='undefined'){await load('https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js');}if(typeof Babel==='undefined'){await load('https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js');}})();})();</script>
+  <script>(function(){function load(src){return new Promise(function(res){var s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=res;s.onerror=res;document.head.appendChild(s);});}(async function(){if(typeof React==='undefined'){await load('https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js');}if(typeof ReactDOM==='undefined'){await load('https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js');}if(typeof Babel==='undefined'){await load('https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js');}})();})();</script>
 
   <script type="text/babel">
   const {useState,useEffect,useRef,useMemo,useCallback,useLayoutEffect} = React;
 
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)); const rand=n=>Math.floor(Math.random()*n);
+  // ========= Helpers =========
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const rand=n=>Math.floor(Math.random()*n);
+  const uniq=(a)=>Array.from(new Set(a));
+
   function heartsMask(lives,max){ const s=Math.max(0,Math.min(max,Number.isFinite(lives)?lives:0)); return '❤'.repeat(s)+'🤍'.repeat(Math.max(0,max-s)); }
   function randomFreeCell(obstacles,mouse,COLS,ROWS,margin=0,rnd=Math.random){ const used=new Set((obstacles||[]).map(o=>`${o.x},${o.y}`)); if(mouse) used.add(`${mouse.x},${mouse.y}`); const minX=Math.max(0,Math.min(COLS-1,margin)), minY=Math.max(0,Math.min(ROWS-1,margin)); const maxX=Math.max(minX,COLS-1-margin), maxY=Math.max(minY,ROWS-1-margin); for(let t=0;t<200;t++){ const x=minX+Math.floor(rnd()*((maxX-minX)+1)); const y=minY+Math.floor(rnd()*((maxY-minY)+1)); const k=`${x},${y}`; if(!used.has(k)) return {x,y}; } for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){ const k=`${x},${y}`; if(!used.has(k)) return {x,y}; } return {x:minX,y:minY}; }
-  function dirFromTap(mouse,tap,cell){ const mx=(mouse.x+0.5)*cell, my=(mouse.y+0.5)*cell; const dx=tap.x-mx, dy=tap.y-my; return (Math.abs(dx)>Math.abs(dy))?{x:dx>0?1:-1,y:0}:{x:0,y:dy>0?1:-1}; }
+  function dirFromTap(mouse, tap, cell){ const mx=(mouse.x+0.5)*cell, my=(mouse.y+0.5)*cell; const dx=tap.x-mx, dy=tap.y-my; return (Math.abs(dx)>Math.abs(dy)) ? {x:dx>0?1:-1,y:0} : {x:0,y:dy>0?1:-1}; }
   function computeGridDims(w,h,baseArea=216,min=8,max=36){ const r=Math.max(0.3, Math.min(3, w/Math.max(1,h))); let rows=Math.round(Math.sqrt(baseArea/ r)); let cols=Math.round(r*rows); rows=clamp(rows,min,max); cols=clamp(cols,min,max); if(h>w && rows<16) rows=16, cols=Math.max(min,Math.round(r*rows)); rows=clamp(rows,min,max); cols=clamp(cols,min,max); return {cols,rows}; }
   function nextStepMs(cur, min=140){ return Math.max(min, Math.round(cur*0.95)); }
 
+  // ========= AudioManager =========
   class AudioManager{ constructor(){ this.queue=Promise.resolve(); this.voicePref=(typeof localStorage!=='undefined'&&localStorage.getItem('voicePref'))||'en-US'; this.voiceId=(typeof localStorage!=='undefined'&&localStorage.getItem('voiceId'))||''; this.voices=[]; this._loadVoices(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',()=>this._loadVoices());}catch(_){} } _loadVoices(){ try{ this.voices=window?.speechSynthesis?.getVoices?.()||[];}catch(_){this.voices=[];} } getVoice(){ const byId=this.voices.find(v=>(v.name+'|'+v.lang)===this.voiceId); if(byId) return byId; return this.voices.find(v=>v.lang===this.voicePref)||this.voices.find(v=>v.lang?.startsWith('en'))||null; } setVoiceLang(lang){ this.voicePref=lang; try{localStorage.setItem('voicePref',lang);}catch(_){}} setVoiceById(id){ this.voiceId=id; try{localStorage.setItem('voiceId',id);}catch(_){}} speak(text,{lang}={}){ if(!window?.speechSynthesis||!window?.SpeechSynthesisUtterance) return Promise.resolve(); const u=new SpeechSynthesisUtterance(text); const v=this.getVoice(); u.lang=lang||v?.lang||this.voicePref||'en-US'; if(v) u.voice=v; u.rate=0.95; return this._enqueue(u);} _enqueue(utter){ this.queue=this.queue.finally(()=>new Promise(res=>{ try{window?.speechSynthesis?.cancel();}catch(_){ } utter.onend=()=>res(); try{window?.speechSynthesis?.speak?.(utter);}catch(_){res();} })); return this.queue; } }
   const audio=new AudioManager();
 
-  const progressClient=(()=>{ const API="/.netlify/functions/progress"; const QKEY="mnc_event_queue_v1"; const isTg=()=>Boolean(window?.Telegram?.WebApp); const initData=()=> (window?.Telegram?.WebApp?.initData || ""); const headers=()=>{ const h={"Content-Type":"application/json"}; if(!isTg()){ h["X-Dev-User"]="1"; } return h; }; let queue=[]; const load=()=>{ try{queue=JSON.parse(localStorage.getItem(QKEY)||"[]");}catch{queue=[];} }; const save=()=>{ try{localStorage.setItem(QKEY,JSON.stringify(queue));}catch{} }; load(); let inFlight=false, timer=0; function enqueue(type, payload={}){ queue.push({type, payload, ts:Date.now()}); save(); schedule(); } function schedule(ms=5000){ if(timer) return; timer=window.setTimeout(flush, ms); } async function flush(){ timer=0; if(inFlight || queue.length===0) return; inFlight=true; const batch=queue.slice(0,25); try{ const body={op:"batch", initData:initData(), events:batch}; const r=await fetch(API,{method:"POST", headers:headers(), body:JSON.stringify(body)}); if(r.ok){ queue.splice(0,batch.length); save(); } }catch(_){ } finally{ inFlight=false; if(queue.length) schedule(8000); } } document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") flush(); else schedule(1200); }, {passive:true}); window.addEventListener("pagehide", flush, {passive:true}); return { track:(kind)=>enqueue("stat", {kind}), syncStats:(stats)=>enqueue("sync", {stats}), flush }; })();
+  // ========= Auto progress client (with debug UI hooks) =========
+  const progressClient=(()=>{
+    const API="/.netlify/functions/progress";
+    const QKEY="mnc_event_queue_v1";
+    const DEVFLAG="mnc_dev_mode";
+    const isTg=()=>Boolean(window?.Telegram?.WebApp);
+    const devMode=()=>localStorage.getItem(DEVFLAG)==='1';
+    const setDev=(v)=>{ try{ localStorage.setItem(DEVFLAG, v?'1':'0'); }catch(_){} };
+    const initData=()=> (window?.Telegram?.WebApp?.initData || "");
+    const headers=()=>{ const h={"Content-Type":"application/json"}; if(!isTg()||devMode()){ h["X-Dev-User"]="1"; } return h; };
 
+    let queue=[]; let inFlight=false; let timer=0;
+    let last={ts:0, ok:null, status:0, body:null, error:null};
+
+    const load=()=>{ try{queue=JSON.parse(localStorage.getItem(QKEY)||"[]");}catch{queue=[];} };
+    const save=()=>{ try{localStorage.setItem(QKEY,JSON.stringify(queue));}catch{} };
+    load();
+
+    function enqueue(type, payload={}){ queue.push({type, payload, ts:Date.now()}); save(); schedule(); }
+    function schedule(ms=4000){ if(timer) return; timer=window.setTimeout(flush, ms); }
+    function size(){ return queue.length; }
+    function getLast(){ return {...last}; }
+
+    async function flush(){
+      timer=0; if(inFlight || queue.length===0) return; inFlight=true;
+      const batch=queue.slice(0,25);
+      try{
+        const body={op:"batch", initData:initData(), events:batch};
+        const r=await fetch(API,{method:"POST", headers:headers(), body:JSON.stringify(body)});
+        let text=await r.text(); let data=null; try{ data=JSON.parse(text); }catch{ }
+        last={ts:Date.now(), ok:r.ok, status:r.status, body:data||text||null, error:null};
+        if(r.ok){ queue.splice(0,batch.length); save(); }
+        else { console.warn('progress flush failed', last); }
+      }catch(err){ last={ts:Date.now(), ok:false, status:0, body:null, error:String(err)}; console.warn('progress flush exception', err); }
+      finally{ inFlight=false; if(queue.length) schedule(6000); }
+    }
+
+    document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") flush(); else schedule(1000); }, {passive:true});
+    window.addEventListener("pagehide", flush, {passive:true});
+
+    return { track:(kind)=>enqueue("stat", {kind}), syncStats:(stats)=>enqueue("sync", {stats}), flush, size, getLast, devMode, setDev };
+  })();
+
+  // ========= Small helpers =========
   function similarity(a,b){ a=(a||'').toLowerCase(); b=(b||'').toLowerCase(); if(!a||!b) return 0; const m=Math.max(a.length,b.length); let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===b[i]) s++; } return Math.round((s/m)*100); }
   function parseCSV(text){ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; const splitter=new RegExp(`${sep}(?=(?:[^\\"]*\\"[^\\"]*\\")*[^\\"]*$)`); for(let i=start;i<lines.length;i++){ const cols=lines[i].split(splitter).map(s=>s.replace(/^\"|\"$/g,'').trim()); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
   function genObstacles(COLS,ROWS,K=6){ const pool=['🌵','🪵','🪨','🕳️','🧊']; const used=new Set(); const a=[]; while(a.length<K){ const x=1+rand(COLS-2), y=1+rand(ROWS-2); const k=`${x},${y}`; if(used.has(k)) continue; used.add(k); a.push({x,y,em:pool[rand(pool.length)]}); } return a; }
@@ -79,33 +179,280 @@
 
   const Btn=({children,onClick,variant='ghost',type='button',disabled=false})=>{const map={grad:'btn btn--grad', ok:'btn btn--ok', ghost:'btn btn--ghost'};return <button type={type} className={map[variant]} onClick={onClick} disabled={disabled}>{children}</button>};
 
-  function Game({onBack,word,onEat,fs,setFs}){ const BASE={COLS:18,ROWS:12}, SPEED=280, MIN_SPEED=140, MAX_LIVES=3; const wrapRef=useRef(null); const rafRef=useRef(0), lastRef=useRef(0), accRef=useRef(0); const collideRef=useRef(false); const [cell,setCell]=useState(38); const [dims,setDims]=useState({cols:BASE.COLS,rows:BASE.ROWS}); const COLS=dims.cols, ROWS=dims.rows; const [running,setRunning]=useState(true); const [mouse,setMouse]=useState({x:1,y:1}); const [cheese,setCheese]=useState({x:6,y:4}); const [dir,setDir]=useState({x:1,y:0}); const [lives,setLives]=useState(MAX_LIVES); const [scale,setScale]=useState(1); const [stepMs,setStepMs]=useState(SPEED); const stepRef=useRef(SPEED); const genObs=useCallback((c,r)=>genObstacles(c,r,6),[]); const [obstacles,setObstacles]=useState(()=>genObs(COLS,ROWS)); const spawnCheese=useCallback(()=>{ const c=randomFreeCell(obstacles,mouse,COLS,ROWS,1); setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)}); },[obstacles,mouse,COLS,ROWS]); const fit=useCallback(()=>{ const el=wrapRef.current; if(!el) return; const vp=window.visualViewport; const vw=Math.floor(vp?vp.width:window.innerWidth); const vh=Math.floor(vp?vp.height:window.innerHeight); if(fs){ const nd=computeGridDims(vw,vh, BASE.COLS*BASE.ROWS); if(nd.cols!==COLS||nd.rows!==ROWS){ setDims(nd); } const size=Math.max(20, Math.floor(Math.min(vw/nd.cols, vh/nd.rows))); el.style.width=(size*nd.cols)+'px'; el.style.height=(size*nd.rows)+'px'; setCell(size); return; } const panel=el.closest('.cy-panel')||el.parentElement||document.body; const cs=getComputedStyle(panel); const padL=parseFloat(cs.paddingLeft)||0; const padR=parseFloat(cs.paddingRight)||0; const padT=parseFloat(cs.paddingTop)||0; const contentW=Math.max(220, Math.floor(panel.clientWidth - padL - padR)); const rect=panel.getBoundingClientRect(); const nav=document.querySelector('.cy-foot'); const navH=(nav && nav.offsetParent)? Math.floor(nav.getBoundingClientRect().height)+12 : 0; const availableH=Math.max(220, Math.floor((vp?vp.height:window.innerHeight) - (rect.top + padT) - navH - 12)); if(COLS!==BASE.COLS||ROWS!==BASE.ROWS) setDims({cols:BASE.COLS,rows:BASE.ROWS}); const sizeW=Math.floor(contentW/BASE.COLS); const sizeH=Math.floor(availableH/BASE.ROWS); const size=Math.max(24, Math.min(sizeW,sizeH)); el.style.width=(size*BASE.COLS)+'px'; el.style.height=(size*BASE.ROWS)+'px'; setCell(size); },[fs,COLS,ROWS]); useLayoutEffect(()=>{ fit(); const onResize=()=>window.requestAnimationFrame(fit); const ro = window.ResizeObserver ? new ResizeObserver(onResize) : null; ro?.observe(document.body); window.addEventListener('resize',onResize); window.addEventListener('orientationchange',onResize); const vv=window.visualViewport; vv?.addEventListener('resize',onResize); vv?.addEventListener('scroll',onResize); return ()=>{ ro?.disconnect(); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); }; },[fit]); useEffect(()=>{ const obs=genObs(COLS,ROWS); setObstacles(obs); const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1); setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0; const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y}); },[COLS,ROWS,genObs]); useEffect(()=>{ const el=wrapRef.current; if(!el) return; const onPtr=(e)=>{ const rect=el.getBoundingClientRect(); const x=e.clientX-rect.left, y=e.clientY-rect.top; const d=dirFromTap(mouse,{x,y},cell); setDir(d); }; el.addEventListener('pointerdown',onPtr,{passive:true}); return ()=>{ el.removeEventListener('pointerdown',onPtr); }; },[mouse,cell]); useEffect(()=>{ if(!running) return; lastRef.current=performance.now(); const step=t=>{ accRef.current+=t-lastRef.current; lastRef.current=t; while(accRef.current>=stepRef.current){ collideRef.current=false; setMouse(prev=>{ let nx=prev.x+dir.x, ny=prev.y+dir.y; if(nx<0||ny<0||nx>=COLS||ny>=ROWS){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; } if(obstacles.some(o=>o.x===nx && o.y===ny)){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; } if(nx===cheese.x && ny===cheese.y){ const c=randomFreeCell(obstacles,{x:nx,y:ny},COLS,ROWS,1); setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)}); setLives(v=>clamp(v+1,0,MAX_LIVES)); setScale(s=>Math.min(1.8,s+0.08)); setStepMs(s=>{ const ns=nextStepMs(s,MIN_SPEED); stepRef.current=ns; return ns; }); onEat && onEat(word); } return {x:nx,y:ny}; }); if(collideRef.current){ accRef.current=0; setDir({x:0,y:0}); break; } accRef.current-=stepRef.current; } rafRef.current=requestAnimationFrame(step); }; rafRef.current=requestAnimationFrame(step); return ()=>cancelAnimationFrame(rafRef.current); },[dir,cheese,obstacles,running,word,onEat,COLS,ROWS]); useEffect(()=>{ if(lives<=0){ setRunning(false); } },[lives]); useEffect(()=>{ const blocked=obstacles.some(o=>o.x===cheese.x && o.y===cheese.y); const out=cheese.x<0||cheese.y<0||cheese.x>=COLS||cheese.y>=ROWS; if(blocked||out) spawnCheese(); },[obstacles,cheese,spawnCheese,COLS,ROWS]); const grid=useMemo(()=>Array.from({length:COLS*ROWS},(_,i)=>({x:i%COLS,y:Math.floor(i/COLS)})),[COLS,ROWS]); const livesMask=heartsMask(lives,MAX_LIVES); const restart=useCallback(()=>{ const obs=genObs(COLS,ROWS); setObstacles(obs); const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1); setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0; const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y}); setRunning(true); },[COLS,ROWS,genObs]); const headerBtns=(<div className="row"><div className="cy-title">Mouse & Cheese</div>{!fs && <Btn onClick={()=>setFs(true)} variant="grad">Fullscreen</Btn>}<Btn onClick={onBack}>Menu</Btn></div>); const arena=(<div ref={wrapRef} className="arena"><div className="lives">{livesMask}</div>{grid.map(c=> (<div key={`${c.x}-${c.y}`} className="cell" style={{left:c.x*cell,top:c.y*cell,width:cell,height:cell}}></div>))}{running && <div className="sprite" style={{left:(mouse.x+.5)*cell, top:(mouse.y+.5)*cell, fontSize:28, transform:`translate(-50%,-50%) scale(${scale})`}}>🐭</div>}<div className="sprite" style={{left:(cheese.x+.5)*cell, top:(cheese.y+.5)*cell, fontSize:26}}>🧀</div>{obstacles.map((o,i)=> (<div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:24}}>{o.em}</div>))}{!running && <div className="gameover" role="alert"><div style={{textAlign:'center'}}><div style={{fontSize:32,fontWeight:800,marginBottom:12}}>Game Over</div><div className="card-row" style={{justifyContent:'center'}}><Btn variant="ok" onClick={restart}>Try again</Btn><Btn onClick={onBack}>Menu</Btn>{fs && <Btn onClick={()=>setFs(false)}>Exit FS</Btn>}</div></div></div>}</div>); if(fs){ return (<div className="fs-overlay" role="dialog" aria-label="Fullscreen Game"><div className="fs-header"><Btn onClick={()=>setFs(false)}>Exit</Btn><Btn onClick={onBack}>Menu</Btn></div>{arena}</div>);} return (<div className="cy-panel">{headerBtns}{arena}<div className="row" style={{marginTop:10,justifyContent:'space-between'}}><Btn onClick={restart}>Restart</Btn><div className="subtitle">Tap to steer (← ↑ → ↓). Eat cheese — word speaks.</div></div></div>); }
+  // ===== Game =====
+  function Game({onBack,word,onEat,fs,setFs}){
+    const BASE={COLS:18,ROWS:12}, SPEED=280, MIN_SPEED=140, MAX_LIVES=3;
+    const wrapRef=useRef(null);
+    const rafRef=useRef(0), lastRef=useRef(0), accRef=useRef(0);
+    const collideRef=useRef(false);
+    const [cell,setCell]=useState(38);
 
-  function Quiz({onBack,onStat}){ const WORDS=getWords(); const [i,setI]=useState(0); const [picked,setPicked]=useState(null); const q=WORDS[i%WORDS.length]; const opts=useMemo(()=>{ const pool=[q.ru]; while(pool.length<4){ const r=WORDS[rand(WORDS.length)].ru; if(!pool.includes(r)) pool.push(r);} return pool.sort(()=>Math.random()-0.5); },[i]); const choose=v=>{ const is=v===q.ru; setPicked(v); audio.speak(q.en); if(is){ onStat&&onStat('quiz'); } }; const next=()=>{ setPicked(null); setI(v=>v+1); }; return (<div className="cy-panel"><div className="row"><div className="cy-title">Quiz — choose translation</div><Btn onClick={onBack}>Menu</Btn><Btn variant="grad" onClick={next} aria-label="Next">Next</Btn></div><div className="quiz-word">{q.en}</div><div className="grid4">{opts.map(v=> (<div key={v} className={"ans "+(picked?(v===q.ru?'ok':(picked===v?'bad':'') ):"")} onClick={()=>choose(v)}>{v}</div>))}</div></div>); }
+    const [dims,setDims]=useState({cols:BASE.COLS,rows:BASE.ROWS});
+    const COLS=dims.cols, ROWS=dims.rows;
 
-  function Cards({onBack,onStat}){ const WORDS=getWords(); const [i,setI]=useState(0); const [show,setShow]=useState(false); const w=WORDS[i%WORDS.length]; const ttsOk=!!(window?.speechSynthesis&&window?.SpeechSynthesisUtterance); return (<div className="cy-panel"><div className="row"><div className="cy-title">Cards</div><Btn onClick={onBack}>Menu</Btn></div><div className="cy-big">{w.en}</div>{show && <div className="subtitle" style={{fontSize:18}}>{w.ru}</div>}<div className="card-row" style={{marginTop:12}}><Btn onClick={()=>setShow(s=>!s)}>{show?'Hide RU':'Show RU'}</Btn><Btn onClick={()=>audio.speak(w.en)} disabled={!ttsOk}>Speak</Btn><Btn variant="ok" onClick={()=>{ setI(v=>v+1); setShow(false); onStat&&onStat('cards'); }}>Know</Btn></div>{!ttsOk && <div className="subtitle" style={{marginTop:8}}>TTS not supported in this environment.</div>}</div>); }
+    const [running,setRunning]=useState(true);
+    const [mouse,setMouse]=useState({x:1,y:1});
+    const [cheese,setCheese]=useState({x:6,y:4});
+    const [dir,setDir]=useState({x:1,y:0});
+    const [lives,setLives]=useState(MAX_LIVES);
+    const [scale,setScale]=useState(1);
 
-  function Accent({onBack,onStat}){ const WORDS=getWords(); const [i,setI]=useState(0); const [heard,setHeard]=useState('—'); const [match,setMatch]=useState(0); const [micReady,setMicReady]=useState(false); const w=WORDS[i%WORDS.length]; useEffect(()=>{ const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; setMicReady(!!Rec); },[]); const listen=()=>audio.speak(w.en); const say=()=>{ const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; if(!Rec){ alert('SpeechRecognition not supported in this browser'); return; } const r=new Rec(); r.lang=(audio.getVoice()?.lang)||'en-US'; r.interimResults=false; r.maxAlternatives=1; r.onresult=e=>{ const txt=(e.results[0][0].transcript||'').trim(); setHeard(txt); const m=similarity(txt,w.en); setMatch(m); if(m>=80){ onStat&&onStat('accent'); } }; r.onerror=()=>setHeard('—'); r.start(); }; return (<div className="cy-panel"><div className="row"><div className="cy-title">Accent • say the word as close to original</div><Btn onClick={onBack}>Menu</Btn></div><div className="cy-big">{w.en}</div><div className="cy-ru">{w.ru}</div><div className="card-row" style={{marginTop:12}}><Btn onClick={listen}>Listen</Btn><Btn variant="grad" onClick={say}>Say (browser)</Btn><Btn variant="grad" onClick={()=>{ setI(v=>v+1); setHeard('—'); setMatch(0); }}>Next</Btn></div><div className="card-row" style={{marginTop:12}}><div className="stat">Microphone access: {micReady? 'ready':'not available'}</div><div className="stat">Heard: {heard} • Match: {match}%</div></div></div>); }
+    const [stepMs,setStepMs]=useState(SPEED);
+    const stepRef=useRef(SPEED);
 
-  function Settings({onBack,icons,setIcons}){ const [voices,setVoices]=useState([]); const [lang,setLang]=useState(audio.voicePref||'en-US'); const [voiceId,setVoiceId]=useState(audio.voiceId||''); const [json,setJson]=useState(''); const fileRef=useRef(); useEffect(()=>{ const update=()=>{ const v=window?.speechSynthesis?.getVoices?.()||[]; setVoices(v); }; update(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',update);}catch(_){ } return ()=>{ try{window?.speechSynthesis?.removeEventListener?.('voiceschanged',update);}catch(_){ } }; },[]); const voicesByLang=voices.filter(v=>v.lang===lang); useEffect(()=>{ if(voicesByLang.length && !voiceId){ setVoiceId(voicesByLang[0].name+'|'+voicesByLang[0].lang); } },[lang,voicesByLang,voiceId]); const saveVoice=()=>{ audio.setVoiceLang(lang); audio.setVoiceById(voiceId); alert('Voice saved'); }; const importPackJSON=()=>{ try{ const arr=JSON.parse(json); if(!Array.isArray(arr)) throw 0; const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert('Pack imported.'); setJson(''); } catch(_){ alert('JSON must be an array of {en,ru}'); } }; const importCSV=text=>{ const arr=parseCSV(text); const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert(`CSV imported: +${arr.length} words.`); }; const onFile=e=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>importCSV(String(r.result||'')); r.readAsText(f,'utf-8'); e.target.value=''; }; const pingAPI=async()=>{ try{ const r=await fetch('/.netlify/functions/progress?op=ping'); alert('API: '+(r.ok?'ok':'unavailable')); }catch(_){ alert('API unavailable (deploy functions)'); } }; const ttsOk=!!(window?.speechSynthesis&&window?.SpeechSynthesisUtterance); const [ic,setIc]=useState(()=>({...icons})); const loadIcon=(key)=>e=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ setIc(o=>({...o,[key]:String(r.result||'')})); }; r.readAsDataURL(f); e.target.value=''; }; const saveIcons=()=>{ try{ const filtered=Object.fromEntries(Object.entries(ic).filter(([_,v])=>isValidIcon(v))); localStorage.setItem('icons',JSON.stringify(filtered)); setIcons(filtered); alert('Icons saved'); }catch(_){ alert('Cannot save icons'); } }; const resetIcons=()=>{ localStorage.removeItem('icons'); setIcons({}); setIc({}); alert('Icons cleared'); }; return (<div className="cy-panel"><div className="row"><div className="cy-title">Settings</div><Btn onClick={onBack}>Menu</Btn></div><div className="settings-grid"><div><div className="subtitle">Voice — language</div><select value={lang} onChange={e=>setLang(e.target.value)} style={{marginTop:8,padding:'10px',borderRadius:12,width:'100%'}}>{[...new Set(voices.map(v=>v.lang))].map(l=> <option key={l} value={l}>{l}</option>)}</select><div className="subtitle" style={{marginTop:10}}>Voice — variant</div><select value={voiceId} onChange={e=>setVoiceId(e.target.value)} style={{marginTop:8,padding:'10px',borderRadius:12,width:'100%'}}>{voicesByLang.map(v=>{ const name=v.name||'voice'; const hint=/female|woman|salli|joanna|emma|amy|linda|victoria|natasha/i.test(name)?' [F]':(/male|man|matthew|justin|joey|brian|arthur|daniel/i.test(name)?' [M]':''); return <option key={v.name+'|'+v.lang} value={v.name+'|'+v.lang}>{name+hint}</option>; })}</select><div className="card-row" style={{marginTop:10}}><Btn onClick={saveVoice} variant="ok" disabled={!ttsOk}>Save</Btn><Btn onClick={()=>audio.speak('Hello, this is your chosen voice.')} disabled={!ttsOk}>Test</Btn></div>{!ttsOk && <div className="subtitle" style={{marginTop:8}}>TTS not supported here.</div>}</div><div><div className="subtitle">Import word pack</div><textarea value={json} onChange={e=>setJson(e.target.value)} placeholder='[{"en":"cat","ru":"кот"}]' style={{marginTop:8,width:'100%',height:110,borderRadius:12,padding:10}} /><div className="card-row" style={{marginTop:10}}><Btn onClick={importPackJSON} variant="ok">Import JSON</Btn><Btn onClick={()=>{ localStorage.removeItem('packs'); alert('Packs cleared'); }}>Clear</Btn></div><div className="subtitle" style={{marginTop:10}}>Or upload CSV (columns: en,ru)</div><input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{marginTop:8}}/></div><div><div className="subtitle">Custom icons (PNG/SVG, 128–256px)</div><div className="card-row" style={{marginTop:10}}><div><div className="subtitle">Quiz</div><img alt="quiz" src={ic.quiz||''} style={{width:48,height:48,display:ic.quiz?'block':'none'}}/><input type="file" accept="image/*" onChange={loadIcon('quiz')} /></div><div><div className="subtitle">Cards</div><img alt="cards" src={ic.cards||''} style={{width:48,height:48,display:ic.cards?'block':'none'}}/><input type="file" accept="image/*" onChange={loadIcon('cards')} /></div><div><div className="subtitle">Game</div><img alt="game" src={ic.game||''} style={{width:48,height:48,display:ic.game?'block':'none'}}/><input type="file" accept="image/*" onChange={loadIcon('game')} /></div><div><div className="subtitle">Accent</div><img alt="accent" src={ic.accent||''} style={{width:48,height:48,display:ic.accent?'block':'none'}}/><input type="file" accept="image/*" onChange={loadIcon('accent')} /></div></div><div className="card-row" style={{marginTop:10}}><Btn variant="ok" onClick={saveIcons}>Save icons</Btn><Btn onClick={resetIcons}>Reset</Btn></div></div></div><div className="cy-panel" style={{marginTop:12}}><div className="cy-title">Supabase link</div><div className="subtitle">Use Netlify Function with server key & RLS. Click to check API deployment.</div><div className="card-row" style={{marginTop:10}}><Btn onClick={pingAPI} variant="grad">Ping API</Btn></div></div></div>); }
+    const genObs=useCallback((c,r)=>genObstacles(c,r,6),[]);
+    const [obstacles,setObstacles]=useState(()=>genObs(COLS,ROWS));
 
-  function LogoMouse(){ return (<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffd800"/><stop offset="1" stopColor="#18ffe3"/></linearGradient></defs><circle cx="32" cy="32" r="28" fill="#0f1423" stroke="url(#g1)" strokeWidth="3"/><ellipse cx="20" cy="20" rx="9" ry="8" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/><ellipse cx="44" cy="20" rx="9" ry="8" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/><path d="M16 36c6 10 26 10 32 0" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/><circle cx="26" cy="34" r="4" fill="#ffd800"/><circle cx="38" cy="34" r="4" fill="#ffd800"/><path d="M28 42h8" stroke="#18ffe3" strokeWidth="2"/></svg>); }
+    const spawnCheese=useCallback(()=>{
+      const c=randomFreeCell(obstacles,mouse,COLS,ROWS,1);
+      setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
+    },[obstacles,mouse,COLS,ROWS]);
+
+    const fit=useCallback(()=>{
+      const el=wrapRef.current; if(!el) return;
+      const vp=window.visualViewport; const vw=Math.floor(vp?vp.width:window.innerWidth); const vh=Math.floor(vp?vp.height:window.innerHeight);
+      if(fs){ const nd=computeGridDims(vw,vh, BASE.COLS*BASE.ROWS); if(nd.cols!==COLS||nd.rows!==ROWS){ setDims(nd); } const size=Math.max(20, Math.floor(Math.min(vw/nd.cols, vh/nd.rows))); el.style.width=(size*nd.cols)+'px'; el.style.height=(size*nd.rows)+'px'; setCell(size); return; }
+      const panel=el.closest('.cy-panel')||el.parentElement||document.body; const cs=getComputedStyle(panel); const padL=parseFloat(cs.paddingLeft)||0; const padR=parseFloat(cs.paddingRight)||0; const padT=parseFloat(cs.paddingTop)||0; const contentW=Math.max(220, Math.floor(panel.clientWidth - padL - padR)); const rect=panel.getBoundingClientRect(); const nav=document.querySelector('.cy-foot'); const navH=(nav && nav.offsetParent)? Math.floor(nav.getBoundingClientRect().height)+12 : 0; const availableH=Math.max(220, Math.floor((vp?vp.height:window.innerHeight) - (rect.top + padT) - navH - 12)); if(COLS!==BASE.COLS||ROWS!==BASE.ROWS) setDims({cols:BASE.COLS,rows:BASE.ROWS}); const sizeW=Math.floor(contentW/BASE.COLS); const sizeH=Math.floor(availableH/BASE.ROWS); const size=Math.max(24, Math.min(sizeW,sizeH)); el.style.width=(size*BASE.COLS)+'px'; el.style.height=(size*BASE.ROWS)+'px'; setCell(size);
+    },[fs,COLS,ROWS]);
+
+    useLayoutEffect(()=>{ fit(); const onResize=()=>window.requestAnimationFrame(fit); const ro = window.ResizeObserver ? new ResizeObserver(onResize) : null; ro?.observe(document.body); window.addEventListener('resize',onResize); window.addEventListener('orientationchange',onResize); const vv=window.visualViewport; vv?.addEventListener('resize',onResize); vv?.addEventListener('scroll',onResize); return ()=>{ ro?.disconnect(); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); }; },[fit]);
+
+    useEffect(()=>{ const obs=genObs(COLS,ROWS); setObstacles(obs); const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1); setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0; const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y}); },[COLS,ROWS,genObs]);
+
+    useEffect(()=>{ const el=wrapRef.current; if(!el) return; const onPtr=(e)=>{ const rect=el.getBoundingClientRect(); const x=e.clientX-rect.left, y=e.clientY-rect.top; const d=dirFromTap(mouse,{x,y},cell); setDir(d); }; el.addEventListener('pointerdown',onPtr,{passive:true}); return ()=>{ el.removeEventListener('pointerdown',onPtr); }; },[mouse,cell]);
+
+    useEffect(()=>{ if(!running) return; lastRef.current=performance.now(); const step=t=>{ accRef.current+=t-lastRef.current; lastRef.current=t; while(accRef.current>=stepRef.current){ collideRef.current=false; setMouse(prev=>{ let nx=prev.x+dir.x, ny=prev.y+dir.y; if(nx<0||ny<0||nx>=COLS||ny>=ROWS){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; } if(obstacles.some(o=>o.x===nx && o.y===ny)){ setLives(v=>Math.max(0,v-1)); collideRef.current=true; return prev; } if(nx===cheese.x && ny===cheese.y){ const c=randomFreeCell(obstacles,{x:nx,y:ny},COLS,ROWS,1); setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)}); setLives(v=>clamp(v+1,0,MAX_LIVES)); setScale(s=>Math.min(1.8,s+0.08)); setStepMs(s=>{ const ns=nextStepMs(s,MIN_SPEED); stepRef.current=ns; return ns; }); onEat && onEat(word); } return {x:nx,y:ny}; }); if(collideRef.current){ accRef.current=0; setDir({x:0,y:0}); break; } accRef.current-=stepRef.current; } rafRef.current=requestAnimationFrame(step); }; rafRef.current=requestAnimationFrame(step); return ()=>cancelAnimationFrame(rafRef.current); },[dir,cheese,obstacles,running,word,onEat,COLS,ROWS]);
+
+    useEffect(()=>{ if(lives<=0){ setRunning(false); } },[lives]);
+
+    useEffect(()=>{ const blocked=obstacles.some(o=>o.x===cheese.x && o.y===cheese.y); const out=cheese.x<0||cheese.y<0||cheese.x>=COLS||cheese.y>=ROWS; if(blocked||out) spawnCheese(); },[obstacles,cheese,spawnCheese,COLS,ROWS]);
+
+    const grid=useMemo(()=>Array.from({length:COLS*ROWS},(_,i)=>({x:i%COLS,y:Math.floor(i/COLS)})),[COLS,ROWS]);
+    const livesMask=heartsMask(lives,MAX_LIVES);
+
+    const restart=useCallback(()=>{ const obs=genObs(COLS,ROWS); setObstacles(obs); const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1); setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0; const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y}); setRunning(true); },[COLS,ROWS,genObs]);
+
+    const headerBtns=(<div className="row"><div className="cy-title">Mouse & Cheese</div>{!fs && <Btn onClick={()=>setFs(true)} variant="grad">Fullscreen</Btn>}<Btn onClick={onBack}>Menu</Btn></div>);
+
+    const arena=(<div ref={wrapRef} className="arena"><div className="lives">{livesMask}</div>{grid.map(c=> (<div key={`${c.x}-${c.y}`} className="cell" style={{left:c.x*cell,top:c.y*cell,width:cell,height:cell}}></div>))}{running && <div className="sprite" style={{left:(mouse.x+.5)*cell, top:(mouse.y+.5)*cell, fontSize:28, transform:`translate(-50%,-50%) scale(${scale})`}}>🐭</div>}<div className="sprite" style={{left:(cheese.x+.5)*cell, top:(cheese.y+.5)*cell, fontSize:26}}>🧀</div>{obstacles.map((o,i)=> (<div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:24}}>{o.em}</div>))}{!running && <div className="gameover" role="alert"><div style={{textAlign:'center'}}><div style={{fontSize:32,fontWeight:800,marginBottom:12}}>Game Over</div><div className="card-row" style={{justifyContent:'center'}}><Btn variant="ok" onClick={restart}>Try again</Btn><Btn onClick={onBack}>Menu</Btn>{fs && <Btn onClick={()=>setFs(false)}>Exit FS</Btn>}</div></div></div>}</div>);
+
+    if(fs){ return (<div className="fs-overlay" role="dialog" aria-label="Fullscreen Game"><div className="fs-header"><Btn onClick={()=>setFs(false)}>Exit</Btn><Btn onClick={onBack}>Menu</Btn></div>{arena}</div>); }
+
+    return (<div className="cy-panel">{headerBtns}{arena}<div className="row" style={{marginTop:10,justifyContent:'space-between'}}><Btn onClick={restart}>Restart</Btn><div className="subtitle">Tap to steer (← ↑ → ↓). Eat cheese — word speaks.</div></div></div>);
+  }
+
+  function Quiz({onBack,onStat}){
+    const WORDS=getWords(); const [i,setI]=useState(0); const [picked,setPicked]=useState(null); const q=WORDS[i%WORDS.length];
+    const opts=useMemo(()=>{ const pool=[q.ru]; while(pool.length<4){ const r=WORDS[rand(WORDS.length)].ru; if(!pool.includes(r)) pool.push(r);} return pool.sort(()=>Math.random()-0.5); },[i]);
+    const choose=v=>{ const is=v===q.ru; setPicked(v); audio.speak(q.en); if(is){ onStat&&onStat('quiz'); } };
+    const next=()=>{ setPicked(null); setI(v=>v+1); };
+    return (<div className="cy-panel"><div className="row"><div className="cy-title">Quiz — choose translation</div><Btn onClick={onBack}>Menu</Btn><Btn variant="grad" onClick={next} aria-label="Next">Next</Btn></div><div className="quiz-word">{q.en}</div><div className="grid4">{opts.map(v=> (<div key={v} className={"ans "+(picked?(v===q.ru?'ok':(picked===v?'bad':'') ):"")} onClick={()=>choose(v)}>{v}</div>))}</div></div>);
+  }
+
+  function Cards({onBack,onStat}){
+    const WORDS=getWords(); const [i,setI]=useState(0); const [show,setShow]=useState(false); const w=WORDS[i%WORDS.length]; const ttsOk=!!(window?.speechSynthesis&&window?.SpeechSynthesisUtterance);
+    return (<div className="cy-panel"><div className="row"><div className="cy-title">Cards</div><Btn onClick={onBack}>Menu</Btn></div><div className="cy-big">{w.en}</div>{show && <div className="subtitle" style={{fontSize:18}}>{w.ru}</div>}<div className="card-row" style={{marginTop:12}}><Btn onClick={()=>setShow(s=>!s)}>{show?'Hide RU':'Show RU'}</Btn><Btn onClick={()=>audio.speak(w.en)} disabled={!ttsOk}>Speak</Btn><Btn variant="ok" onClick={()=>{ setI(v=>v+1); setShow(false); onStat&&onStat('cards'); }}>Know</Btn></div>{!ttsOk && <div className="subtitle" style={{marginTop:8}}>TTS not supported in this environment.</div>}</div>);
+  }
+
+  function Accent({onBack,onStat}){
+    const WORDS=getWords(); const [i,setI]=useState(0); const [heard,setHeard]=useState('—'); const [match,setMatch]=useState(0); const [micReady,setMicReady]=useState(false); const w=WORDS[i%WORDS.length];
+    useEffect(()=>{ const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; setMicReady(!!Rec); },[]);
+    const listen=()=>audio.speak(w.en);
+    const say=()=>{ const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; if(!Rec){ alert('SpeechRecognition not supported in this browser'); return; } const r=new Rec(); r.lang=(audio.getVoice()?.lang)||'en-US'; r.interimResults=false; r.maxAlternatives=1; r.onresult=e=>{ const txt=(e.results[0][0].transcript||'').trim(); setHeard(txt); const m=similarity(txt,w.en); setMatch(m); if(m>=80){ onStat&&onStat('accent'); } }; r.onerror=()=>setHeard('—'); r.start(); };
+    return (<div className="cy-panel"><div className="row"><div className="cy-title">Accent • say the word as close to original</div><Btn onClick={onBack}>Menu</Btn></div><div className="cy-big">{w.en}</div><div className="cy-ru">{w.ru}</div><div className="card-row" style={{marginTop:12}}><Btn onClick={listen}>Listen</Btn><Btn variant="grad" onClick={say}>Say (browser)</Btn><Btn variant="grad" onClick={()=>{ setI(v=>v+1); setHeard('—'); setMatch(0); }}>Next</Btn></div><div className="card-row" style={{marginTop:12}}><div className="stat">Microphone access: {micReady? 'ready':'not available'}</div><div className="stat">Heard: {heard} • Match: {match}%</div></div></div>);
+  }
+
+  function Settings({onBack,icons,setIcons}){
+    const [voices,setVoices]=useState([]);
+    const [lang,setLang]=useState(audio.voicePref||'en-US');
+    const [voiceId,setVoiceId]=useState(audio.voiceId||'');
+    const [json,setJson]=useState('');
+    const fileRef=useRef();
+
+    useEffect(()=>{ const update=()=>{ const v=window?.speechSynthesis?.getVoices?.()||[]; setVoices(v); }; update(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',update);}catch(_){ } return ()=>{ try{window?.speechSynthesis?.removeEventListener?.('voiceschanged',update);}catch(_){ } }; },[]);
+    const voicesByLang=voices.filter(v=>v.lang===lang);
+    useEffect(()=>{ if(voicesByLang.length && !voiceId){ setVoiceId(voicesByLang[0].name+'|'+voicesByLang[0].lang); } },[lang,voicesByLang,voiceId]);
+
+    const saveVoice=()=>{ audio.setVoiceLang(lang); audio.setVoiceById(voiceId); alert('Voice saved'); };
+    const importPackJSON=()=>{ try{ const arr=JSON.parse(json); if(!Array.isArray(arr)) throw 0; const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert('Pack imported.'); setJson(''); } catch(_){ alert('JSON must be an array of {en,ru}'); } };
+    const importCSV=text=>{ const arr=parseCSV(text); const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert(`CSV imported: +${arr.length} words.`); };
+    const onFile=e=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>importCSV(String(r.result||'')); r.readAsText(f,'utf-8'); e.target.value=''; };
+
+    const pingAPI=async()=>{ try{ const r=await fetch('/.netlify/functions/progress?op=diag'); const j=await r.json(); alert('API diag: '+JSON.stringify(j)); }catch(_){ alert('API unavailable'); } };
+
+    const ttsOk=!!(window?.speechSynthesis&&window?.SpeechSynthesisUtterance);
+
+    // custom icons
+    const [ic,setIc]=useState(()=>({...icons}));
+    const loadIcon=(key)=>e=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ setIc(o=>({...o,[key]:String(r.result||'')})); }; r.readAsDataURL(f); e.target.value=''; };
+    const saveIcons=()=>{ try{ const filtered=Object.fromEntries(Object.entries(ic).filter(([_,v])=>isValidIcon(v))); localStorage.setItem('icons',JSON.stringify(filtered)); setIcons(filtered); alert('Icons saved'); }catch(_){ alert('Cannot save icons'); } };
+    const resetIcons=()=>{ localStorage.removeItem('icons'); setIcons({}); setIc({}); alert('Icons cleared'); };
+
+    // === Server debug panel ===
+    const [dev,setDev]=useState(progressClient.devMode());
+    const tgUserId = (window?.Telegram?.WebApp?.initDataUnsafe?.user?.id)||null;
+    const [last,setLast]=useState(progressClient.getLast());
+    const [qsize,setQsize]=useState(progressClient.size());
+
+    const sendTest=()=>{ progressClient.track('quiz'); setQsize(progressClient.size()); progressClient.flush().then(()=>{ setTimeout(()=>{ setLast(progressClient.getLast()); setQsize(progressClient.size()); },500); }); };
+
+    const toggleDev=()=>{ const nv=!dev; setDev(nv); progressClient.setDev(nv); alert('Dev user '+(nv?'ON (X-Dev-User=1)':'OFF (Telegram initData)')); };
+
+    return (
+      <div className="cy-panel">
+        <div className="row"><div className="cy-title">Settings</div><Btn onClick={onBack}>Menu</Btn></div>
+        <div className="settings-grid">
+          <div>
+            <div className="subtitle">Voice — language</div>
+            <select value={lang} onChange={e=>setLang(e.target.value)} style={{marginTop:8,padding:'10px',borderRadius:12,width:'100%'}}>
+              {uniq(voices.map(v=>v.lang)).map(l=> <option key={l} value={l}>{l}</option>)}
+            </select>
+            <div className="subtitle" style={{marginTop:10}}>Voice — variant</div>
+            <select value={voiceId} onChange={e=>setVoiceId(e.target.value)} style={{marginTop:8,padding:'10px',borderRadius:12,width:'100%'}}>
+              {voicesByLang.map(v=>{ const name=v.name||'voice'; const hint=/female|woman|salli|joanna|emma|amy|linda|victoria|natasha/i.test(name)?' [F]':(/male|man|matthew|justin|joey|brian|arthur|daniel/i.test(name)?' [M]':''); return <option key={v.name+'|'+v.lang} value={v.name+'|'+v.lang}>{name+hint}</option>; })}
+            </select>
+            <div className="card-row" style={{marginTop:10}}>
+              <Btn onClick={saveVoice} variant="ok" disabled={!ttsOk}>Save</Btn>
+              <Btn onClick={()=>audio.speak('Hello, this is your chosen voice.')} disabled={!ttsOk}>Test</Btn>
+            </div>
+            {!ttsOk && <div className="subtitle" style={{marginTop:8}}>TTS not supported here.</div>}
+          </div>
+
+          <div>
+            <div className="subtitle">Import word pack</div>
+            <textarea value={json} onChange={e=>setJson(e.target.value)} placeholder='[{"en":"cat","ru":"кот"}]' style={{marginTop:8,width:'100%',height:110,borderRadius:12,padding:10}} />
+            <div className="card-row" style={{marginTop:10}}>
+              <Btn onClick={importPackJSON} variant="ok">Import JSON</Btn>
+              <Btn onClick={()=>{ localStorage.removeItem('packs'); alert('Packs cleared'); }}>Clear</Btn>
+            </div>
+            <div className="subtitle" style={{marginTop:10}}>Or upload CSV (columns: en,ru)</div>
+            <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{marginTop:8}}/>
+          </div>
+
+          <div>
+            <div className="subtitle">Custom icons (PNG/SVG, 128–256px)</div>
+            <div className="card-row" style={{marginTop:10}}>
+              <div><div className="subtitle">Quiz</div><input type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>setIc(o=>({...o,quiz:String(r.result||'')})); r.readAsDataURL(f); e.target.value=''; }}/></div>
+              <div><div className="subtitle">Cards</div><input type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>setIc(o=>({...o,cards:String(r.result||'')})); r.readAsDataURL(f); e.target.value=''; }}/></div>
+              <div><div className="subtitle">Game</div><input type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>setIc(o=>({...o,game:String(r.result||'')})); r.readAsDataURL(f); e.target.value=''; }}/></div>
+              <div><div className="subtitle">Accent</div><input type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>setIc(o=>({...o,accent:String(r.result||'')})); r.readAsDataURL(f); e.target.value=''; }}/></div>
+            </div>
+            <div className="card-row" style={{marginTop:10}}>
+              <Btn variant="ok" onClick={()=>{ try{ const filtered=Object.fromEntries(Object.entries(ic).filter(([_,v])=>isValidIcon(v))); localStorage.setItem('icons',JSON.stringify(filtered)); setIcons(filtered); alert('Icons saved'); }catch(_){ alert('Cannot save icons'); } }}>Save icons</Btn>
+              <Btn onClick={()=>{ localStorage.removeItem('icons'); setIcons({}); setIc({}); alert('Icons cleared'); }}>Reset</Btn>
+            </div>
+          </div>
+
+          <div>
+            <div className="subtitle"><b>Server</b> — auto progress debug</div>
+            <div className="stat">Telegram user id: <b>{String(tgUserId||'—')}</b></div>
+            <div className="stat">Queue: <b>{qsize}</b></div>
+            <div className="stat">Last upload: {last.ok===null?'—':(last.ok?'OK':'FAIL')} {last.status||''}</div>
+            <div className="stat" style={{maxWidth:520,overflow:'auto'}}>Last body: <pre style={{whiteSpace:'pre-wrap'}}>{last.body?JSON.stringify(last.body):'—'}</pre></div>
+            <div className="card-row" style={{marginTop:10}}>
+              <Btn onClick={pingAPI}>Diag</Btn>
+              <Btn variant="ok" onClick={sendTest}>Send test event</Btn>
+              <Btn onClick={toggleDev}>{dev?'Dev user ON':'Dev user OFF'}</Btn>
+            </div>
+            <div className="subtitle">Dev ON = отправляем с заголовком <code>X-Dev-User: 1</code> (без Telegram подписи). Полезно для проверки записи в БД.</div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // ===== Cyber Menu & Layout =====
+  function LogoMouse(){return(<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffd800"/><stop offset="1" stopColor="#18ffe3"/></linearGradient></defs><circle cx="32" cy="32" r="28" fill="#0f1423" stroke="url(#g1)" strokeWidth="3"/><ellipse cx="20" cy="20" rx="9" ry="8" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/><ellipse cx="44" cy="20" rx="9" ry="8" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/><path d="M16 36c6 10 26 10 32 0" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/><circle cx="26" cy="34" r="4" fill="#ffd800"/><circle cx="38" cy="34" r="4" fill="#ffd800"/><path d="M28 42h8" stroke="#18ffe3" strokeWidth="2"/></svg>);}
   const IconQuiz=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 9a3 3 0 1 1 3 3v2"/><circle cx="12" cy="19" r="1"/></svg>);
   const IconCards=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M7 9h6M7 13h6"/><rect x="13" y="3" width="8" height="12" rx="2"/></svg>);
   const IconGame=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 12h4M8 10v4"/><path d="M15 10h.01M19 14h.01"/><rect x="2" y="8" width="20" height="8" rx="4"/></svg>);
   const IconMic=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3"/></svg>);
   const IconSettings=()=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/><circle cx="12" cy="12" r="3"/></svg>);
 
-  function CyberMenu({go,stats,toggleTheme,icons}){ const goal=20; const done=stats.cards+stats.quiz+stats.cheese+stats.accent; const pct=Math.min(100,Math.round(done/goal*100)); useEffect(()=>{ const el=document.querySelector('.cy-goal .bar i'); if(el){ el.style.width=pct+'%'; } },[pct]); return (<div className="cyber"><div className="cy-head"><div className="cy-logo"><LogoMouse/> <span>MOUSE + CHEESE</span></div><div className="topbar"><Btn onClick={()=>go('settings')}>Settings</Btn><Btn onClick={toggleTheme}>Theme</Btn></div></div><div className="cy-goal"><h2>GOAL: 20 / DAY</h2><div className="sub">Keep up the streak — study every day</div><div className="bar" aria-label={`Progress ${pct}%`}><i/></div><div className="cy-grid"><div className="cy-tile"><b>{stats.cards}</b><span>CARDS</span></div><div className="cy-tile"><b>{stats.quiz}</b><span>QUIZ</span></div><div className="cy-tile"><b>{stats.cheese}</b><span>CHEESE</span></div><div className="cy-tile"><b>{stats.accent}</b><span>ACCENT</span></div></div></div><div className="cy-actions"><button className="cy-btn" onClick={()=>go('quiz')} aria-label="Quiz">{icons?.quiz?<img className="cy-icon-img" alt="quiz" src={icons.quiz}/>:<IconQuiz/>}<span>QUIZ</span></button><button className="cy-btn" onClick={()=>go('cards')} aria-label="Cards">{icons?.cards?<img className="cy-icon-img" alt="cards" src={icons.cards}/>:<IconCards/>}<span>CARDS</span></button><button className="cy-btn" onClick={()=>go('game')} aria-label="Game">{icons?.game?<img className="cy-icon-img" alt="game" src={icons.game}/>:<IconGame/>}<span>GAME</span></button><button className="cy-btn" onClick={()=>go('accent')} aria-label="Accent">{icons?.accent?<img className="cy-icon-img" alt="accent" src={icons.accent}/>:<IconMic/>}<span>ACCENT</span></button></div></div>); }
-  function Menu(props){ return <CyberMenu {...props}/> }
-  function CyberBottomNav({go,icons}){ return (<div className="cy-foot"><button className="cy-foot-btn" onClick={()=>go('quiz')} aria-label="Quiz">{icons?.quiz?<img className="cy-icon-img" alt="quiz" src={icons.quiz}/>:<IconQuiz/>}</button><button className="cy-foot-btn" onClick={()=>go('cards')} aria-label="Cards">{icons?.cards?<img className="cy-icon-img" alt="cards" src={icons.cards}/>:<IconCards/>}</button><button className="cy-foot-btn" onClick={()=>go('game')} aria-label="Game">{icons?.game?<img className="cy-icon-img" alt="game" src={icons.game}/>:<IconGame/>}</button><button className="cy-foot-btn" onClick={()=>go('accent')} aria-label="Accent">{icons?.accent?<img className="cy-icon-img" alt="accent" src={icons.accent}/>:<IconMic/>}</button><button className="cy-foot-btn" onClick={()=>go('settings')} aria-label="Settings"><IconSettings/></button></div>); }
+  function CyberMenu({go,stats,toggleTheme,icons}){
+    const goal=20; const done=stats.cards+stats.quiz+stats.cheese+stats.accent; const pct=Math.min(100,Math.round(done/goal*100));
+    useEffect(()=>{ const el=document.querySelector('.cy-goal .bar i'); if(el){ el.style.width=pct+'%'; } },[pct]);
+    return (
+      <div className="cyber">
+        <div className="cy-head">
+          <div className="cy-logo"><LogoMouse/> <span>MOUSE + CHEESE</span></div>
+          <div className="topbar"><Btn onClick={()=>go('settings')}>Settings</Btn><Btn onClick={toggleTheme}>Theme</Btn></div>
+        </div>
+        <div className="cy-goal">
+          <h2>GOAL: 20 / DAY</h2>
+          <div className="sub">Keep up the streak — study every day</div>
+          <div className="bar" aria-label={`Progress ${pct}%`}><i/></div>
+          <div className="cy-grid">
+            <div className="cy-tile"><b>{stats.cards}</b><span>CARDS</span></div>
+            <div className="cy-tile"><b>{stats.quiz}</b><span>QUIZ</span></div>
+            <div className="cy-tile"><b>{stats.cheese}</b><span>CHEESE</span></div>
+            <div className="cy-tile"><b>{stats.accent}</b><span>ACCENT</span></div>
+          </div>
+        </div>
+        <div className="cy-actions">
+          <button className="cy-btn" onClick={()=>go('quiz')} aria-label="Quiz"><IconQuiz/><span>QUIZ</span></button>
+          <button className="cy-btn" onClick={()=>go('cards')} aria-label="Cards"><IconCards/><span>CARDS</span></button>
+          <button className="cy-btn" onClick={()=>go('game')} aria-label="Game"><IconGame/><span>GAME</span></button>
+          <button className="cy-btn" onClick={()=>go('accent')} aria-label="Accent"><IconMic/><span>ACCENT</span></button>
+        </div>
+      </div>
+    );
+  }
 
-  function App(){ const WORDS=getWords(); const getIcons=()=>{ try{ const raw=JSON.parse(localStorage.getItem('icons')||'{}'); return Object.fromEntries(Object.entries(raw).filter(([_,v])=>isValidIcon(v))); }catch(_){return {}} }; const [icons,setIcons]=useState(getIcons()); const [screen,setScreen]=useState('menu'); const [stats,setStats]=useState(()=>{ try{return JSON.parse(localStorage.getItem('stats')||'{"cards":0,"quiz":0,"cheese":0,"accent":0}')}catch(_){return {cards:0,quiz:0,cheese:0,accent:0}} }); const onStat=useCallback((k)=>{ setStats(s=>{ const n={...s,[k]:s[k]+1}; localStorage.setItem('stats',JSON.stringify(n)); try{ progressClient.track(k); }catch(_){ } return n; }); },[]); useEffect(()=>{ const t=(typeof localStorage!=='undefined'&&localStorage.getItem('theme'))||'light'; document.body.classList.toggle('dark',t==='dark'); },[]); const toggleTheme=useCallback(()=>{ const now=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',now); try{ localStorage.setItem('theme',now?'dark':'light'); }catch(_){} },[]); const go=useCallback((s)=>setScreen(s),[]); const [wordI,setWordI]=useState(0); useEffect(()=>{ try{ window.Telegram?.WebApp?.ready?.(); }catch(_){ } },[]); const [fs,setFs]=useState(false); useEffect(()=>{ document.body.classList.toggle('no-foot', screen==='game'); },[screen]); useEffect(()=>{ const onKey=(e)=>{ if(e.key==='Escape'){ if(fs){ setFs(false);} else if(screen==='game'){ setScreen('menu'); } } }; window.addEventListener('keydown', onKey); return ()=>window.removeEventListener('keydown', onKey); },[screen,fs]); useEffect(()=>{ document.body.classList.toggle('fs', fs); },[fs]); useEffect(()=>{ try{ const s=JSON.parse(localStorage.getItem('stats')||'{"cards":0,"quiz":0,"cheese":0,"accent":0}'); progressClient.syncStats(s); progressClient.flush(); }catch(_){ } },[]); return (<div className="wrap">{screen==='menu' && <Menu go={go} stats={stats} toggleTheme={toggleTheme} icons={icons}/>}{screen==='quiz' && <Quiz onBack={()=>go('menu')} onStat={onStat}/>}{screen==='cards' && <Cards onBack={()=>go('menu')} onStat={onStat}/>}{screen==='accent' && <Accent onBack={()=>go('menu')} onStat={onStat}/>}{screen==='settings' && <Settings onBack={()=>go('menu')} icons={icons} setIcons={setIcons}/>}{screen==='game' && <Game onBack={()=>go('menu')} word={WORDS[wordI%WORDS.length]} onEat={(w)=>{audio.speak(w.en); setWordI(i=>i+1); onStat('cheese');}} fs={fs} setFs={setFs}/>}{screen!=='game' && <CyberBottomNav go={go} icons={icons}/>}</div>); }
+  function Menu(props){ return <CyberMenu {...props}/> }
+
+  function CyberBottomNav({go}){
+    return (
+      <div className="cy-foot">
+        <button className="cy-foot-btn" onClick={()=>go('quiz')} aria-label="Quiz"><IconQuiz/></button>
+        <button className="cy-foot-btn" onClick={()=>go('cards')} aria-label="Cards"><IconCards/></button>
+        <button className="cy-foot-btn" onClick={()=>go('game')} aria-label="Game"><IconGame/></button>
+        <button className="cy-foot-btn" onClick={()=>go('accent')} aria-label="Accent"><IconMic/></button>
+        <button className="cy-foot-btn" onClick={()=>go('settings')} aria-label="Settings"><IconSettings/></button>
+      </div>
+    );
+  }
+
+  function App(){
+    const WORDS=getWords();
+    const [screen,setScreen]=useState('menu');
+    const [stats,setStats]=useState(()=>{ try{return JSON.parse(localStorage.getItem('stats')||'{"cards":0,"quiz":0,"cheese":0,"accent":0}')}catch(_){return {cards:0,quiz:0,cheese:0,accent:0}} });
+    const onStat=useCallback((k)=>{ setStats(s=>{ const n={...s,[k]:s[k]+1}; localStorage.setItem('stats',JSON.stringify(n)); try{ progressClient.track(k); }catch(_){ } return n; }); },[]);
+
+    useEffect(()=>{ const t=(typeof localStorage!=='undefined'&&localStorage.getItem('theme'))||'light'; document.body.classList.toggle('dark',t==='dark'); },[]);
+    const toggleTheme=useCallback(()=>{ const now=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',now); try{ localStorage.setItem('theme',now?'dark':'light'); }catch(_){} },[]);
+    const go=useCallback((s)=>setScreen(s),[]);
+
+    const [wordI,setWordI]=useState(0);
+
+    useEffect(()=>{ try{ window.Telegram?.WebApp?.ready?.(); }catch(_){ } },[]);
+
+    const [fs,setFs]=useState(false);
+    useEffect(()=>{ document.body.classList.toggle('no-foot', screen==='game'); },[screen]);
+    useEffect(()=>{ const onKey=(e)=>{ if(e.key==='Escape'){ if(fs){ setFs(false);} else if(screen==='game'){ setScreen('menu'); } } }; window.addEventListener('keydown', onKey); return ()=>window.removeEventListener('keydown', onKey); },[screen,fs]);
+    useEffect(()=>{ document.body.classList.toggle('fs', fs); },[fs]);
+
+    useEffect(()=>{ try{ const s=JSON.parse(localStorage.getItem('stats')||'{"cards":0,"quiz":0,"cheese":0,"accent":0}'); progressClient.syncStats(s); progressClient.flush(); }catch(_){ } },[]);
+
+    return (
+      <div className="wrap">
+        {screen==='menu' && <Menu go={go} stats={stats} toggleTheme={toggleTheme}/>}
+        {screen==='quiz' && <Quiz onBack={()=>go('menu')} onStat={onStat}/>}
+        {screen==='cards' && <Cards onBack={()=>go('menu')} onStat={onStat}/>}
+        {screen==='accent' && <Accent onBack={()=>go('menu')} onStat={onStat}/>}
+        {screen==='settings' && <Settings onBack={()=>go('menu')} icons={{}} setIcons={()=>{}}/>}
+        {screen==='game' && <Game onBack={()=>go('menu')} word={WORDS[wordI%WORDS.length]} onEat={(w)=>{audio.speak(w.en); setWordI(i=>i+1); onStat('cheese');}} fs={fs} setFs={setFs}/>}
+        {screen!=='game' && <CyberBottomNav go={go}/>}
+      </div>
+    );
+  }
 
   ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
+  // Self-checks
   window.__MNC__={clamp, similarity, parseCSV, AudioManager, randomFreeCell, heartsMask, dirFromTap, computeGridDims, nextStepMs};
-  try{ console.assert(clamp(-1,0,10)===0,'clamp low'); console.assert(clamp(11,0,10)===10,'clamp high'); console.assert(similarity('cheese','cheese')===100,'similarity full'); const t=parseCSV('en,ru\ncat,кот\n'); console.assert(Array.isArray(t)&&t.length===1 && t[0].en==='cat' && t[0].ru==='кот','csv basic'); const t2=parseCSV('english;russian\n"ice cream";мороженое'); console.assert(t2[0].en==='ice cream' && t2[0].ru==='мороженое','csv semicolon+quotes'); const am=new AudioManager(); Promise.resolve(am.speak('')).then(()=>{}); const occ=[{x:0,y:0},{x:1,y:1}], m={x:2,y:2}; const rc=randomFreeCell(occ,m,18,12,1,()=>0.99); console.assert(rc.x>=1&&rc.x<=16&&rc.y>=1&&rc.y<=10,'randomFreeCell bounds'); console.assert(heartsMask(3,3).length>0,'hearts mask'); const __cell=40; const __mouse={x:5,y:5}; console.assert(dirFromTap(__mouse,{x:(__mouse.x+1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===1,'dir right'); console.assert(dirFromTap(__mouse,{x:(__mouse.x-1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===-1,'dir left'); console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y-1.6)*__cell},__cell).y===-1,'dir up'); console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y+1.6)*__cell},__cell).y===1,'dir down'); console.assert(isValidIcon('https://example.com/i.png')===true,'valid icon url'); console.assert(isValidIcon('data:text/plain;base64,AA')===false,'invalid icon data'); const dPortrait=computeGridDims(375,740); console.assert(dPortrait.rows>=16 && dPortrait.rows>dPortrait.cols,'portrait rows dominate'); const dLandscape=computeGridDims(1024,600); console.assert(dLandscape.cols>dLandscape.rows,'landscape cols dominate'); const asp=(w,h)=>w/h; const near=(a,b)=>Math.abs(a-b)<0.35; console.assert(near(dPortrait.cols/dPortrait.rows, asp(375,740)),'portrait aspect approx'); console.assert(nextStepMs(280)<=280 && nextStepMs(280)>=140,'speed decreases but not below min'); console.assert(nextStepMs(150,140)>=140,'min clamp'); setTimeout(()=>{ const el=document.querySelector('.arena'); if(el){ const sw=parseInt(el.style.width)||0; const sh=parseInt(el.style.height)||0; console.assert(sw>0&&sh>0,'arena sized'); } }, 120); }catch(e){ console.warn('self-checks skipped',e); }
+  try{ console.assert(clamp(-1,0,10)===0,'clamp low'); console.assert(clamp(11,0,10)===10,'clamp high'); console.assert(similarity('cheese','cheese')===100,'similarity full'); const t=parseCSV('en,ru\ncat,кот\n'); console.assert(Array.isArray(t)&&t.length===1 && t[0].en==='cat' && t[0].ru==='кот','csv basic'); const t2=parseCSV('english;russian\n"ice cream";мороженое'); console.assert(t2[0].en==='ice cream' && t2[0].ru==='мороженое','csv semicolon+quotes'); const am=new AudioManager(); Promise.resolve(am.speak('')).then(()=>{}); const occ=[{x:0,y:0},{x:1,y:1}], m={x:2,y:2}; const rc=randomFreeCell(occ,m,18,12,1,()=>0.99); console.assert(rc.x>=1&&rc.x<=16&&rc.y>=1&&rc.y<=10,'randomFreeCell bounds'); console.assert(heartsMask(3,3).length>0,'hearts mask'); const __cell=40; const __mouse={x:5,y:5}; console.assert(dirFromTap(__mouse,{x:(__mouse.x+1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===1,'dir right'); console.assert(dirFromTap(__mouse,{x:(__mouse.x-1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===-1,'dir left'); console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y-1.6)*__cell},__cell).y===-1,'dir up'); console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y+1.6)*__cell},__cell).y===1,'dir down'); console.assert(isValidIcon('https://example.com/i.png')===true,'valid icon url'); console.assert(isValidIcon('data:text/plain;base64,AA')===false,'invalid icon data'); const dPortrait=computeGridDims(375,740); console.assert(dPortrait.rows>=16 && dPortrait.rows>dPortrait.cols,'portrait rows dominate'); const dLandscape=computeGridDims(1024,600); console.assert(dLandscape.cols>dLandscape.rows,'landscape cols dominate'); const asp=(w,h)=>w/h; const near=(a,b)=>Math.abs(a-b)<0.35; console.assert(near(dPortrait.cols/dPortrait.rows, asp(375,740)),'portrait aspect approx'); console.assert(nextStepMs(280)<=280 && nextStepMs(280)>=140,'speed decreases but not below min'); console.assert(nextStepMs(150,140)>=140,'min clamp'); setTimeout(()=>{ const el=document.querySelector('.arena'); if(el){ const sw=parseInt(el.style.width)||0; const sh=parseInt(el.style.height)||0; console.assert(sw>0&&sh>0,'arena sized'); } },120); }catch(e){ console.warn('self-checks skipped',e); }
   </script>
 </body>
 </html>
