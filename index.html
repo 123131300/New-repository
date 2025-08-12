@@ -25,6 +25,7 @@
       --cy-bg:#0c0f19;--cy-ink:#e9fffb;--cy-muted:#7ad7c7;--cy-yellow:#ffd800;--cy-cyan:#18ffe3;
       --cy-tile:#0f1423;--cy-border:#1d2440;--cy-glow:0 0 10px rgba(24,255,227,.35),0 0 28px rgba(255,216,0,.25);
     }
+    /* light cyber vars */
     body:not(.dark){
       --cy-bg:#eefaf8;--cy-ink:#0b1320;--cy-muted:#2f7a6d;--cy-yellow:#d7a800;--cy-cyan:#09cbb7;
       --cy-tile:#ffffff;--cy-border:#cfe8e4;--cy-glow:0 0 8px rgba(9,203,183,.18),0 0 18px rgba(215,168,0,.12);
@@ -54,36 +55,66 @@
     .pill{background:var(--chip);border-radius:999px;padding:10px 16px}
     .cta{padding:12px 18px;border-radius:14px}
 
+    /* QUIZ */
+    .quiz-word{font-size:64px;font-weight:900;margin:8px 0 16px;color:var(--cy-ink);font-family:'Orbitron',system-ui}
+    .ans{padding:16px 18px;border-radius:14px;border:1px solid var(--cy-border);background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.03));color:var(--cy-ink);cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease, background .12s ease; font-family:'Rajdhani',system-ui; font-weight:700}
+    .ans:active{transform:translateY(1px)}
+    .ans.ok{background:#d1fae5;border-color:#34d399}
+    .ans.bad{background:#fee2e2;border-color:#fca5a1}
+
+    /* CARDS */
+    .big{font-size:64px;font-weight:900;margin:8px 0 6px}
+
+    /* ACCENT */
+    .cy-ru{margin-top:6px;font-family:'Rajdhani',system-ui;font-weight:700;font-size:26px;color:var(--cy-yellow);text-shadow:0 0 10px rgba(255,216,0,.25)}
+    
+    .stat{background:var(--chip);border-radius:14px;padding:12px 14px;margin-top:8px}
+
     /* GAME */
-    .arena{background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%}
+    .arena{background:#e9eef6;border-radius:18px;position:relative;overflow:hidden;border:1px solid #e6ebf4;max-width:100%;z-index:1}
     .cell{position:absolute;border:1px solid rgba(0,0,0,.04)}
     .sprite{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))}
     .lives{position:absolute;top:10px;right:16px;font-size:20px}
     .gameover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:28px;color:#111827;background:rgba(255,255,255,.65);backdrop-filter:saturate(1.2) blur(2px)}
 
-    /* CYBER MENU */
+    /* PROGRESS */
+    .progress{height:10px;border-radius:999px;background:#eef2f7;overflow:hidden}
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2));width:0}
+
+    /* === CYBER MENU (scoped) === */
     .cyber{background:radial-gradient(1200px 600px at 10% -10%, rgba(24,255,227,.06), transparent 60%), radial-gradient(1000px 600px at 100% 0, rgba(255,216,0,.06), transparent 60%), var(--cy-bg); color:var(--cy-ink); border-radius:22px; padding:18px; box-shadow:0 12px 50px rgba(0,0,0,.35); border:1px solid var(--cy-border); max-width:100%; overflow:hidden}
     .cy-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
     .cy-logo{display:flex;align-items:center;gap:10px;font-family:'Orbitron',system-ui;font-weight:800;letter-spacing:.5px;font-size:20px}
+    .cy-logo i{display:none}
     .cy-logo svg{width:36px;height:36px;filter:drop-shadow(0 0 10px rgba(24,255,227,.6))}
     .cy-head .btn{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));color:var(--cy-ink);border:1px solid var(--cy-border)}
+
     .cy-goal{padding:16px;border-radius:16px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.05));border:1px solid var(--cy-border);box-shadow:var(--cy-glow)}
     .cy-goal h2{margin:0;font-family:'Orbitron',system-ui;font-size:22px;color:var(--cy-cyan)}
+    .cy-goal .sub{margin-top:6px;color:var(--cy-muted)}
     .cy-goal .bar{margin-top:10px;height:12px;border-radius:999px;background:rgba(12,17,32,.25);border:1px solid var(--cy-border);overflow:hidden}
     .cy-goal .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy-yellow),var(--cy-cyan));width:0;box-shadow:var(--cy-glow);transition:width .6s ease}
+
     .cy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
     .cy-tile{background:var(--cy-tile);border:1px solid var(--cy-border);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--cy-glow)}
     .cy-tile b{font-family:'Orbitron',system-ui;font-size:26px;color:var(--cy-yellow);display:block}
     .cy-tile span{color:var(--cy-muted);font-weight:700;letter-spacing:.6px}
-    .cy-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
 
-    /* bottom nav */
+    .cy-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
+    /* bottom cyber nav */
     .cy-foot{position:sticky;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px;padding-bottom: env(safe-area-inset-bottom)}
     .cy-foot .cy-foot-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);color:var(--cy-cyan);box-shadow:var(--cy-glow);cursor:pointer;transition:transform .12s ease}
+    .cy-foot .cy-foot-btn:hover{transform:translateY(-1px)}
+    .cy-foot .cy-foot-btn span{display:none}
     .cy-foot .cy-foot-btn svg{width:22px;height:22px;color:var(--cy-cyan);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
     .cy-btn{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);border-radius:18px;padding:16px 10px;cursor:pointer;box-shadow:var(--cy-glow);transition:transform .12s ease}
+    .cy-btn:hover{transform:translateY(-1px)}
     .cy-btn svg{width:32px;height:32px;color:var(--cy-cyan);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))}
+    .cy-btn span{color:var(--cy-ink);font-family:'Rajdhani',system-ui;font-weight:700;letter-spacing:.6px;opacity:.95}
     .cy-icon-img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(24,255,227,.55))}
+    .cy-foot .cy-icon-img{width:22px;height:22px;filter:drop-shadow(0 0 6px rgba(24,255,227,.45))}
+
+    /* reusable cyber panel for subpages */
     .cy-panel{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.06));border:1px solid var(--cy-border);box-shadow:var(--cy-glow);border-radius:18px;padding:18px;margin:18px 0;color:var(--cy-ink);max-width:100%;overflow:hidden}
     .cy-title{font-family:'Orbitron',system-ui;font-weight:800;color:var(--cy-cyan);font-size:20px}
     .cy-sub{color:var(--cy-muted)}
@@ -91,14 +122,17 @@
     .cy-panel .stat{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));border:1px solid var(--cy-border);box-shadow:var(--cy-glow);color:var(--cy-ink)}
     .cy-panel select,.cy-panel textarea,.cy-panel input[type=file]{background:linear-gradient(180deg,var(--cy-tile),rgba(0,0,0,.04));border:1px solid var(--cy-border);color:var(--cy-ink);border-radius:12px;box-shadow:var(--cy-glow)}
     .lives{color:#e9fffb;text-shadow:0 0 6px rgba(24,255,227,.4)}
-    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start}
+    .cy-panel .subtitle{color:var(--cy-ink);opacity:.9}
 
-    /* fullscreen overlay (игра) */
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start}
+    .cy-panel input[type=file]{width:100%}
+
+    /* === FULLSCREEN OVERLAY === */
     .fs-overlay{position:fixed;inset:0;padding: max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left)); background:var(--cy-bg); z-index:9999;display:flex;align-items:center;justify-content:center}
-    .fs-header{position:absolute;left: max(12px, env(safe-area-inset-left)); top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px}
+    .fs-header{position:absolute;left: max(12px, env(safe-area-inset-left)); top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px; z-index:3}
 
     @media (max-width:720px){
-      .cy-big{font-size:44px}
+      .quiz-word,.big,.cy-big{font-size:44px}
       .grid4{grid-template-columns:repeat(2,1fr)}
       .cy-grid{grid-template-columns:repeat(2,1fr)}
       .cy-actions{grid-template-columns:repeat(2,1fr)}
@@ -109,103 +143,84 @@
 <body>
   <div id="root"><div class="wrap"><h1>🐭 Mouse & Cheese</h1><p>Loading…</p></div></div>
 
+  <!-- Primary CDNs -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Fallback loader in case any CDN above fails -->
+  <script>
+    (function(){
+      function load(src){return new Promise(function(res){var s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=res;s.onerror=res;document.head.appendChild(s);});}
+      (async function(){
+        if(typeof React==='undefined'){await load('https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js');}
+        if(typeof ReactDOM==='undefined'){await load('https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js');}
+        if(typeof Babel==='undefined'){await load('https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js');}
+      })();
+    })();
+  </script>
 
   <script type="text/babel">
   const {useState,useEffect,useRef,useMemo,useCallback,useLayoutEffect} = React;
 
-  /* ---------------- helpers ---------------- */
+  // ========= Helpers =========
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const rand=n=>Math.floor(Math.random()*n);
-  const heartsMask=(l,max)=>('❤'.repeat(clamp(l,0,max))+'🤍'.repeat(clamp(max-l,0,max)));
-  const isValidIcon=u=>typeof u==='string'&&(u.startsWith('data:image/')||u.startsWith('http://')||u.startsWith('https://'));
-
-  function getIconsSafe(){
-    try{
-      const raw=localStorage.getItem('icons');
-      if(!raw) return {};
-      const obj=JSON.parse(raw);
-      if(!obj || typeof obj!=='object') return {};
-      return Object.fromEntries(Object.entries(obj).filter(([_,v])=>isValidIcon(v)));
-    }catch(_){return {}}
-  }
-
+  function heartsMask(lives,max){ const s=Math.max(0,Math.min(max,Number.isFinite(lives)?lives:0)); return '❤'.repeat(s)+'🤍'.repeat(Math.max(0,max-s)); }
   function randomFreeCell(obstacles,mouse,COLS,ROWS,margin=0,rnd=Math.random){
-    const used=new Set((obstacles||[]).map(o=>`${o.x},${o.y}`));
-    if(mouse) used.add(`${mouse.x},${mouse.y}`);
+    const used=new Set((obstacles||[]).map(o=>`${o.x},${o.y}`)); if(mouse) used.add(`${mouse.x},${mouse.y}`);
     const minX=Math.max(0,Math.min(COLS-1,margin)), minY=Math.max(0,Math.min(ROWS-1,margin));
     const maxX=Math.max(minX,COLS-1-margin), maxY=Math.max(minY,ROWS-1-margin);
-    for(let t=0;t<200;t++){
-      const x=minX+Math.floor(rnd()*((maxX-minX)+1));
-      const y=minY+Math.floor(rnd()*((maxY-minY)+1));
-      const k=`${x},${y}`; if(!used.has(k)) return {x,y};
-    }
-    for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){
-      const k=`${x},${y}`; if(!used.has(k)) return {x,y};
-    }
+    for(let t=0;t<200;t++){ const x=minX+Math.floor(rnd()*((maxX-minX)+1)); const y=minY+Math.floor(rnd()*((maxY-minY)+1)); const k=`${x},${y}`; if(!used.has(k)) return {x,y}; }
+    for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){ const k=`${x},${y}`; if(!used.has(k)) return {x,y}; }
     return {x:minX,y:minY};
   }
-  const dirFromTap=(mouse,tap,cell)=>{
+
+  // Tap→direction helper (pure)
+  function dirFromTap(mouse, tap, cell){
     const mx=(mouse.x+0.5)*cell, my=(mouse.y+0.5)*cell;
     const dx=tap.x-mx, dy=tap.y-my;
-    return (Math.abs(dx)>Math.abs(dy))?{x:dx>0?1:-1,y:0}:{x:0,y:dy>0?1:-1};
-  };
+    return (Math.abs(dx)>Math.abs(dy)) ? {x:dx>0?1:-1,y:0} : {x:0,y:dy>0?1:-1};
+  }
+
+  // Pick grid dims close to viewport aspect, preserving ~base area
   function computeGridDims(w,h,baseArea=216,min=8,max=36){
     const r=Math.max(0.3, Math.min(3, w/Math.max(1,h)));
     let rows=Math.round(Math.sqrt(baseArea/ r));
     let cols=Math.round(r*rows);
     rows=clamp(rows,min,max); cols=clamp(cols,min,max);
+    // Avoid too small grid in tall portrait
     if(h>w && rows<16) rows=16, cols=Math.max(min,Math.round(r*rows));
+    // Re-clamp
     rows=clamp(rows,min,max); cols=clamp(cols,min,max);
     return {cols,rows};
   }
 
-  /* ---------------- audio ---------------- */
-  class AudioManager{
-    constructor(){
-      this.queue=Promise.resolve();
-      this.voicePref=(localStorage.getItem('voicePref')||'en-US');
-      this.voiceId=(localStorage.getItem('voiceId')||'');
-      this.voices=[];
-      this._loadVoices();
-      try{window.speechSynthesis?.addEventListener?.('voiceschanged',()=>this._loadVoices());}catch(_){}
-    }
-    _loadVoices(){ try{ this.voices=window.speechSynthesis?.getVoices?.()||[];}catch(_){this.voices=[];} }
-    getVoice(){
-      const byId=this.voices.find(v=>(v.name+'|'+v.lang)===this.voiceId);
-      if(byId) return byId;
-      return this.voices.find(v=>v.lang===this.voicePref)||this.voices.find(v=>v.lang?.startsWith('en'))||null;
-    }
-    setVoiceLang(lang){ this.voicePref=lang; try{localStorage.setItem('voicePref',lang);}catch(_){ } }
-    setVoiceById(id){ this.voiceId=id; try{localStorage.setItem('voiceId',id);}catch(_){ } }
-    speak(text,{lang}={}){ if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return Promise.resolve();
-      const u=new SpeechSynthesisUtterance(text);
-      const v=this.getVoice(); u.lang=lang||v?.lang||this.voicePref||'en-US'; if(v) u.voice=v; u.rate=0.95;
-      this.queue=this.queue.finally(()=>new Promise(res=>{ try{window.speechSynthesis.cancel();}catch(_){}
-        u.onend=()=>res(); try{window.speechSynthesis.speak(u);}catch(_){res();}
-      }));
-      return this.queue;
-    }
-  }
+  // Speed utilities (pure)
+  function nextStepMs(cur, min=140){ return Math.max(min, Math.round(cur*0.95)); }
+
+  // ========= AudioManager =========
+  class AudioManager{ constructor(){ this.queue=Promise.resolve(); this.voicePref=(typeof localStorage!=='undefined'&&localStorage.getItem('voicePref'))||'en-US'; this.voiceId=(typeof localStorage!=='undefined'&&localStorage.getItem('voiceId'))||''; this.voices=[]; this._loadVoices(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',()=>this._loadVoices());}catch(_){} } _loadVoices(){ try{ this.voices=window?.speechSynthesis?.getVoices?.()||[];}catch(_){this.voices=[];} } getVoice(){ const byId=this.voices.find(v=>(v.name+'|'+v.lang)===this.voiceId); if(byId) return byId; return this.voices.find(v=>v.lang===this.voicePref)||this.voices.find(v=>v.lang?.startsWith('en'))||null; } setVoiceLang(lang){ this.voicePref=lang; try{localStorage.setItem('voicePref',lang);}catch(_){}} setVoiceById(id){ this.voiceId=id; try{localStorage.setItem('voiceId',id);}catch(_){}} speak(text,{lang}={}){ if(!window?.speechSynthesis||!window?.SpeechSynthesisUtterance) return Promise.resolve(); const u=new SpeechSynthesisUtterance(text); const v=this.getVoice(); u.lang=lang||v?.lang||this.voicePref||'en-US'; if(v) u.voice=v; u.rate=0.95; return this._enqueue(u);} _enqueue(utter){ this.queue=this.queue.finally(()=>new Promise(res=>{ try{window?.speechSynthesis?.cancel();}catch(_){ } utter.onend=()=>res(); try{window?.speechSynthesis?.speak?.(utter);}catch(_){res();} })); return this.queue; } }
   const audio=new AudioManager();
 
+  function similarity(a,b){ a=(a||'').toLowerCase(); b=(b||'').toLowerCase(); if(!a||!b) return 0; const m=Math.max(a.length,b.length); let s=0; for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===b[i]) s++; } return Math.round((s/m)*100); }
+  function parseCSV(text){ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; const splitter=new RegExp(`${sep}(?=(?:[^\\"]*\\"[^\\"]*\\")*[^\\"]*$)`); for(let i=start;i<lines.length;i++){ const cols=lines[i].split(splitter).map(s=>s.replace(/^\"|\"$/g,'').trim()); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; }
+  function genObstacles(COLS,ROWS,K=6){ const pool=['🌵','🪵','🪨','🕳️','🧊']; const used=new Set(); const a=[]; while(a.length<K){ const x=1+rand(COLS-2), y=1+rand(ROWS-2); const k=`${x},${y}`; if(used.has(k)) continue; used.add(k); a.push({x,y,em:pool[rand(pool.length)]}); } return a; }
+  function isValidIcon(u){ return typeof u==='string' && (u.startsWith('data:image/') || u.startsWith('http://') || u.startsWith('https://')); }
+
   const BASE_WORDS=[{en:'cheese',ru:'сыр'},{en:'room',ru:'комната'},{en:'right',ru:'право'},{en:'child',ru:'ребёнок'},{en:'ticket',ru:'билет'},{en:'left',ru:'лево'},{en:'school',ru:'школа'},{en:'game',ru:'игра'}];
-  const getWords=()=>{ let packs=[]; try{packs=JSON.parse(localStorage.getItem('packs')||'[]');}catch(_){packs=[];} return [...BASE_WORDS,...packs.filter(w=>w.en&&w.ru)]; };
+  function getWords(){ let packs=[]; try{packs=JSON.parse(localStorage.getItem('packs')||'[]');}catch(_){packs=[];} return [...BASE_WORDS,...packs.filter(w=>w.en&&w.ru)]; }
 
-  const Btn=({children,onClick,variant='ghost',type='button',disabled=false})=>{
-    const map={grad:'btn btn--grad', ok:'btn btn--ok', ghost:'btn btn--ghost'};
-    return <button type={type} className={map[variant]} onClick={onClick} disabled={disabled}>{children}</button>;
-  };
+  const Btn=({children,onClick,variant='ghost',type='button',disabled=false})=>{const map={grad:'btn btn--grad', ok:'btn btn--ok', ghost:'btn btn--ghost'};return <button type={type} className={map[variant]} onClick={onClick} disabled={disabled}>{children}</button>};
 
-  /* ---------------- Game (без изменений механики) ---------------- */
+  // ===== Game =====
   function Game({onBack,word,onEat,fs,setFs}){
-    const BASE={COLS:18,ROWS:12}, SPEED=280, MAX_LIVES=3;
+    const BASE={COLS:18,ROWS:12}, SPEED=280, MIN_SPEED=140, MAX_LIVES=3;
     const wrapRef=useRef(null);
     const rafRef=useRef(0), lastRef=useRef(0), accRef=useRef(0);
     const collideRef=useRef(false);
     const [cell,setCell]=useState(38);
+
+    // dynamic grid
     const [dims,setDims]=useState({cols:BASE.COLS,rows:BASE.ROWS});
     const COLS=dims.cols, ROWS=dims.rows;
 
@@ -216,7 +231,11 @@
     const [lives,setLives]=useState(MAX_LIVES);
     const [scale,setScale]=useState(1);
 
-    const genObs=useCallback((c,r)=>{ const pool=['🌵','🪵','🪨','🕳️','🧊']; const used=new Set(); const a=[]; while(a.length<6){ const x=1+rand(c-2), y=1+rand(r-2); const k=`${x},${y}`; if(used.has(k)) continue; used.add(k); a.push({x,y,em:pool[rand(pool.length)]}); } return a; },[]);
+    // variable step time (speed)
+    const [stepMs,setStepMs]=useState(SPEED);
+    const stepRef=useRef(SPEED);
+
+    const genObs=useCallback((c,r)=>genObstacles(c,r,6),[]);
     const [obstacles,setObstacles]=useState(()=>genObs(COLS,ROWS));
 
     const spawnCheese=useCallback(()=>{
@@ -224,26 +243,32 @@
       setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
     },[obstacles,mouse,COLS,ROWS]);
 
+    // Fit grid to visible viewport / overlay
     const fit=useCallback(()=>{
       const el=wrapRef.current; if(!el) return;
       const vp=window.visualViewport; const vw=Math.floor(vp?vp.width:window.innerWidth); const vh=Math.floor(vp?vp.height:window.innerHeight);
       if(fs){
+        // Fullscreen: pick grid close to screen aspect
         const nd=computeGridDims(vw,vh, BASE.COLS*BASE.ROWS);
-        if(nd.cols!==COLS||nd.rows!==ROWS) setDims(nd);
+        if(nd.cols!==COLS||nd.rows!==ROWS){ setDims(nd); }
         const size=Math.max(20, Math.floor(Math.min(vw/nd.cols, vh/nd.rows)));
         el.style.width=(size*nd.cols)+'px';
         el.style.height=(size*nd.rows)+'px';
         setCell(size);
         return;
       }
+      // Non-FS: fit into panel
       const panel=el.closest('.cy-panel')||el.parentElement||document.body;
       const cs=getComputedStyle(panel);
-      const padL=parseFloat(cs.paddingLeft)||0, padR=parseFloat(cs.paddingRight)||0, padT=parseFloat(cs.paddingTop)||0;
+      const padL=parseFloat(cs.paddingLeft)||0;
+      const padR=parseFloat(cs.paddingRight)||0;
+      const padT=parseFloat(cs.paddingTop)||0;
       const contentW=Math.max(220, Math.floor(panel.clientWidth - padL - padR));
       const rect=panel.getBoundingClientRect();
       const nav=document.querySelector('.cy-foot');
       const navH=(nav && nav.offsetParent)? Math.floor(nav.getBoundingClientRect().height)+12 : 0;
       const availableH=Math.max(220, Math.floor((vp?vp.height:window.innerHeight) - (rect.top + padT) - navH - 12));
+      // Keep base grid in non-FS
       if(COLS!==BASE.COLS||ROWS!==BASE.ROWS) setDims({cols:BASE.COLS,rows:BASE.ROWS});
       const sizeW=Math.floor(contentW/BASE.COLS);
       const sizeH=Math.floor(availableH/BASE.ROWS);
@@ -253,7 +278,7 @@
       setCell(size);
     },[fs,COLS,ROWS]);
 
-    useLayoutEffect(()=>{
+    useLayoutEffect(()=>{ // run earlier to avoid flicker
       fit();
       const onResize=()=>window.requestAnimationFrame(fit);
       const ro = window.ResizeObserver ? new ResizeObserver(onResize) : null;
@@ -264,15 +289,18 @@
       return ()=>{ ro?.disconnect(); window.removeEventListener('resize',onResize); window.removeEventListener('orientationchange',onResize); vv?.removeEventListener('resize',onResize); vv?.removeEventListener('scroll',onResize); };
     },[fit]);
 
+    // Reset game when dims change (FS toggled/orientation)
     useEffect(()=>{
       const obs=genObs(COLS,ROWS);
       setObstacles(obs);
       const start={x:1,y:1};
       setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1);
+      setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0;
       const c=randomFreeCell(obs,start,COLS,ROWS,1);
       setCheese({x:c.x,y:c.y});
     },[COLS,ROWS,genObs]);
 
+    // Tap steering (← ↑ → ↓)
     useEffect(()=>{
       const el=wrapRef.current; if(!el) return;
       const onPtr=(e)=>{
@@ -282,15 +310,16 @@
         setDir(d);
       };
       el.addEventListener('pointerdown',onPtr,{passive:true});
-      return ()=>el.removeEventListener('pointerdown',onPtr);
+      return ()=>{ el.removeEventListener('pointerdown',onPtr); };
     },[mouse,cell]);
 
+    // Game loop (rAF, fixed step with variable speed)
     useEffect(()=>{
       if(!running) return;
       lastRef.current=performance.now();
       const step=t=>{
         accRef.current+=t-lastRef.current; lastRef.current=t;
-        while(accRef.current>=SPEED){
+        while(accRef.current>=stepRef.current){
           collideRef.current=false;
           setMouse(prev=>{
             let nx=prev.x+dir.x, ny=prev.y+dir.y;
@@ -301,12 +330,18 @@
               setCheese({x:clamp(c.x,0,COLS-1), y:clamp(c.y,0,ROWS-1)});
               setLives(v=>clamp(v+1,0,MAX_LIVES));
               setScale(s=>Math.min(1.8,s+0.08));
+              // speed up a bit each time
+              setStepMs(s=>{ const ns=nextStepMs(s,MIN_SPEED); stepRef.current=ns; return ns; });
               onEat && onEat(word);
             }
             return {x:nx,y:ny};
           });
-          if(collideRef.current){ accRef.current=0; setDir({x:0,y:0}); break; }
-          accRef.current-=SPEED;
+          if(collideRef.current){
+            accRef.current=0;
+            setDir({x:0,y:0});
+            break;
+          }
+          accRef.current-=stepRef.current;
         }
         rafRef.current=requestAnimationFrame(step);
       };
@@ -314,8 +349,9 @@
       return ()=>cancelAnimationFrame(rafRef.current);
     },[dir,cheese,obstacles,running,word,onEat,COLS,ROWS]);
 
-    useEffect(()=>{ if(lives<=0) setRunning(false); },[lives]);
+    useEffect(()=>{ if(lives<=0){ setRunning(false); } },[lives]);
 
+    // Ensure cheese valid
     useEffect(()=>{
       const blocked=obstacles.some(o=>o.x===cheese.x && o.y===cheese.y);
       const out=cheese.x<0||cheese.y<0||cheese.x>=COLS||cheese.y>=ROWS;
@@ -324,6 +360,14 @@
 
     const grid=useMemo(()=>Array.from({length:COLS*ROWS},(_,i)=>({x:i%COLS,y:Math.floor(i/COLS)})),[COLS,ROWS]);
     const livesMask=heartsMask(lives,MAX_LIVES);
+
+    const restart=useCallback(()=>{
+      const obs=genObs(COLS,ROWS); setObstacles(obs);
+      const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1);
+      setStepMs(SPEED); stepRef.current=SPEED; accRef.current=0;
+      const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y});
+      setRunning(true);
+    },[COLS,ROWS,genObs]);
 
     const headerBtns=(
       <div className="row"><div className="cy-title">Mouse & Cheese</div>
@@ -335,11 +379,24 @@
     const arena=(
       <div ref={wrapRef} className="arena">
         <div className="lives">{livesMask}</div>
-        {grid.map(c=> (<div key={`${c.x}-${c.y}`} className="cell" style={{left:c.x*cell,top:c.y*cell,width:cell,height:cell}} />))}
+        {grid.map(c=> (
+          <div key={`${c.x}-${c.y}`} className="cell" style={{left:c.x*cell,top:c.y*cell,width:cell,height:cell}}></div>
+        ))}
         {running && <div className="sprite" style={{left:(mouse.x+.5)*cell, top:(mouse.y+.5)*cell, fontSize:28, transform:`translate(-50%,-50%) scale(${scale})`}}>🐭</div>}
         <div className="sprite" style={{left:(cheese.x+.5)*cell, top:(cheese.y+.5)*cell, fontSize:26}}>🧀</div>
-        {obstacles.map((o,i)=> (<div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:24}}>{o.em}</div>))}
-        {!running && <div className="gameover">Game Over</div>}
+        {obstacles.map((o,i)=> (
+          <div key={i} className="sprite" style={{left:(o.x+.5)*cell, top:(o.y+.5)*cell, fontSize:24}}>{o.em}</div>
+        ))}
+        {!running && <div className="gameover" role="alert">
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:32,fontWeight:800,marginBottom:12}}>Game Over</div>
+            <div className="card-row" style={{justifyContent:'center'}}>
+              <Btn variant="ok" onClick={restart}>Try again</Btn>
+              <Btn onClick={onBack}>Menu</Btn>
+              {fs && <Btn onClick={()=>setFs(false)}>Exit FS</Btn>}
+            </div>
+          </div>
+        </div>}
       </div>
     );
 
@@ -354,21 +411,18 @@
         </div>
       );
     }
+
     return (
       <div className="cy-panel">
         {headerBtns}
         {arena}
         <div className="row" style={{marginTop:10,justifyContent:'space-between'}}>
-          <Btn onClick={()=>{ const obs=genObs(COLS,ROWS); setObstacles(obs); const start={x:1,y:1}; setMouse(start); setDir({x:1,y:0}); setLives(MAX_LIVES); setScale(1); const c=randomFreeCell(obs,start,COLS,ROWS,1); setCheese({x:c.x,y:c.y}); setRunning(true); }}>Restart</Btn>
+          <Btn onClick={restart}>Restart</Btn>
           <div className="subtitle">Tap to steer (← ↑ → ↓). Eat cheese — word speaks.</div>
         </div>
       </div>
     );
   }
-
-  /* ---------------- Quiz / Cards / Accent (без изменений) ---------------- */
-  const similarity=(a,b)=>{a=(a||'').toLowerCase();b=(b||'').toLowerCase();if(!a||!b)return 0;const m=Math.max(a.length,b.length);let s=0;for(let i=0;i<Math.min(a.length,b.length);i++){if(a[i]===b[i])s++;}return Math.round((s/m)*100);};
-  const parseCSV=(text)=>{ const lines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean); if(!lines.length) return []; const sep=lines[0].includes(';')&&!lines[0].includes(',')?';':','; const first=lines[0].split(sep).map(s=>s.trim().toLowerCase()); let start=0,enFirst=true; if(first.includes('en')||first.includes('ru')||first.includes('english')||first.includes('russian')){ start=1; enFirst=first[0].startsWith('en'); } const out=[]; const splitter=new RegExp(`${sep}(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)`); for(let i=start;i<lines.length;i++){ const cols=lines[i].split(splitter).map(s=>s.replace(/^\"|\"$/g,'').trim()); if(cols.length<2) continue; const [a,b]=cols; const en=enFirst?a:b, ru=enFirst?b:a; if(en&&ru) out.push({en,ru}); } return out; };
 
   function Quiz({onBack,onStat}){
     const WORDS=getWords(); const [i,setI]=useState(0); const [picked,setPicked]=useState(null); const q=WORDS[i%WORDS.length];
@@ -424,47 +478,19 @@
     );
   }
 
-  /* ---------------- Settings + ErrorBoundary ---------------- */
-  class ErrorBoundary extends React.Component{
-    constructor(p){ super(p); this.state={hasError:false,err:null}; }
-    static getDerivedStateFromError(){ return {hasError:true}; }
-    componentDidCatch(err){ this.setState({err}); }
-    render(){
-      if(this.state.hasError){
-        return (
-          <div className="cy-panel">
-            <div className="cy-title">Settings crashed</div>
-            <div className="subtitle">Something went wrong while rendering settings. Try reopening.</div>
-            <div className="card-row" style={{marginTop:10}}><Btn onClick={this.props.onBack}>Back to Menu</Btn></div>
-            {this.state.err && <pre style={{whiteSpace:'pre-wrap',opacity:.7,marginTop:8}}>{String(this.state.err)}</pre>}
-          </div>
-        );
-      }
-      return this.props.children;
-    }
-  }
-
   function Settings({onBack,icons,setIcons}){
-    const [voices,setVoices]=useState([]);
-    const [lang,setLang]=useState(audio.voicePref||'en-US');
-    const [voiceId,setVoiceId]=useState(audio.voiceId||'');
-    const [json,setJson]=useState('');
-    const fileRef=useRef();
-
-    useEffect(()=>{ const update=()=>{ try{ setVoices(window.speechSynthesis?.getVoices?.()||[]); }catch(_){ setVoices([]);} }; update(); try{window.speechSynthesis?.addEventListener?.('voiceschanged',update);}catch(_){ } return ()=>{ try{window.speechSynthesis?.removeEventListener?.('voiceschanged',update);}catch(_){ } }; },[]);
-    const voiceList=Array.isArray(voices)?voices:[];
-    const langOptions=[...new Set(voiceList.map(v=>v?.lang).filter(Boolean))];
-    const voicesByLang=voiceList.filter(v=>v?.lang===lang);
+    const [voices,setVoices]=useState([]); const [lang,setLang]=useState(audio.voicePref||'en-US'); const [voiceId,setVoiceId]=useState(audio.voiceId||''); const [json,setJson]=useState(''); const fileRef=useRef();
+    useEffect(()=>{ const update=()=>{ const v=window?.speechSynthesis?.getVoices?.()||[]; setVoices(v); }; update(); try{window?.speechSynthesis?.addEventListener?.('voiceschanged',update);}catch(_){ } return ()=>{ try{window?.speechSynthesis?.removeEventListener?.('voiceschanged',update);}catch(_){ } }; },[]);
+    const voicesByLang=voices.filter(v=>v.lang===lang);
     useEffect(()=>{ if(voicesByLang.length && !voiceId){ setVoiceId(voicesByLang[0].name+'|'+voicesByLang[0].lang); } },[lang,voicesByLang,voiceId]);
-
     const saveVoice=()=>{ audio.setVoiceLang(lang); audio.setVoiceById(voiceId); alert('Voice saved'); };
-
     const importPackJSON=()=>{ try{ const arr=JSON.parse(json); if(!Array.isArray(arr)) throw 0; const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert('Pack imported.'); setJson(''); } catch(_){ alert('JSON must be an array of {en,ru}'); } };
     const importCSV=text=>{ const arr=parseCSV(text); const prev=JSON.parse(localStorage.getItem('packs')||'[]'); localStorage.setItem('packs',JSON.stringify([...prev,...arr])); alert(`CSV imported: +${arr.length} words.`); };
     const onFile=e=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>importCSV(String(r.result||'')); r.readAsText(f,'utf-8'); e.target.value=''; };
     const pingAPI=async()=>{ try{ const r=await fetch('/.netlify/functions/progress?op=ping'); alert('API: '+(r.ok?'ok':'unavailable')); }catch(_){ alert('API unavailable (deploy functions)'); } };
     const ttsOk=!!(window?.speechSynthesis&&window?.SpeechSynthesisUtterance);
 
+    // custom icon uploads
     const [ic,setIc]=useState(()=>({...icons}));
     const loadIcon=(key)=>e=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ setIc(o=>({...o,[key]:String(r.result||'')})); }; r.readAsDataURL(f); e.target.value=''; };
     const saveIcons=()=>{ try{ const filtered=Object.fromEntries(Object.entries(ic).filter(([_,v])=>isValidIcon(v))); localStorage.setItem('icons',JSON.stringify(filtered)); setIcons(filtered); alert('Icons saved'); }catch(_){ alert('Cannot save icons'); } };
@@ -477,11 +503,11 @@
           <div>
             <div className="subtitle">Voice — language</div>
             <select value={lang} onChange={e=>setLang(e.target.value)} style={{marginTop:8,padding:'10px',borderRadius:12,width:'100%'}}>
-              {langOptions.length? langOptions.map(l=> <option key={l} value={l}>{l}</option>) : <option value={lang}>{lang}</option>}
+              {[...new Set(voices.map(v=>v.lang))].map(l=> <option key={l} value={l}>{l}</option>)}
             </select>
             <div className="subtitle" style={{marginTop:10}}>Voice — variant</div>
             <select value={voiceId} onChange={e=>setVoiceId(e.target.value)} style={{marginTop:8,padding:'10px',borderRadius:12,width:'100%'}}>
-              {voicesByLang.length? voicesByLang.map(v=>{ const name=v.name||'voice'; const hint=/female|woman|salli|joanna|emma|amy|linda|victoria|natasha/i.test(name)?' [F]':(/male|man|matthew|justin|joey|brian|arthur|daniel/i.test(name)?' [M]':''); return <option key={v.name+'|'+v.lang} value={v.name+'|'+v.lang}>{name+hint}</option>; }) : <option value={voiceId||''}>{voiceId||'—'}</option>}
+              {voicesByLang.map(v=>{ const name=v.name||'voice'; const hint=/female|woman|salli|joanna|emma|amy|linda|victoria|natasha/i.test(name)?' [F]':(/male|man|matthew|justin|joey|brian|arthur|daniel/i.test(name)?' [M]':''); return <option key={v.name+'|'+v.lang} value={v.name+'|'+v.lang}>{name+hint}</option>; })}
             </select>
             <div className="card-row" style={{marginTop:10}}>
               <Btn onClick={saveVoice} variant="ok" disabled={!ttsOk}>Save</Btn>
@@ -489,7 +515,6 @@
             </div>
             {!ttsOk && <div className="subtitle" style={{marginTop:8}}>TTS not supported here.</div>}
           </div>
-
           <div>
             <div className="subtitle">Import word pack</div>
             <textarea value={json} onChange={e=>setJson(e.target.value)} placeholder='[{"en":"cat","ru":"кот"}]' style={{marginTop:8,width:'100%',height:110,borderRadius:12,padding:10}} />
@@ -500,17 +525,29 @@
             <div className="subtitle" style={{marginTop:10}}>Or upload CSV (columns: en,ru)</div>
             <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{marginTop:8}}/>
           </div>
-
           <div>
             <div className="subtitle">Custom icons (PNG/SVG, 128–256px)</div>
             <div className="card-row" style={{marginTop:10}}>
-              {['quiz','cards','game','accent'].map(k=>(
-                <div key={k}>
-                  <div className="subtitle" style={{textTransform:'capitalize'}}>{k}</div>
-                  <img alt={k} src={ic[k]||''} style={{width:48,height:48,display:ic[k]?'block':'none'}}/>
-                  <input type="file" accept="image/*" onChange={loadIcon(k)} />
-                </div>
-              ))}
+              <div>
+                <div className="subtitle">Quiz</div>
+                <img alt="quiz" src={ic.quiz||''} style={{width:48,height:48,display:ic.quiz?'block':'none'}}/>
+                <input type="file" accept="image/*" onChange={loadIcon('quiz')} />
+              </div>
+              <div>
+                <div className="subtitle">Cards</div>
+                <img alt="cards" src={ic.cards||''} style={{width:48,height:48,display:ic.cards?'block':'none'}}/>
+                <input type="file" accept="image/*" onChange={loadIcon('cards')} />
+              </div>
+              <div>
+                <div className="subtitle">Game</div>
+                <img alt="game" src={ic.game||''} style={{width:48,height:48,display:ic.game?'block':'none'}}/>
+                <input type="file" accept="image/*" onChange={loadIcon('game')} />
+              </div>
+              <div>
+                <div className="subtitle">Accent</div>
+                <img alt="accent" src={ic.accent||''} style={{width:48,height:48,display:ic.accent?'block':'none'}}/>
+                <input type="file" accept="image/*" onChange={loadIcon('accent')} />
+              </div>
             </div>
             <div className="card-row" style={{marginTop:10}}>
               <Btn variant="ok" onClick={saveIcons}>Save icons</Btn>
@@ -518,7 +555,6 @@
             </div>
           </div>
         </div>
-
         <div className="cy-panel" style={{marginTop:12}}>
           <div className="cy-title">Supabase link</div>
           <div className="subtitle">Use Netlify Function with server key & RLS. Click to check API deployment.</div>
@@ -528,11 +564,16 @@
     );
   }
 
-  /* ---------------- Menu / App ---------------- */
+  // ===== Cyber Menu =====
   function LogoMouse(){
     return (
       <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffd800"/><stop offset="1" stopColor="#18ffe3"/></linearGradient></defs>
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ffd800"/>
+            <stop offset="1" stopColor="#18ffe3"/>
+          </linearGradient>
+        </defs>
         <circle cx="32" cy="32" r="28" fill="#0f1423" stroke="url(#g1)" strokeWidth="3"/>
         <ellipse cx="20" cy="20" rx="9" ry="8" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/>
         <ellipse cx="44" cy="20" rx="9" ry="8" fill="#0f1423" stroke="#18ffe3" strokeWidth="2"/>
@@ -595,17 +636,20 @@
 
   function App(){
     const WORDS=getWords();
-    const [icons,setIcons]=useState(getIconsSafe());
+    const getIcons=()=>{ try{ const raw=JSON.parse(localStorage.getItem('icons')||'{}'); return Object.fromEntries(Object.entries(raw).filter(([_,v])=>isValidIcon(v))); }catch(_){return {}} };
+    const [icons,setIcons]=useState(getIcons());
     const [screen,setScreen]=useState('menu');
     const [stats,setStats]=useState(()=>{ try{return JSON.parse(localStorage.getItem('stats')||'{"cards":0,"quiz":0,"cheese":0,"accent":0}')}catch(_){return {cards:0,quiz:0,cheese:0,accent:0}} });
     const onStat=useCallback((k)=>{ setStats(s=>{ const n={...s,[k]:s[k]+1}; localStorage.setItem('stats',JSON.stringify(n)); return n; }); },[]);
-    useEffect(()=>{ const t=(localStorage.getItem('theme')||'light'); document.body.classList.toggle('dark',t==='dark'); },[]);
+    useEffect(()=>{ const t=(typeof localStorage!=='undefined'&&localStorage.getItem('theme'))||'light'; document.body.classList.toggle('dark',t==='dark'); },[]);
     const toggleTheme=useCallback(()=>{ const now=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',now); try{ localStorage.setItem('theme',now?'dark':'light'); }catch(_){} },[]);
-    const go=useCallback((s)=>{ if(s!=='game'){ /* выходим из фуллскрина, если уходят со страницы игры */ setFs(false);} setScreen(s); },[]);
+    const go=useCallback((s)=>setScreen(s),[]);
     const [wordI,setWordI]=useState(0);
 
+    /* Telegram WebApp safe init (optional) */
     useEffect(()=>{ try{ window.Telegram?.WebApp?.ready?.(); }catch(_){} },[]);
 
+    /* Hide bottom nav in Game and add Escape back-to-menu; lock scroll when FS */
     const [fs,setFs]=useState(false);
     useEffect(()=>{ document.body.classList.toggle('no-foot', screen==='game'); },[screen]);
     useEffect(()=>{ const onKey=(e)=>{ if(e.key==='Escape'){ if(fs){ setFs(false);} else if(screen==='game'){ setScreen('menu'); } } }; window.addEventListener('keydown', onKey); return ()=>window.removeEventListener('keydown', onKey); },[screen,fs]);
@@ -618,11 +662,6 @@
         {screen==='cards' && <Cards onBack={()=>go('menu')} onStat={onStat}/>}
         {screen==='accent' && <Accent onBack={()=>go('menu')} onStat={onStat}/>}
         {screen==='game' && <Game onBack={()=>go('menu')} word={WORDS[wordI%WORDS.length]} onEat={(w)=>{audio.speak(w.en); setWordI(i=>i+1); onStat('cheese');}} fs={fs} setFs={setFs}/>}
-        {screen==='settings' && (
-          <ErrorBoundary onBack={()=>go('menu')}>
-            <Settings onBack={()=>go('menu')} icons={icons} setIcons={setIcons}/>
-          </ErrorBoundary>
-        )}
         {screen!=='game' && <CyberBottomNav go={go} icons={icons}/>}
       </div>
     );
@@ -630,11 +669,41 @@
 
   ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
-  /* ---------- self-checks ---------- */
-  window.__MNC__={clamp, randomFreeCell, heartsMask, dirFromTap, computeGridDims, getIconsSafe};
+  // ===== Self-checks (unit-style) =====
+  window.__MNC__={clamp, similarity, parseCSV, AudioManager, randomFreeCell, heartsMask, dirFromTap, computeGridDims, nextStepMs};
   try{
-    console.assert(getIconsSafe() && typeof getIconsSafe()==='object','icons safe returns object');
-    const t=parseInt(Date.now()/1e7,10)%2; if(t===1){ localStorage.setItem('icons','null'); console.assert(typeof getIconsSafe()==='object','icons=null safe'); }
+    console.assert(clamp(-1,0,10)===0,'clamp low');
+    console.assert(clamp(11,0,10)===10,'clamp high');
+    console.assert(similarity('cheese','cheese')===100,'similarity full');
+    const t=parseCSV('en,ru\ncat,кот\n');
+    console.assert(Array.isArray(t)&&t.length===1 && t[0].en==='cat' && t[0].ru==='кот','csv basic');
+    const t2=parseCSV('english;russian\n"ice cream";мороженое');
+    console.assert(t2[0].en==='ice cream' && t2[0].ru==='мороженое','csv semicolon+quotes');
+    const am=new AudioManager(); Promise.resolve(am.speak('')).then(()=>{});
+    const occ=[{x:0,y:0},{x:1,y:1}], m={x:2,y:2};
+    const rc=randomFreeCell(occ,m,18,12,1,()=>0.99);
+    console.assert(rc.x>=1&&rc.x<=16&&rc.y>=1&&rc.y<=10,'randomFreeCell bounds');
+    console.assert(heartsMask(3,3).length>0,'hearts mask');
+    const __cell=40; const __mouse={x:5,y:5};
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x+1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===1,'dir right');
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x-1.6)*__cell,y:(__mouse.y+0.5)*__cell},__cell).x===-1,'dir left');
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y-1.6)*__cell},__cell).y===-1,'dir up');
+    console.assert(dirFromTap(__mouse,{x:(__mouse.x+0.5)*__cell,y:(__mouse.y+1.6)*__cell},__cell).y===1,'dir down');
+    console.assert(isValidIcon('https://example.com/i.png')===true,'valid icon url');
+    console.assert(isValidIcon('data:text/plain;base64,AA')===false,'invalid icon data');
+
+    // NEW: grid dims tests
+    const dPortrait=computeGridDims(375,740); console.assert(dPortrait.rows>=16 && dPortrait.rows>dPortrait.cols,'portrait rows dominate');
+    const dLandscape=computeGridDims(1024,600); console.assert(dLandscape.cols>dLandscape.rows,'landscape cols dominate');
+    const asp=(w,h)=>w/h; const near=(a,b)=>Math.abs(a-b)<0.35; // not too strict due to clamping
+    console.assert(near(dPortrait.cols/dPortrait.rows, asp(375,740)),'portrait aspect approx');
+
+    // NEW: speed-up tests
+    console.assert(nextStepMs(280)<=280 && nextStepMs(280)>=140,'speed decreases but not below min');
+    console.assert(nextStepMs(150,140)>=140,'min clamp');
+
+    // DOM-size sanity check after mount
+    setTimeout(()=>{ const el=document.querySelector('.arena'); if(el){ const sw=parseInt(el.style.width)||0; const sh=parseInt(el.style.height)||0; console.assert(sw>0&&sh>0,'arena sized'); } }, 120);
   }catch(e){ console.warn('self-checks skipped',e); }
   </script>
 </body>
