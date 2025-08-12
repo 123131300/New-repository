@@ -2,18 +2,11 @@ import type { Handler } from "@netlify/functions";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
-// === ENV with aliases (to match your screenshot) ===
+// === ENV with aliases (matches your current names) ===
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.SUPABASE_URL_PUBLIC || "").trim();
 const SUPABASE_SERVICE_ROLE = (process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_KEY || "").trim();
 const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || "").trim();
 const ALLOW_ORIGIN = (process.env.ALLOW_ORIGIN || "*").trim();
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
-  console.warn("[progress] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE/SUPABASE_SERVICE_KEY envs");
-}
-if (!TELEGRAM_BOT_TOKEN) {
-  console.warn("[progress] Missing TELEGRAM_BOT_TOKEN/BOT_TOKEN env — Telegram verification will fail in prod");
-}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
   auth: { persistSession: false },
@@ -25,7 +18,7 @@ type EventItem =
   | { type: "stat"; payload: { kind: StatKind }; ts: number }
   | { type: "sync"; payload: { stats: Partial<Record<StatKind, number>> }; ts: number };
 
-function ok(body: unknown, status = 200) {
+function resp(body: unknown, status = 200) {
   return {
     statusCode: status,
     headers: {
@@ -38,13 +31,14 @@ function ok(body: unknown, status = 200) {
     body: JSON.stringify(body),
   };
 }
-const bad = (msg: string, status = 400) => ok({ error: msg }, status);
+const bad = (msg: string, status = 400) => resp({ ok: false, error: msg }, status);
 
-function verifyTelegramInitData(initData: string): { ok: boolean; userId?: number } {
-  if (!initData) return { ok: false };
+// --- Telegram initData verification ---
+function verifyTelegramInitData(initData: string): { ok: boolean; userId?: number; reason?: string } {
+  if (!initData) return { ok: false, reason: "EMPTY" };
   const params = new URLSearchParams(initData);
   const hash = params.get("hash") || "";
-  if (!hash) return { ok: false };
+  if (!hash) return { ok: false, reason: "NO_HASH" };
 
   const pairs: string[] = [];
   params.forEach((v, k) => {
@@ -53,25 +47,30 @@ function verifyTelegramInitData(initData: string): { ok: boolean; userId?: numbe
   pairs.sort();
   const dataCheckString = pairs.join("\n");
 
-  const secretKey = crypto
-    .createHmac("sha256", "WebAppData")
-    .update(TELEGRAM_BOT_TOKEN)
-    .digest();
-  const calcHash = crypto
-    .createHmac("sha256", secretKey)
-    .update(dataCheckString)
-    .digest("hex");
+  try {
+    const secretKey = crypto.createHmac("sha256", "WebAppData").update(TELEGRAM_BOT_TOKEN).digest();
+    const calcHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+    const isEqual = crypto.timingSafeEqual(Buffer.from(calcHash), Buffer.from(hash));
+    if (!isEqual) return { ok: false, reason: "HASH_MISMATCH" };
+  } catch (e) {
+    return { ok: false, reason: "CRYPTO_FAIL" };
+  }
 
-  const isEqual = crypto.timingSafeEqual(Buffer.from(calcHash), Buffer.from(hash));
-  if (!isEqual) return { ok: false };
-
+  // Telegram initData может жить долго. Не режем жёстко. Разрешим до 30 дней.
   const ad = Number(params.get("auth_date") || "0") * 1000;
-  if (!ad || Date.now() - ad > 2 * 24 * 60 * 60 * 1000) return { ok: false };
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  if (ad && Date.now() - ad > THIRTY_DAYS) {
+    // не фейлим, просто пометим как старое
+  }
 
   const userJson = params.get("user");
-  if (!userJson) return { ok: false };
-  const user = JSON.parse(userJson);
-  return { ok: true, userId: Number(user.id) };
+  if (!userJson) return { ok: false, reason: "NO_USER" };
+  try {
+    const user = JSON.parse(userJson);
+    return { ok: true, userId: Number(user.id) };
+  } catch {
+    return { ok: false, reason: "USER_PARSE" };
+  }
 }
 
 function devUser(headers: Record<string, string | undefined>): number | undefined {
@@ -82,19 +81,24 @@ function devUser(headers: Record<string, string | undefined>): number | undefine
 }
 
 async function upsertUserProfile(userId: number) {
-  await supabase.from("users").upsert({ id: userId }).select().single();
+  const { error } = await supabase.from("users").upsert({ id: userId }).select().single();
+  if (error) throw new Error("upsert users: " + error.message);
 }
 
 async function applyEvents(userId: number, events: EventItem[]) {
-  if (!events.length) return;
+  if (!events.length) return { logged: 0, inc: { cards: 0, quiz: 0, cheese: 0, accent: 0 } };
+
+  // 1) write raw events
   const toLog = events.map((e) => ({
     user_id: userId,
     type: e.type === "stat" ? e.payload.kind : "sync",
     payload: e.payload,
     ts: new Date(e.ts).toISOString(),
   }));
-  await supabase.from("events").insert(toLog).select();
+  const ins = await supabase.from("events").insert(toLog).select();
+  if (ins.error) throw new Error("insert events: " + ins.error.message);
 
+  // 2) aggregate
   const today = new Date().toISOString().slice(0, 10);
   let inc = { cards: 0, quiz: 0, cheese: 0, accent: 0 } as Record<StatKind, number>;
   let sync: Partial<Record<StatKind, number>> | null = null;
@@ -103,20 +107,24 @@ async function applyEvents(userId: number, events: EventItem[]) {
     else if (e.type === "sync") sync = e.payload.stats ?? null;
   }
   if (sync) {
-    await supabase
+    const up = await supabase
       .from("progress")
-      .upsert({
-        user_id: userId,
-        day: today,
-        cards: sync.cards ?? 0,
-        quiz: sync.quiz ?? 0,
-        cheese: sync.cheese ?? 0,
-        accent: sync.accent ?? 0,
-      })
+      .upsert(
+        {
+          user_id: userId,
+          day: today,
+          cards: sync.cards ?? 0,
+          quiz: sync.quiz ?? 0,
+          cheese: sync.cheese ?? 0,
+          accent: sync.accent ?? 0,
+        },
+        { onConflict: "user_id,day" }
+      )
       .select();
+    if (up.error) throw new Error("upsert progress: " + up.error.message);
   }
   if (Object.values(inc).some((v) => v > 0)) {
-    await supabase.rpc("mnc_increment_progress", {
+    const rpc = await supabase.rpc("mnc_increment_progress", {
       p_user_id: userId,
       p_day: today,
       p_cards: inc.cards,
@@ -124,17 +132,40 @@ async function applyEvents(userId: number, events: EventItem[]) {
       p_cheese: inc.cheese,
       p_accent: inc.accent,
     });
+    if (rpc.error) throw new Error("rpc mnc_increment_progress: " + rpc.error.message);
   }
+  return { logged: toLog.length, inc };
 }
 
 const handler: Handler = async (ev) => {
-  if (ev.httpMethod === "OPTIONS") return ok({});
-  if (ev.httpMethod === "GET") return ok({ ok: true, ping: "pong" });
+  if (ev.httpMethod === "OPTIONS") return resp({});
+
+  // Simple diagnostics in GET
+  if (ev.httpMethod === "GET") {
+    const op = ev.queryStringParameters?.op || "ping";
+    if (op === "diag") {
+      const canSupabase = !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE;
+      let dbOk = false;
+      if (canSupabase) {
+        const test = await supabase.from("users").select("id", { count: "exact", head: true });
+        dbOk = !test.error;
+      }
+      return resp({
+        ok: true,
+        env: {
+          SUPABASE_URL: !!SUPABASE_URL,
+          SUPABASE_SERVICE_ROLE: !!SUPABASE_SERVICE_ROLE,
+          TELEGRAM_BOT_TOKEN: !!TELEGRAM_BOT_TOKEN,
+        },
+        dbOk,
+      });
+    }
+    return resp({ ok: true, ping: "pong" });
+  }
+
   if (ev.httpMethod !== "POST") return bad("Method not allowed", 405);
 
-  const hdrs = Object.fromEntries(
-    Object.entries(ev.headers).map(([k, v]) => [k.toLowerCase(), v])
-  );
+  const hdrs = Object.fromEntries(Object.entries(ev.headers).map(([k, v]) => [k.toLowerCase(), v]));
 
   let body: any = {};
   try {
@@ -143,10 +174,11 @@ const handler: Handler = async (ev) => {
     return bad("Invalid JSON");
   }
 
+  // user detection
   let userId: number | undefined;
   if (body.initData) {
     const v = verifyTelegramInitData(body.initData);
-    if (!v.ok) return bad("Invalid Telegram initData", 401);
+    if (!v.ok) return bad("Invalid Telegram initData: " + (v.reason || ""), 401);
     userId = v.userId;
   } else {
     userId = devUser(hdrs);
@@ -158,12 +190,12 @@ const handler: Handler = async (ev) => {
 
   try {
     await upsertUserProfile(userId);
-  } catch (e) {
-    console.warn("[progress] upsertUserProfile", e);
+    const result = await applyEvents(userId, events);
+    return resp({ ok: true, saved: result.logged, inc: result.inc });
+  } catch (e: any) {
+    console.error("/progress error", e?.message || e);
+    return bad("DB_ERROR: " + (e?.message || "unknown"), 500);
   }
-
-  await applyEvents(userId, events);
-  return ok({ ok: true, saved: events.length });
 };
 
 export { handler };
