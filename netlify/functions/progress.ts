@@ -2,15 +2,13 @@ import type { Handler } from "@netlify/functions";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
-// === ENV with aliases (matches your current names) ===
+// === ENV ===
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.SUPABASE_URL_PUBLIC || "").trim();
 const SUPABASE_SERVICE_ROLE = (process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_KEY || "").trim();
 const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || "").trim();
 const ALLOW_ORIGIN = (process.env.ALLOW_ORIGIN || "*").trim();
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
-  auth: { persistSession: false },
-});
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } });
 
 type StatKind = "cards" | "quiz" | "cheese" | "accent";
 
@@ -24,7 +22,7 @@ function resp(body: unknown, status = 200) {
     headers: {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": ALLOW_ORIGIN,
-      "Access-Control-Allow-Headers": "Content-Type, X-Dev-User",
+      "Access-Control-Allow-Headers": "Content-Type, X-Dev-User, X-Dev-Username, X-Dev-FirstName",
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
       Vary: "Origin",
     },
@@ -34,7 +32,12 @@ function resp(body: unknown, status = 200) {
 const bad = (msg: string, status = 400) => resp({ ok: false, error: msg }, status);
 
 // --- Telegram initData verification ---
-function verifyTelegramInitData(initData: string): { ok: boolean; userId?: number; reason?: string } {
+interface TgVerifyOk { ok: true; userId: number; username?: string; first_name?: string }
+interface TgVerifyFail { ok: false; reason: string }
+
+type TgVerify = TgVerifyOk | TgVerifyFail;
+
+function verifyTelegramInitData(initData: string): TgVerify {
   if (!initData) return { ok: false, reason: "EMPTY" };
   const params = new URLSearchParams(initData);
   const hash = params.get("hash") || "";
@@ -56,39 +59,34 @@ function verifyTelegramInitData(initData: string): { ok: boolean; userId?: numbe
     return { ok: false, reason: "CRYPTO_FAIL" };
   }
 
-  // Telegram initData может жить долго. Не режем жёстко. Разрешим до 30 дней.
-  const ad = Number(params.get("auth_date") || "0") * 1000;
-  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-  if (ad && Date.now() - ad > THIRTY_DAYS) {
-    // не фейлим, просто пометим как старое
-  }
-
+  // allow long-lived sessions (<=30d) — не валим при истечении
   const userJson = params.get("user");
   if (!userJson) return { ok: false, reason: "NO_USER" };
   try {
     const user = JSON.parse(userJson);
-    return { ok: true, userId: Number(user.id) };
+    return { ok: true, userId: Number(user.id), username: user.username, first_name: user.first_name };
   } catch {
     return { ok: false, reason: "USER_PARSE" };
   }
 }
 
-function devUser(headers: Record<string, string | undefined>): number | undefined {
-  const h = headers["x-dev-user"];
-  if (!h) return undefined;
-  const id = Number(h);
-  return Number.isFinite(id) ? id : undefined;
+function devUser(headers: Record<string, string | undefined>): { id?: number; username?: string; first_name?: string } {
+  const idRaw = headers["x-dev-user"]; if (!idRaw) return {};
+  const id = Number(idRaw); if (!Number.isFinite(id)) return {};
+  return { id, username: headers["x-dev-username"], first_name: headers["x-dev-firstname"] };
 }
 
-async function upsertUserProfile(userId: number) {
-  const { error } = await supabase.from("users").upsert({ id: userId }).select().single();
+async function upsertUserProfile(params: { id: number; username?: string; first_name?: string }) {
+  const row: any = { id: params.id };
+  if (params.username !== undefined) row.username = params.username;
+  if (params.first_name !== undefined) row.first_name = params.first_name;
+  const { error } = await supabase.from("users").upsert(row, { onConflict: "id" }).select().single();
   if (error) throw new Error("upsert users: " + error.message);
 }
 
 async function applyEvents(userId: number, events: EventItem[]) {
   if (!events.length) return { logged: 0, inc: { cards: 0, quiz: 0, cheese: 0, accent: 0 } };
 
-  // 1) write raw events
   const toLog = events.map((e) => ({
     user_id: userId,
     type: e.type === "stat" ? e.payload.kind : "sync",
@@ -98,7 +96,6 @@ async function applyEvents(userId: number, events: EventItem[]) {
   const ins = await supabase.from("events").insert(toLog).select();
   if (ins.error) throw new Error("insert events: " + ins.error.message);
 
-  // 2) aggregate
   const today = new Date().toISOString().slice(0, 10);
   let inc = { cards: 0, quiz: 0, cheese: 0, accent: 0 } as Record<StatKind, number>;
   let sync: Partial<Record<StatKind, number>> | null = null;
@@ -110,14 +107,7 @@ async function applyEvents(userId: number, events: EventItem[]) {
     const up = await supabase
       .from("progress")
       .upsert(
-        {
-          user_id: userId,
-          day: today,
-          cards: sync.cards ?? 0,
-          quiz: sync.quiz ?? 0,
-          cheese: sync.cheese ?? 0,
-          accent: sync.accent ?? 0,
-        },
+        { user_id: userId, day: today, cards: sync.cards ?? 0, quiz: sync.quiz ?? 0, cheese: sync.cheese ?? 0, accent: sync.accent ?? 0 },
         { onConflict: "user_id,day" }
       )
       .select();
@@ -125,12 +115,7 @@ async function applyEvents(userId: number, events: EventItem[]) {
   }
   if (Object.values(inc).some((v) => v > 0)) {
     const rpc = await supabase.rpc("mnc_increment_progress", {
-      p_user_id: userId,
-      p_day: today,
-      p_cards: inc.cards,
-      p_quiz: inc.quiz,
-      p_cheese: inc.cheese,
-      p_accent: inc.accent,
+      p_user_id: userId, p_day: today, p_cards: inc.cards, p_quiz: inc.quiz, p_cheese: inc.cheese, p_accent: inc.accent,
     });
     if (rpc.error) throw new Error("rpc mnc_increment_progress: " + rpc.error.message);
   }
@@ -140,25 +125,16 @@ async function applyEvents(userId: number, events: EventItem[]) {
 const handler: Handler = async (ev) => {
   if (ev.httpMethod === "OPTIONS") return resp({});
 
-  // Simple diagnostics in GET
   if (ev.httpMethod === "GET") {
     const op = ev.queryStringParameters?.op || "ping";
     if (op === "diag") {
-      const canSupabase = !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE;
-      let dbOk = false;
-      if (canSupabase) {
-        const test = await supabase.from("users").select("id", { count: "exact", head: true });
-        dbOk = !test.error;
-      }
-      return resp({
-        ok: true,
-        env: {
-          SUPABASE_URL: !!SUPABASE_URL,
-          SUPABASE_SERVICE_ROLE: !!SUPABASE_SERVICE_ROLE,
-          TELEGRAM_BOT_TOKEN: !!TELEGRAM_BOT_TOKEN,
-        },
-        dbOk,
-      });
+      const can = !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE; let dbOk = false;
+      if (can) { const t = await supabase.from("users").select("id", { count: "exact", head: true }); dbOk = !t.error; }
+      return resp({ ok: true, env: { SUPABASE_URL: !!SUPABASE_URL, SUPABASE_SERVICE_ROLE: !!SUPABASE_SERVICE_ROLE, TELEGRAM_BOT_TOKEN: !!TELEGRAM_BOT_TOKEN }, dbOk });
+    }
+    if (op === "probe") {
+      const sentinel = -9999;
+      try { const ins = await supabase.from("users").upsert({ id: sentinel }).select(); const del = await supabase.from("users").delete().eq("id", sentinel); return resp({ ok: !ins.error && !del.error, insErr: ins.error?.message || null, delErr: del.error?.message || null }); } catch (e: any) { return bad("probe_failed: "+(e?.message||"unknown")); }
     }
     return resp({ ok: true, ping: "pong" });
   }
@@ -167,21 +143,15 @@ const handler: Handler = async (ev) => {
 
   const hdrs = Object.fromEntries(Object.entries(ev.headers).map(([k, v]) => [k.toLowerCase(), v]));
 
-  let body: any = {};
-  try {
-    body = JSON.parse(ev.body || "{}");
-  } catch {
-    return bad("Invalid JSON");
-  }
+  let body: any = {}; try { body = JSON.parse(ev.body || "{}"); } catch { return bad("Invalid JSON"); }
 
-  // user detection
-  let userId: number | undefined;
+  let userId: number | undefined; let username: string | undefined; let first_name: string | undefined;
   if (body.initData) {
     const v = verifyTelegramInitData(body.initData);
-    if (!v.ok) return bad("Invalid Telegram initData: " + (v.reason || ""), 401);
-    userId = v.userId;
+    if (!v.ok) return bad("Invalid Telegram initData: " + v.reason, 401);
+    userId = v.userId; username = v.username; first_name = v.first_name;
   } else {
-    userId = devUser(hdrs);
+    const u = devUser(hdrs); userId = u.id; username = u.username; first_name = u.first_name;
   }
   if (!userId) return bad("No user", 401);
 
@@ -189,7 +159,7 @@ const handler: Handler = async (ev) => {
   if (op !== "batch" || !Array.isArray(events)) return bad("Invalid op");
 
   try {
-    await upsertUserProfile(userId);
+    await upsertUserProfile({ id: userId, username, first_name });
     const result = await applyEvents(userId, events);
     return resp({ ok: true, saved: result.logged, inc: result.inc });
   } catch (e: any) {
