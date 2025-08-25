@@ -1,0 +1,1432 @@
+import React, { useEffect, useMemo, useState } from "react";
+
+// ================================
+// E‑BOSH GUERRILLA — v7.1
+// Исправления по фидбеку:
+// 1) Размеры заголовка/выделения теперь применяются в визуале (fallback от hero.titleSize & highlightSize + синхронизация со Style).
+// 2) Универсальный контроль шрифтов: вкладка «Стиль», «Пипетка» + список «Элементы на странице» без клика по странице.
+// 3) Убрано слово «Лого» в шапке.
+// 4) Кнопка «Записаться на разведку» запускает встроенный мини‑квиз (3–5 вопросов). «Посмотреть программу» — мягкий скролл к разделу.
+// 5) Переносы строк и загрузка изображений (data:URL) сохранены.
+// ================================
+
+// ---------- Storage helpers ----------
+const LS_KEY = "ebosh_cms_v7"; // сохранён совместимый ключ
+
+function load() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return DEFAULT_CONTENT;
+}
+function save(c) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(c));
+  } catch {}
+}
+
+// ---------- Images (data URL) ----------
+async function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+function useImageSrc(src) {
+  const [url, setUrl] = useState(undefined);
+  useEffect(() => {
+    if (!src) return setUrl(undefined);
+    setUrl(src); // src может быть http(s) или data:URL
+  }, [src]);
+  return url;
+}
+
+// ---------- Content model (JS, без TS) ----------
+const DEFAULT_CONTENT = {
+  brand: "E-BOSH GUERRILLA",
+  nav: [
+    { key: "hero", label: "Главная", href: "#hero", show: true },
+    { key: "manifest", label: "Манифест", href: "#manifest", show: true },
+    { key: "audience", label: "Для кого", href: "#audience", show: true },
+    { key: "author", label: "Автор", href: "#author", show: true },
+    { key: "program", label: "Программа", href: "#program", show: true },
+    { key: "kit", label: "Комплект", href: "#kit", show: true },
+    { key: "gear", label: "Снаряжение", href: "#gear", show: true },
+    { key: "trophies", label: "Трофеи", href: "#trophies", show: true },
+    { key: "community", label: "Комьюнити", href: "#community", show: true },
+    { key: "contract", label: "Контракт", href: "#contract", show: true },
+    { key: "cta", label: "Запись", href: "#cta", show: true },
+  ],
+  hero: {
+    titleLeft: "ПРЕВРАТИ ИИ В",
+    highlight: "ЛИЧНУЮ КУВАЛДУ",
+    lead:
+      "За 30 дней ты научишься не «промптить», а системно вышибать все дерьмо из нейросетей реальные результаты для своей работы.",
+    bullets: [
+      "Фокус на твоей задаче с 1-го дня",
+      "Готовый кейс, а не просто знания",
+      "Еженедельный разбор лично со мной",
+      "100% возврат + личная консультация",
+    ],
+    image: "",
+    titleSize: 72, // слайдер Героя
+    highlightSize: 72, // слайдер Героя
+  },
+  manifest: {
+    title: "МАНИФЕСТ E-BOSH",
+    background: "",
+    text:
+      "Мир инфобизнеса прогнил. Мы верим не в волшебную палочку, а в кувалду. Мы верим, что ИИ — не замена человеку, а усилитель в его руках.",
+  },
+  audience: {
+    title: "Для кого этот курс",
+    cards: [
+      {
+        title: "Этот отряд для тех, кто уже в бою",
+        text: "Для специалистов с опытом в своей профессии, которые хотят стать на голову выше.",
+      },
+      {
+        title: "Мы усиливаем сильных",
+        text: "Если базовых навыков ноль — умножать нечего. Мы — про работу и рост ценности.",
+      },
+    ],
+  },
+  author: {
+    title: "Кто ведёт в бой",
+    text:
+      "Я из тех, кто привык работать руками и головой. Я не продаю сказки, я показываю систему, которая приносит результат.",
+    photo: "",
+  },
+  program: {
+    title: "Программа обучения",
+    subtitle:
+      "Цель: сделать из тебя не просто пользователя ИИ, а тактика, который видит задачу и добивается результата.",
+    weeks: [
+      { title: "Неделя 1. Ввод в обстановку", points: ["Принятие присяги", "Разведка местности", "Выбор цели"] },
+      { title: "Неделя 2. Арсенал", points: ["Выбор и пристрелка оружия"] },
+      { title: "Неделя 3. Первый бой", points: ["Вылазка на вражескую территорию"] },
+      { title: "Неделя 4. Стратегия командира", points: ["От партизана к генералу"] },
+    ],
+  },
+  cases: {
+    title: "Кейсы и отзывы",
+    items: [
+      { name: "Александр", role: "Копирайтер", task: "Сократить время на SEO-статьи", result: "ИИ делает 80% рутины, +80 000 ₽/мес" },
+      { name: "Мария", role: "Дизайнер", task: "Серия креативов под рекламу", result: "10 вариантов за 40 минут без выгорания" },
+      { name: "Илья", role: "Маркетолог", task: "Контент-план + видео", result: "CPL −27%, запуск за 48 часов" },
+    ],
+  },
+  community: {
+    title: "Комьюнити = точка сбора",
+    items: [
+      { title: "Совместные вылазки", text: "Вместе штурмуем новые нейросети. Практика вместо болтовни." },
+      { title: "Общий арсенал", text: "Живая база лучших инструкций, примеров и кейсов." },
+      { title: "Плечо товарища", text: "Поддержка от меня и бойцов отряда." },
+    ],
+    note: "Ты вступаешь не в чат. Ты вступаешь в братство.",
+  },
+  contract: {
+    title: "Гарантия, высеченная в граните",
+    mine:
+      "Если за 30 дней ты проходишь все модули и сдаёшь задания, но не создаёшь систему — верну 100% и дам личную консультацию.",
+    yours:
+      "Это тренировочный лагерь, а не Netflix. Пропуск двух практических заданий подряд без причины — отчисление и возврат (минус комиссии).",
+  },
+  cta: {
+    title: "Точка сбора",
+    subtitle:
+      "Ответишь на 3–5 вопросов — получишь «Боевой устав партизана». Я честно скажу, смогу ли помочь.",
+    primaryText: "Записаться на разведку",
+    primaryHref: "#form",
+    secondaryText: "Посмотреть программу",
+    secondaryHref: "#program",
+  },
+  gear: {
+    title: "Твой арсенал",
+    items: [
+      { icon: "", text: "Карта местности. Разложим задачу и составим четкий план атаки." },
+      { icon: "", text: "Личное оружие. Ваша выверенная инструкция под нужную нейросеть." },
+      { icon: "", text: "Боевой трофей. На выходе — готовый результат для портфолио/клиента." },
+      { icon: "", text: "Разведданные. Где применять, чтобы не сливать время." },
+      { icon: "", text: "Полевые учения. Разборы + 2 эфира Q&A. Ответы ≤ 24 ч." },
+      { icon: "", text: "Снаряжение №1 «Черный рынок инструментов». Доступ из РФ." },
+      { icon: "", text: "Снаряжение №2 «Архив боевых операций». База кейсов." },
+      { icon: "", text: "Снаряжение №3 «Вечный патрон». Пожизненный доступ и апдейты." },
+    ],
+  },
+  images: { logo: "", hero: "", manifestBg: "", authorPhoto: "" },
+  // Стили для любых текстовых узлов (ключ = data-k)
+  styles: {},
+};
+
+// ---------- Utils ----------
+function toHTML(t) {
+  // FIX: завершённый регэксп для перевода строк
+  return (t || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br/>");
+}
+
+// --- мини‑тесты (не мешают продакшену) ---
+function runToHTMLTests() {
+  const cases = [
+    { input: "", expected: "" },
+    { input: "**x**", expected: "<b>x</b>" },
+    { input: "a\nb", expected: "a<br/>b" },
+    { input: "**a**\n**b**", expected: "<b>a</b><br/><b>b</b>" },
+  ];
+  let ok = true;
+  for (const { input, expected } of cases) {
+    const got = toHTML(input);
+    if (got !== expected) {
+      // eslint-disable-next-line no-console
+      console.warn("toHTML test failed", { input, got, expected });
+      ok = false;
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.log(`[EBOSH tests] toHTML: ${ok ? "OK" : "FAIL"}`);
+}
+if (typeof window !== "undefined" && !window.__EBOSH_V7_TESTED__) {
+  window.__EBOSH_V7_TESTED__ = true;
+  try { runToHTMLTests(); } catch {}
+}
+
+const Label = ({ children }) => (
+  <div className="text-xs text-white/60 mb-1">{children}</div>
+);
+
+function FileRow({ label, value, onChange }) {
+  const url = useImageSrc(value);
+  return (
+    <div className="mb-4">
+      <Label>{label}</Label>
+      <div className="flex gap-2 items-start">
+        <input
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Вставь ссылку или оставь пусто — используй загрузку"
+          className="flex-1 bg-neutral-800/70 rounded px-2 py-2 text-sm outline-none"
+        />
+        <label className="px-3 py-2 rounded bg-neutral-700 hover:bg-neutral-600 cursor-pointer text-sm">
+          Загрузить файл
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              const data = await fileToDataURL(f);
+              onChange(String(data));
+            }}
+          />
+        </label>
+      </div>
+      <div className="mt-2 h-28 bg-neutral-900/50 rounded flex items-center justify-center overflow-hidden border border-white/5">
+        {url ? (
+          <img src={url} alt="preview" className="max-h-28 object-contain" />
+        ) : (
+          <span className="text-xs text-white/40">preview</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Styles helper ----------
+function useNodeStyle(content, k, extra = "") {
+  const s = (content.styles && content.styles[k]) || {};
+  const classAlign = s.align === "center" ? "text-center" : s.align === "right" ? "text-right" : s.align === "left" ? "text-left" : "";
+  const className = [extra, classAlign, "whitespace-pre-line"].filter(Boolean).join(" ");
+  const style = {};
+  if (s.fontSize) style.fontSize = s.fontSize + "px";
+  if (s.lineHeight) style.lineHeight = s.lineHeight;
+  if (s.weight) style.fontWeight = s.weight;
+  return { className, style };
+}
+
+function T({ c, k, as = "div", html, children, extra = "", baseStyle }) {
+  const Tag = as;
+  const ns = useNodeStyle(c, k, extra);
+  const style = { ...(baseStyle || {}), ...(ns.style || {}) }; // style из «Стиля» перекрывает base
+  if (html) return <Tag data-k={k} className={ns.className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <Tag data-k={k} className={ns.className} style={style}>
+      {children}
+    </Tag>
+  );
+}
+
+// ---------- Editors ----------
+function NavEditor({ content, set }) {
+  const add = () => set({ ...content, nav: [...content.nav, { key: `n${Date.now()}`, label: "Новый", href: "#", show: true }] });
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-3">
+        <div className="font-medium">Навигация</div>
+        <button onClick={add} className="text-xs px-2 py-1 bg-neutral-700 rounded">Добавить пункт</button>
+      </div>
+      {content.nav.map((n, i) => (
+        <div key={n.key} className="grid grid-cols-12 gap-2 mb-2">
+          <input
+            className="col-span-4 bg-neutral-800/70 rounded px-2 py-1"
+            value={n.label}
+            onChange={(e) => {
+              const nav = [...content.nav];
+              nav[i] = { ...n, label: e.target.value };
+              set({ ...content, nav });
+            }}
+          />
+          <input
+            className="col-span-6 bg-neutral-800/70 rounded px-2 py-1"
+            value={n.href}
+            onChange={(e) => {
+              const nav = [...content.nav];
+              nav[i] = { ...n, href: e.target.value };
+              set({ ...content, nav });
+            }}
+          />
+          <label className="col-span-1 text-xs flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={n.show}
+              onChange={(e) => {
+                const nav = [...content.nav];
+                nav[i] = { ...n, show: e.target.checked };
+                set({ ...content, nav });
+              }}
+            />
+            показывать
+          </label>
+          <button
+            className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded"
+            onClick={() => {
+              const nav = [...content.nav];
+              nav.splice(i, 1);
+              set({ ...content, nav });
+            }}
+          >
+            Удалить
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ImagesEditor({ content, set }) {
+  return (
+    <div>
+      <FileRow label="Лого" value={content.images.logo} onChange={(v) => set({ ...content, images: { ...content.images, logo: v } })} />
+      <FileRow label="Hero изображение" value={content.hero.image || content.images.hero} onChange={(v) => set({ ...content, hero: { ...content.hero, image: v } })} />
+      <FileRow label="Фон манифеста" value={content.manifest.background || content.images.manifestBg} onChange={(v) => set({ ...content, manifest: { ...content.manifest, background: v } })} />
+      <FileRow label="Фото автора" value={content.author.photo || content.images.authorPhoto} onChange={(v) => set({ ...content, author: { ...content.author, photo: v } })} />
+      {content.gear.items.map((g, i) => (
+        <FileRow
+          key={i}
+          label={`Иконка #${i + 1}`}
+          value={g.icon}
+          onChange={(v) => {
+            const items = [...content.gear.items];
+            items[i] = { ...items[i], icon: v };
+            set({ ...content, gear: { ...content.gear, items } });
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HeroEditor({ content, set }) {
+  const h = content.hero;
+  const addBullet = () => set({ ...content, hero: { ...h, bullets: [...h.bullets, "Новый пункт"] } });
+
+  // синхронизация слайдеров Героя с универсальными стилями
+  const patchStyle = (key, patch) => {
+    const styles = { ...(content.styles || {}) };
+    styles[key] = { ...(styles[key] || {}), ...patch };
+    set({ ...content, styles });
+  };
+
+  return (
+    <div>
+      <Label>Бренд</Label>
+      <input value={content.brand} onChange={(e) => set({ ...content, brand: e.target.value })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3" />
+
+      <Label>Заголовок (левая часть) — переносы сохраняются</Label>
+      <textarea value={h.titleLeft} onChange={(e) => set({ ...content, hero: { ...h, titleLeft: e.target.value } })} rows={2} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <div className="flex items-center gap-3 mb-3">
+        <Label>Размер заголовка (px)</Label>
+        <input
+          type="range"
+          min={36}
+          max={128}
+          value={h.titleSize ?? 72}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            set({ ...content, hero: { ...h, titleSize: v } });
+            patchStyle("hero.titleLeft", { fontSize: v });
+          }}
+        />
+        <input
+          type="number"
+          className="w-20 bg-neutral-800/70 rounded px-2 py-1"
+          value={h.titleSize ?? 72}
+          onChange={(e) => {
+            const v = Number(e.target.value || 72);
+            set({ ...content, hero: { ...h, titleSize: v } });
+            patchStyle("hero.titleLeft", { fontSize: v });
+          }}
+        />
+      </div>
+
+      <Label>Выделение</Label>
+      <input value={h.highlight} onChange={(e) => set({ ...content, hero: { ...h, highlight: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <div className="flex items-center gap-3 mb-3">
+        <Label>Размер выделения (px)</Label>
+        <input
+          type="range"
+          min={36}
+          max={128}
+          value={h.highlightSize ?? 72}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            set({ ...content, hero: { ...h, highlightSize: v } });
+            patchStyle("hero.highlight", { fontSize: v });
+          }}
+        />
+        <input
+          type="number"
+          className="w-20 bg-neutral-800/70 rounded px-2 py-1"
+          value={h.highlightSize ?? 72}
+          onChange={(e) => {
+            const v = Number(e.target.value || 72);
+            set({ ...content, hero: { ...h, highlightSize: v } });
+            patchStyle("hero.highlight", { fontSize: v });
+          }}
+        />
+      </div>
+
+      <Label>Лид (**жирный** и переносы)</Label>
+      <textarea value={h.lead} onChange={(e) => set({ ...content, hero: { ...h, lead: e.target.value } })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3" />
+
+      <div className="mb-2 font-medium">Пункты-лиды</div>
+      {h.bullets.map((b, i) => (
+        <div key={i} className="flex gap-2 mb-2">
+          <input
+            className="flex-1 bg-neutral-800/70 rounded px-2 py-1"
+            value={b}
+            onChange={(e) => {
+              const bullets = [...h.bullets];
+              bullets[i] = e.target.value;
+              set({ ...content, hero: { ...h, bullets } });
+            }}
+          />
+          <button
+            className="px-2 py-1 text-xs bg-neutral-700 rounded"
+            onClick={() => {
+              const bullets = [...h.bullets];
+              bullets.splice(i, 1);
+              set({ ...content, hero: { ...h, bullets } });
+            }}
+          >
+            X
+          </button>
+        </div>
+      ))}
+      <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={addBullet}>
+        Добавить пункт
+      </button>
+    </div>
+  );
+}
+
+function ManifestEditor({ content, set }) {
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={content.manifest.title} onChange={(e) => set({ ...content, manifest: { ...content.manifest, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3" />
+      <Label>Текст (**жирный** и переносы)</Label>
+      <textarea value={content.manifest.text} onChange={(e) => set({ ...content, manifest: { ...content.manifest, text: e.target.value } })} rows={6} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+    </div>
+  );
+}
+
+function AudienceEditor({ content, set }) {
+  const add = () => set({ ...content, audience: { ...content.audience, cards: [...content.audience.cards, { title: "Новый заголовок", text: "Текст" }] } });
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={content.audience.title} onChange={(e) => set({ ...content, audience: { ...content.audience, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <div className="flex justify-between items-center mb-2">
+        <div className="font-medium">Карточки</div>
+        <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>
+          Добавить
+        </button>
+      </div>
+      {content.audience.cards.map((cItem, i) => (
+      <div key={i} className="mb-2 grid grid-cols-12 gap-2">
+          <input
+            className="col-span-4 bg-neutral-800/70 rounded px-2 py-1"
+            value={cItem.title}
+            onChange={(e) => {
+              const cards = [...content.audience.cards];
+              cards[i] = { ...cItem, title: e.target.value };
+              set({ ...content, audience: { ...content.audience, cards } });
+            }}
+          />
+          <textarea
+            className="col-span-7 bg-neutral-800/70 rounded px-2 py-1"
+            rows={2}
+            value={cItem.text}
+            onChange={(e) => {
+              const cards = [...content.audience.cards];
+              cards[i] = { ...cItem, text: e.target.value };
+              set({ ...content, audience: { ...content.audience, cards } });
+            }}
+          />
+          <button
+            className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded"
+            onClick={() => {
+              const cards = [...content.audience.cards];
+              cards.splice(i, 1);
+              set({ ...content, audience: { ...content.audience, cards } });
+            }}
+          >
+            X
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AuthorEditor({ content, set }) {
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={content.author.title} onChange={(e) => set({ ...content, author: { ...content.author, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <Label>Текст</Label>
+      <textarea value={content.author.text} onChange={(e) => set({ ...content, author: { ...content.author, text: e.target.value } })} rows={6} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <FileRow label="Фото автора" value={content.author.photo} onChange={(v) => set({ ...content, author: { ...content.author, photo: v } })} />
+    </div>
+  );
+}
+
+function ProgramEditor({ content, set }) {
+  const add = () => set({ ...content, program: { ...content.program, weeks: [...content.program.weeks, { title: "Новая неделя", points: ["Пункт"] }] } });
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={content.program.title} onChange={(e) => set({ ...content, program: { ...content.program, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <Label>Подзаголовок</Label>
+      <textarea value={content.program.subtitle} onChange={(e) => set({ ...content, program: { ...content.program, subtitle: e.target.value } })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <div className="flex justify-between items-center mb-2">
+        <div className="font-medium">Недели</div>
+        <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>
+          Добавить
+        </button>
+      </div>
+      {content.program.weeks.map((w, wi) => (
+        <div key={wi} className="mb-2 p-2 rounded bg-white/5">
+          <input
+            className="w-full bg-neutral-800/70 rounded px-2 py-1 mb-2"
+            value={w.title}
+            onChange={(e) => {
+              const weeks = [...content.program.weeks];
+              weeks[wi] = { ...w, title: e.target.value };
+              set({ ...content, program: { ...content.program, weeks } });
+            }}
+          />
+          {w.points.map((p, pi) => (
+            <div key={pi} className="flex gap-2 mb-2">
+              <input
+                className="flex-1 bg-neutral-800/70 rounded px-2 py-1"
+                value={p}
+                onChange={(e) => {
+                  const weeks = [...content.program.weeks];
+                  const pts = [...weeks[wi].points];
+                  pts[pi] = e.target.value;
+                  weeks[wi] = { ...w, points: pts };
+                  set({ ...content, program: { ...content.program, weeks } });
+                }}
+              />
+              <button
+                className="px-2 py-1 text-xs bg-neutral-700 rounded"
+                onClick={() => {
+                  const weeks = [...content.program.weeks];
+                  const pts = [...weeks[wi].points];
+                  pts.splice(pi, 1);
+                  weeks[wi] = { ...w, points: pts };
+                  set({ ...content, program: { ...content.program, weeks } });
+                }}
+              >
+                X
+              </button>
+            </div>
+          ))}
+          <button
+            className="text-xs px-2 py-1 bg-neutral-700 rounded"
+            onClick={() => {
+              const weeks = [...content.program.weeks];
+              weeks[wi] = { ...w, points: [...w.points, "Пункт"] };
+              set({ ...content, program: { ...content.program, weeks } });
+            }}
+          >
+            Добавить пункт
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CasesEditor({ content, set }) {
+  const add = () => set({ ...content, cases: { ...content.cases, items: [...content.cases.items, { name: "Имя", role: "Роль", task: "Задача", result: "Результат" }] } });
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={content.cases.title} onChange={(e) => set({ ...content, cases: { ...content.cases, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <div className="flex justify-between items-center mb-2">
+        <div className="font-medium">Кейсы</div>
+        <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>
+          Добавить
+        </button>
+      </div>
+      {content.cases.items.map((it, i) => (
+        <div key={i} className="grid grid-cols-12 gap-2 mb-2">
+          <input
+            className="col-span-3 bg-neutral-800/70 rounded px-2 py-1"
+            value={it.name}
+            onChange={(e) => {
+              const items = [...content.cases.items];
+              items[i] = { ...it, name: e.target.value };
+              set({ ...content, cases: { ...content.cases, items } });
+            }}
+            placeholder="Имя"
+          />
+          <input
+            className="col-span-3 bg-neutral-800/70 rounded px-2 py-1"
+            value={it.role}
+            onChange={(e) => {
+              const items = [...content.cases.items];
+              items[i] = { ...it, role: e.target.value };
+              set({ ...content, cases: { ...content.cases, items } });
+            }}
+            placeholder="Роль"
+          />
+          <input
+            className="col-span-3 bg-neutral-800/70 rounded px-2 py-1"
+            value={it.task}
+            onChange={(e) => {
+              const items = [...content.cases.items];
+              items[i] = { ...it, task: e.target.value };
+              set({ ...content, cases: { ...content.cases, items } });
+            }}
+            placeholder="Задача"
+          />
+          <input
+            className="col-span-2 bg-neutral-800/70 rounded px-2 py-1"
+            value={it.result}
+            onChange={(e) => {
+              const items = [...content.cases.items];
+              items[i] = { ...it, result: e.target.value };
+              set({ ...content, cases: { ...content.cases, items } });
+            }}
+            placeholder="Результат"
+          />
+          <button
+            className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded"
+            onClick={() => {
+              const items = [...content.cases.items];
+              items.splice(i, 1);
+              set({ ...content, cases: { ...content.cases, items } });
+            }}
+          >
+            X
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CommunityEditor({ content, set }) {
+  const add = () => set({ ...content, community: { ...content.community, items: [...content.community.items, { title: "Пункт", text: "Текст" }] } });
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={content.community.title} onChange={(e) => set({ ...content, community: { ...content.community, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <div className="flex justify-between items-center mb-2">
+        <div className="font-medium">Пункты</div>
+        <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>
+          Добавить
+        </button>
+      </div>
+      {content.community.items.map((it, i) => (
+        <div key={i} className="grid grid-cols-12 gap-2 mb-2">
+          <input
+            className="col-span-4 bg-neutral-800/70 rounded px-2 py-1"
+            value={it.title}
+            onChange={(e) => {
+              const items = [...content.community.items];
+              items[i] = { ...it, title: e.target.value };
+              set({ ...content, community: { ...content.community, items } });
+            }}
+          />
+          <textarea
+            className="col-span-7 bg-neutral-800/70 rounded px-2 py-1"
+            rows={2}
+            value={it.text}
+            onChange={(e) => {
+              const items = [...content.community.items];
+              items[i] = { ...it, text: e.target.value };
+              set({ ...content, community: { ...content.community, items } });
+            }}
+          />
+          <button
+            className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded"
+            onClick={() => {
+              const items = [...content.community.items];
+              items.splice(i, 1);
+              set({ ...content, community: { ...content.community, items } });
+            }}
+          >
+            X
+          </button>
+        </div>
+      ))}
+      <Label>Нижняя подпись</Label>
+      <input value={content.community.note} onChange={(e) => set({ ...content, community: { ...content.community, note: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+    </div>
+  );
+}
+
+function ContractEditor({ content, set }) {
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={content.contract.title} onChange={(e) => set({ ...content, contract: { ...content.contract, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <Label>Мои обязательства</Label>
+      <textarea value={content.contract.mine} onChange={(e) => set({ ...content, contract: { ...content.contract, mine: e.target.value } })} rows={4} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <Label>Твои обязательства</Label>
+      <textarea value={content.contract.yours} onChange={(e) => set({ ...content, contract: { ...content.contract, yours: e.target.value } })} rows={4} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+    </div>
+  );
+}
+
+function CTAEditor({ content, set }) {
+  const cta = content.cta;
+  return (
+    <div>
+      <Label>Заголовок</Label>
+      <input value={cta.title} onChange={(e) => set({ ...content, cta: { ...cta, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <Label>Подзаголовок</Label>
+      <textarea value={cta.subtitle} onChange={(e) => set({ ...content, cta: { ...cta, subtitle: e.target.value } })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label>Кнопка 1 — текст</Label>
+          <input value={cta.primaryText} onChange={(e) => set({ ...content, cta: { ...cta, primaryText: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+          <Label>Кнопка 1 — ссылка (не используется, т.к. открываем квиз)</Label>
+          <input value={cta.primaryHref} onChange={(e) => set({ ...content, cta: { ...cta, primaryHref: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+        </div>
+        <div>
+          <Label>Кнопка 2 — текст</Label>
+          <input value={cta.secondaryText || ""} onChange={(e) => set({ ...content, cta: { ...cta, secondaryText: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+          <Label>Кнопка 2 — ссылка (скроллит к блоку)</Label>
+          <input value={cta.secondaryHref || "#program"} onChange={(e) => set({ ...content, cta: { ...cta, secondaryHref: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DataEditor({ content, set }) {
+  const [text, setText] = useState(JSON.stringify(content, null, 2));
+  return (
+    <div>
+      <div className="flex gap-2 mb-2">
+        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={() => setText(JSON.stringify(content, null, 2))}>
+          Экспорт в текст
+        </button>
+        <button
+          className="px-2 py-1 bg-neutral-700 rounded text-xs"
+          onClick={() => {
+            try {
+              const c = JSON.parse(text);
+              set(c);
+              save(c);
+            } catch {}
+          }}
+        >
+          Импорт из текста
+        </button>
+        <button
+          className="px-2 py-1 bg-neutral-700 rounded text-xs"
+          onClick={() => {
+            localStorage.removeItem(LS_KEY);
+            set(DEFAULT_CONTENT);
+            save(DEFAULT_CONTENT);
+            setText(JSON.stringify(DEFAULT_CONTENT, null, 2));
+          }}
+        >
+          Сброс
+        </button>
+      </div>
+      <textarea className="w-full h-64 bg-neutral-800/70 rounded px-2 py-2 font-mono text-xs" value={text} onChange={(e) => setText(e.target.value)} />
+    </div>
+  );
+}
+
+// ------- StyleEditor с выбором элемента без «Пипетки» -------
+function listKeys(content) {
+  const out = [];
+  const push = (key, label) => out.push({ key, label });
+  push("brand", "Шапка — бренд");
+  push("hero.titleLeft", "Hero — заголовок");
+  push("hero.highlight", "Hero — выделение");
+  push("hero.lead", "Hero — лид");
+  content.hero.bullets.forEach((_, i) => push(`hero.bullets.${i}`, `Hero — пункт #${i + 1}`));
+  push("manifest.title", "Манифест — заголовок");
+  push("manifest.text", "Манифест — текст");
+  push("audience.title", "Для кого — заголовок");
+  content.audience.cards.forEach((_, i) => {
+    push(`audience.cards.${i}.title`, `Для кого — карточка #${i + 1} заголовок`);
+    push(`audience.cards.${i}.text`, `Для кого — карточка #${i + 1} текст`);
+  });
+  push("author.title", "Автор — заголовок");
+  push("author.text", "Автор — текст");
+  push("program.title", "Программа — заголовок");
+  push("program.subtitle", "Программа — подзаголовок");
+  content.program.weeks.forEach((w, wi) => w.points.forEach((_, pi) => push(`program.weeks.${wi}.points.${pi}`, `Программа — неделя ${wi + 1} пункт ${pi + 1}`)));
+  push("gear.title", "Снаряжение — заголовок");
+  content.gear.items.forEach((_, i) => push(`gear.items.${i}.text`, `Снаряжение — пункт #${i + 1}`));
+  push("cases.title", "Кейсы — заголовок");
+  content.cases.items.forEach((_, i) => {
+    push(`cases.items.${i}.name`, `Кейс #${i + 1} — имя`);
+    push(`cases.items.${i}.role`, `Кейс #${i + 1} — роль`);
+    push(`cases.items.${i}.task`, `Кейс #${i + 1} — задача`);
+    push(`cases.items.${i}.result`, `Кейс #${i + 1} — результат`);
+  });
+  push("community.title", "Комьюнити — заголовок");
+  content.community.items.forEach((_, i) => {
+    push(`community.items.${i}.title`, `Комьюнити — пункт #${i + 1} заголовок`);
+    push(`community.items.${i}.text`, `Комьюнити — пункт #${i + 1} текст`);
+  });
+  push("community.note", "Комьюнити — нижняя подпись");
+  push("contract.title", "Контракт — заголовок");
+  push("contract.mine", "Контракт — мои обязательства");
+  push("contract.yours", "Контракт — твои обязательства");
+  push("cta.title", "CTA — заголовок");
+  push("cta.subtitle", "CTA — подзаголовок");
+  content.nav.forEach((_, i) => push(`nav.${i}.label`, `Навигация — пункт #${i + 1}`));
+  return out;
+}
+
+function StyleEditor({ content, set, pickedKey, setPickedKey }) {
+  const s = (content.styles && content.styles[pickedKey]) || {};
+  const setStyle = (patch) => {
+    const styles = { ...(content.styles || {}), [pickedKey]: { ...(content.styles?.[pickedKey] || {}), ...patch } };
+    set({ ...content, styles });
+  };
+  const reset = () => {
+    const styles = { ...(content.styles || {}) };
+    delete styles[pickedKey];
+    set({ ...content, styles });
+  };
+
+  const keys = listKeys(content);
+
+  return (
+    <div>
+      <div className="mb-3">
+        <Label>Элементы на странице</Label>
+        <div className="flex flex-wrap gap-2">
+          {keys.map(({ key, label }) => (
+            <button key={key} onClick={() => setPickedKey(key)} className={`px-2 py-1 rounded text-xs ${pickedKey === key ? "bg-emerald-700" : "bg-neutral-700"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {!pickedKey && <div className="text-sm text-white/60 mb-4">Или включи «Пипетку» и кликни по тексту на странице.</div>}
+
+      {pickedKey && (
+        <>
+          <div className="text-xs text-white/50 mb-2">Цель: {pickedKey}</div>
+          <div className="mb-4">
+            <Label>Размер шрифта (px)</Label>
+            <div className="flex items-center gap-3">
+              <input type="range" min={12} max={128} step={1} value={s.fontSize ?? 18} onChange={(e) => setStyle({ fontSize: Number(e.target.value) })} />
+              <input type="number" className="w-20 bg-neutral-800/70 rounded px-2 py-1" value={s.fontSize ?? 18} onChange={(e) => setStyle({ fontSize: Number(e.target.value || 18) })} />
+            </div>
+          </div>
+          <div className="mb-4">
+            <Label>Начертание</Label>
+            <select className="bg-neutral-800/70 rounded px-2 py-2" value={s.weight ?? 400} onChange={(e) => setStyle({ weight: Number(e.target.value) })}>
+              <option value={300}>Light (300)</option>
+              <option value={400}>Regular (400)</option>
+              <option value={600}>SemiBold (600)</option>
+              <option value={700}>Bold (700)</option>
+              <option value={800}>ExtraBold (800)</option>
+            </select>
+          </div>
+          <div className="mb-4">
+            <Label>Выравнивание</Label>
+            <div className="flex gap-2">
+              {[
+                ["left", "Слева"],
+                ["center", "По центру"],
+                ["right", "Справа"],
+              ].map(([val, label]) => (
+                <button key={val} onClick={() => setStyle({ align: val })} className={`px-3 py-1 rounded ${s.align === val ? "bg-emerald-700" : "bg-neutral-700"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mb-4">
+            <Label>Межстрочный интервал (CSS line-height)</Label>
+            <input placeholder="Напр., 1.2 или 28px" value={s.lineHeight ?? ""} onChange={(e) => setStyle({ lineHeight: e.target.value })} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+          </div>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 rounded bg-neutral-700" onClick={reset}>Сбросить стиль для этого элемента</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Editor({ open, onClose, content, setContent, tab, setTab, pickMode, setPickMode, pickedKey, setPickedKey }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60">
+      <div className="absolute right-0 top-0 h-full w-[580px] bg-neutral-900/95 backdrop-blur p-4 overflow-y-auto border-l border-white/5">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {[
+            ["hero", "Герой"],
+            ["manifest", "Манифест"],
+            ["audience", "Для кого"],
+            ["author", "Автор"],
+            ["program", "Программа"],
+            ["cases", "Кейсы"],
+            ["community", "Комьюнити"],
+            ["contract", "Контракт"],
+            ["gear", "Снаряжение"],
+            ["nav", "Навигация"],
+            ["images", "Изображения"],
+            ["cta", "CTA"],
+            ["style", "Стиль"],
+            ["data", "Данные"],
+          ].map(([k, t]) => (
+            <button key={k} onClick={() => setTab(k)} className={`px-3 py-1 rounded text-sm ${tab === k ? "bg-emerald-700" : "bg-neutral-700"}`}>
+              {t}
+            </button>
+          ))}
+          <div className="grow" />
+          <button
+            onClick={() => setPickMode(!pickMode)}
+            className={`px-3 py-1 rounded text-sm ${pickMode ? "лиbg-amber-600" : "bg-neutral-700"}`}
+            title="Пипетка: клик по любому тексту на странице — откроет его в «Стиль»"
+          >
+            {pickMode ? "Пипетка ВКЛ" : "Пипетка"}
+          </button>
+          <button onClick={() => { save(content); onClose(); }} className="px-3 py-1 rounded bg-emerald-700 text-sm">
+            Применить всё
+          </button>
+          <button onClick={onClose} className="px-3 py-1 rounded bg-neutral-700 text-sm">
+            Выйти
+          </button>
+        </div>
+        {tab === "hero" && <HeroEditor content={content} set={setContent} />}
+        {tab === "manifest" && <ManifestEditor content={content} set={setContent} />}
+        {tab === "audience" && <AudienceEditor content={content} set={setContent} />}
+        {tab === "author" && <AuthorEditor content={content} set={setContent} />}
+        {tab === "program" && <ProgramEditor content={content} set={setContent} />}
+        {tab === "cases" && <CasesEditor content={content} set={setContent} />}
+        {tab === "community" && <CommunityEditor content={content} set={setContent} />}
+        {tab === "contract" && <ContractEditor content={content} set={setContent} />}
+        {tab === "gear" && <GearEditor content={content} set={setContent} />}
+        {tab === "nav" && <NavEditor content={content} set={setContent} />}
+        {tab === "images" && <ImagesEditor content={content} set={setContent} />}
+        {tab === "cta" && <CTAEditor content={content} set={setContent} />}
+        {tab === "style" && <StyleEditor content={content} set={setContent} pickedKey={pickedKey} setPickedKey={setPickedKey} />}
+        {tab === "data" && <DataEditor content={content} set={setContent} />}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Sections ----------
+const Section = ({ id, children }) => <section id={id} className="scroll-mt-28">{children}</section>;
+
+function IconImg({ src }) {
+  const url = useImageSrc(src);
+  if (!url) return null;
+  return <img src={url} alt="icon" className="w-16 h-16 object-contain flex-none" />;
+}
+
+function Hero({ c }) {
+  const heroUrl = useImageSrc(c.hero.image || c.images.hero);
+  return (
+    <Section id="hero">
+      <div className="grid md:grid-cols-2 gap-8 items-center py-10">
+        <div>
+          <T c={c} k="hero.titleLeft" as="h1" extra="font-extrabold leading-tight text-white" baseStyle={{ fontSize: (c.hero.titleSize ?? 72) + "px" }}>
+            {c.hero.titleLeft}
+          </T>
+          <T c={c} k="hero.highlight" as="div" extra="font-extrabold leading-tight text-amber-400 mt-2" baseStyle={{ fontSize: (c.hero.highlightSize ?? 72) + "px" }}>
+            {c.hero.highlight}
+          </T>
+          <T c={c} k="hero.lead" as="p" html={toHTML(c.hero.lead)} extra="mt-6 text-white/80 text-lg" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 text-white/80">
+            {c.hero.bullets.map((b, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="mt-1 w-2 h-2 rounded-full bg-amber-400" />
+                <T c={c} k={`hero.bullets.${i}`} as="span">{b}</T>
+              </div>
+            ))}
+          </div>
+          <a href="#" onClick={(e)=>e.preventDefault()} className="inline-block mt-7 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-semibold" data-quiz-trigger>
+            Записаться на разведку
+          </a>
+        </div>
+        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden min-h-[320px] flex items-center justify-center">
+          {heroUrl && <img src={heroUrl} alt="Hero" className="w-full h-full object-cover" />}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Manifest({ c }) {
+  const bg = useImageSrc(c.manifest.background || c.images.manifestBg);
+  return (
+    <Section id="manifest">
+      <div className="py-14">
+        <div className="text-sm text-white/50 mb-3">Идеология</div>
+        <T c={c} k="manifest.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.manifest.title}</T>
+        <div className="grid md:grid-cols-2 gap-6">
+          <T c={c} k="manifest.text" as="div" html={toHTML(c.manifest.text)} extra="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85 leading-relaxed" />
+          <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden min-h-[280px] flex items-center justify-center">
+            {bg && <img src={bg} alt="bg" className="w-full h-full object-cover" />}
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Gear({ c }) {
+  return (
+    <Section id="gear">
+      <div className="py-12">
+        <div className="text-sm text-white/50 mb-3">Снаряжение</div>
+        <T c={c} k="gear.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.gear.title}</T>
+        <div className="grid md:grid-cols-3 gap-5">
+          {c.gear.items.map((g, i) => (
+            <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 text-white/85 flex gap-4">
+              <IconImg src={g.icon} />
+              <T c={c} k={`gear.items.${i}.text`} as="div" extra="leading-relaxed">{g.text}</T>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Audience({ c }) {
+  return (
+    <Section id="audience">
+      <div className="py-12">
+        <div className="text-sm text-white/50 mb-3">Вербовочный пункт</div>
+        <T c={c} k="audience.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.audience.title}</T>
+        <div className="grid md:grid-cols-2 gap-6">
+          {c.audience.cards.map((cd, i) => (
+            <div key={i} className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85 leading-relaxed">
+              <T c={c} k={`audience.cards.${i}.title`} as="div" extra="font-semibold text-white mb-2 text-xl">{cd.title}</T>
+              <T c={c} k={`audience.cards.${i}.text`} as="div">{cd.text}</T>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Author({ c }) {
+  const photo = useImageSrc(c.author.photo || c.images.authorPhoto);
+  return (
+    <Section id="author">
+      <div className="py-12 grid md:grid-cols-2 gap-6 items-start">
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85 leading-relaxed">
+          <div className="text-sm text-white/50 mb-3">Командир отряда</div>
+          <T c={c} k="author.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.author.title}</T>
+          <T c={c} k="author.text" as="div" html={toHTML(c.author.text)} />
+        </div>
+        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden min-h-[320px] flex items-center justify-center">
+          {photo && <img src={photo} alt="author" className="w-full h-full object-cover" />}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Program({ c }) {
+  const [open, setOpen] = useState(0);
+  return (
+    <Section id="program">
+      <div className="py-12">
+        <div className="text-sm text-white/50 mb-3">Боевая подготовка</div>
+        <T c={c} k="program.title" as="h2" extra="text-4xl font-extrabold text-white mb-2">{c.program.title}</T>
+        <T c={c} k="program.subtitle" as="div" extra="text-white/70 mb-6">{c.program.subtitle}</T>
+        <div className="space-y-3">
+          {c.program.weeks.map((w, i) => (
+            <div key={i} className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+              <button className="w-full text-left px-4 py-4 font-semibold" onClick={() => setOpen(open === i ? null : i)}>
+                <span className="mr-2 inline-flex w-6 h-6 items-center justify-center rounded bg-amber-500/20 text-amber-300">{i + 1}</span>
+                {w.title}
+              </button>
+              {open === i && (
+                <div className="px-6 pb-4 text-white/80">
+                  {w.points.map((p, pi) => (
+                    <div key={pi} className="flex items-start gap-2 mb-2">
+                      <span className="mt-1 w-2 h-2 rounded-full bg-amber-400" />
+                      <T c={c} k={`program.weeks.${i}.points.${pi}`} as="span">{p}</T>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Cases({ c }) {
+  return (
+    <Section id="trophies">
+      <div className="py-12">
+        <div className="text-sm text-white/50 mb-3">Стена трофеев</div>
+        <T c={c} k="cases.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.cases.title}</T>
+        <div className="grid md:grid-cols-3 gap-5">
+          {c.cases.items.map((it, i) => (
+            <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 text-white/85">
+              <div className="text-amber-300 text-sm mb-2">Позывной</div>
+              <T c={c} k={`cases.items.${i}.name`} as="div" extra="text-xl font-semibold mb-1">{it.name}</T>
+              <T c={c} k={`cases.items.${i}.role`} as="div" extra="text-white/60 mb-3">Специализация: {it.role}</T>
+              <div className="mb-2"><b>Боевая задача.</b> <T c={c} k={`cases.items.${i}.task`} as="span">{it.task}</T></div>
+              <div className="mt-3 p-3 rounded bg-emerald-900/20 text-emerald-300"><b>Результат.</b> <T c={c} k={`cases.items.${i}.result`} as="span">{it.result}</T></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Community({ c }) {
+  return (
+    <Section id="community">
+      <div className="py-12">
+        <div className="text-sm text-white/50 mb-3">Рождение отряда</div>
+        <T c={c} k="community.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.community.title}</T>
+        <div className="grid md:grid-cols-3 gap-5">
+          {c.community.items.map((it, i) => (
+            <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 text-white/85">
+              <T c={c} k={`community.items.${i}.title`} as="div" extra="text-xl font-semibold mb-2">{it.title}</T>
+              <T c={c} k={`community.items.${i}.text`} as="div">{it.text}</T>
+            </div>
+          ))}
+        </div>
+        <T c={c} k="community.note" as="div" extra="mt-6 text-white/60">{c.community.note}</T>
+      </div>
+    </Section>
+  );
+}
+
+function Contract({ c }) {
+  return (
+    <Section id="contract">
+      <div className="py-12">
+        <div className="text-sm text-white/50 mb-3">Двусторонний контракт</div>
+        <T c={c} k="contract.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.contract.title}</T>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85">
+            <div className="font-semibold text-amber-300 mb-2">Мои обязательства</div>
+            <T c={c} k="contract.mine" as="div">{c.contract.mine}</T>
+          </div>
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85">
+            <div className="font-semibold text-amber-300 mb-2">Твои обязательства</div>
+            <T c={c} k="contract.yours" as="div">{c.contract.yours}</T>
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function CTA({ c, onStartQuiz, onShowProgram }) {
+  return (
+    <Section id="cta">
+      <div className="py-16 text-center">
+        <T c={c} k="cta.title" as="h2" extra="text-4xl font-extrabold text-white mb-2">{c.cta.title}</T>
+        <T c={c} k="cta.subtitle" as="div" extra="text-white/70 mb-6">{c.cta.subtitle}</T>
+        <div className="flex justify-center gap-4">
+          <button onClick={onStartQuiz} className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-semibold">{c.cta.primaryText}</button>
+          {c.cta.secondaryText && (
+            <button onClick={onShowProgram} className="px-6 py-3 rounded-xl border border-white/20">
+              {c.cta.secondaryText}
+            </button>
+          )}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ---------- Mini-Quiz ----------
+function Quiz({ open, onClose }) {
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({ role: "", goal: "", xp: "", niche: "", result: "" });
+
+  useEffect(() => {
+    if (!open) return;
+    // блокировка скролла под модалкой
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => (document.body.style.overflow = prev);
+  }, [open]);
+
+  if (!open) return null;
+
+  const steps = [
+    (
+      <div key={0}>
+        <div className="text-lg font-semibold mb-3">Кто ты по роли?</div>
+        <div className="grid grid-cols-2 gap-2">
+          {["Дизайнер", "Маркетолог", "Копирайтер", "Продюсер", "Предприниматель", "Другое"].map((r) => (
+            <button key={r} className={`px-3 py-2 rounded bg-neutral-700 ${form.role === r ? "outline outline-2 outline-amber-500" : ""}`} onClick={() => setForm({ ...form, role: r })}>
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+    ),
+    (
+      <div key={1}>
+        <div className="text-lg font-semibold mb-3">Цель на 30 дней</div>
+        <input value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })} placeholder="Например: автоматизировать подготовку рекламных макетов" className="w-full bg-neutral-800/70 rounded px-3 py-2" />
+      </div>
+    ),
+    (
+      <div key={2}>
+        <div className="text-lg font-semibold mb-3">Опыт с ИИ</div>
+        <div className="grid grid-cols-2 gap-2">
+          {["0", "1–6 мес", "6–12 мес", "> 12 мес"].map((r) => (
+            <button key={r} className={`px-3 py-2 rounded bg-neutral-700 ${form.xp === r ? "outline outline-2 outline-amber-500" : ""}`} onClick={() => setForm({ ...form, xp: r })}>
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+    ),
+    (
+      <div key={3}>
+        <div className="text-lg font-semibold mb-3">Ниша/чем занимаешься</div>
+        <input value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Например: перформанс-маркетинг, e‑com, B2B SaaS" className="w-full bg-neutral-800/70 rounded px-3 py-2" />
+      </div>
+    ),
+    (
+      <div key={4}>
+        <div className="text-lg font-semibold mb-3">Какой конкретный результат ждёшь?</div>
+        <textarea value={form.result} onChange={(e) => setForm({ ...form, result: e.target.value })} rows={3} placeholder="Например: подготовить 30 креативов/мес без найма дизайнера" className="w-full bg-neutral-800/70 rounded px-3 py-2" />
+      </div>
+    ),
+  ];
+
+  const canNext = () => {
+    if (step === 0) return !!form.role;
+    if (step === 1) return !!form.goal;
+    if (step === 2) return !!form.xp;
+    if (step === 3) return !!form.niche;
+    if (step === 4) return !!form.result;
+    return true;
+  };
+
+  const submit = () => {
+    const payload = { ...form, ts: new Date().toISOString() };
+    try {
+      const arr = JSON.parse(localStorage.getItem("ebosh_lead_quiz") || "[]");
+      arr.push(payload);
+      localStorage.setItem("ebosh_lead_quiz", JSON.stringify(arr));
+    } catch {}
+    setStep(999);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
+      <div className="w-full max-w-xl rounded-2xl bg-neutral-900 border border-white/10 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="font-semibold">Разведка — мини‑квиз</div>
+          <button onClick={onClose} className="text-white/60 hover:text-white">✕</button>
+        </div>
+
+        {step === 999 ? (
+          <div className="text-center py-8">
+            <div className="text-xl font-semibold mb-2">Готово!</div>
+            <div className="text-white/70 mb-4">Ответы сохранены. Мы свяжемся, если ты подходишь под формат отряда.</div>
+            <button onClick={onClose} className="px-4 py-2 rounded bg-emerald-700">Закрыть</button>
+          </div>
+        ) : (
+          <>
+            {steps[step]}
+            <div className="flex justify-between mt-5">
+              <button className="px-4 py-2 rounded bg-neutral-700" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>
+                Назад
+              </button>
+              {step < steps.length - 1 ? (
+                <button className="px-4 py-2 rounded bg-emerald-700 disabled:opacity-50" onClick={() => setStep(step + 1)} disabled={!canNext()}>
+                  Далее
+                </button>
+              ) : (
+                <button className="px-4 py-2 rounded bg-amber-600 disabled:opacity-50" onClick={submit} disabled={!canNext()}>
+                  Отправить
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- App ----------
+export default function App() {
+  const [content, setContent] = useState(load());
+  const [editor, setEditor] = useState(false);
+  const [active, setActive] = useState("hero");
+  const [tab, setTab] = useState("hero");
+  const [pickMode, setPickMode] = useState(false);
+  const [pickedKey, setPickedKey] = useState("");
+  const [quizOpen, setQuizOpen] = useState(false);
+
+  useEffect(() => save(content), [content]);
+
+  useEffect(() => {
+    const ids = Array.from(new Set(content.nav.map((n) => n.href.replace("#", "")).filter(Boolean)));
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const e = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (e) setActive(e.target.id);
+      },
+      { rootMargin: "-40% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] }
+    );
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, [content.nav]);
+
+  const logo = useImageSrc(content.images.logo);
+
+  const onPickCapture = (e) => {
+    if (!pickMode) return;
+    const el = e.target.closest("[data-k]");
+    if (el) {
+      const k = el.getAttribute("data-k");
+      setPickedKey(k || "");
+      setEditor(true);
+      setTab("style");
+      setPickMode(false);
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleStartQuiz = () => setQuizOpen(true);
+  const handleShowProgram = () => {
+    const el = document.getElementById("program");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-neutral-900 to-neutral-950 text-white" onClickCapture={onPickCapture}>
+      <header className="sticky top-0 z-40 backdrop-blur bg-black/40 border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {logo ? <img src={logo} alt="logo" className="w-10 h-10 rounded" /> : <div className="w-10 h-10 rounded bg-white/5" />}
+            <div className="leading-tight">
+              <T c={content} k="brand" as="div" extra="font-semibold text-white">{content.brand}</T>
+            </div>
+          </div>
+          <nav className="ml-auto flex items-center gap-2 flex-wrap">
+            {content.nav
+              .filter((n) => n.show)
+              .map((n, i) => {
+                const id = n.href.replace("#", "");
+                return (
+                  <a
+                    key={n.key}
+                    href={n.href}
+                    className={`px-3 py-2 rounded-md hover:bg-white/5 ${active === id ? "bg-gradient-to-r from-amber-500 to-orange-600 text-black" : "text-white/85"}`}
+                    onClick={(e) => {
+                      const el = document.getElementById(id);
+                      if (el) {
+                        e.preventDefault();
+                        el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }}
+                  >
+                    <T c={content} k={`nav.${i}.label`} as="span">{n.label}</T>
+                  </a>
+                );
+              })}
+            <button onClick={() => setEditor(true)} className="ml-2 px-3 py-2 rounded-md border border-white/20">
+              Редактировать
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4">
+        <Hero c={content} />
+        <Manifest c={content} />
+        <Audience c={content} />
+        <Author c={content} />
+        <Program c={content} />
+        <Gear c={content} />
+        <Cases c={content} />
+        <Community c={content} />
+        <Contract c={content} />
+        <CTA c={content} onStartQuiz={handleStartQuiz} onShowProgram={handleShowProgram} />
+        <div id="kit" className="h-2" />
+      </main>
+
+      <Editor
+        open={editor}
+        onClose={() => setEditor(false)}
+        content={content}
+        setContent={setContent}
+        tab={tab}
+        setTab={setTab}
+        pickMode={pickMode}
+        setPickMode={setPickMode}
+        pickedKey={pickedKey}
+        setPickedKey={setPickedKey}
+      />
+
+      <Quiz open={quizOpen} onClose={() => setQuizOpen(false)} />
+    </div>
+  );
+}
