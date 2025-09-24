@@ -1,20 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-// ================================
-// E‑BOSH GUERRILLA — v7.2
-// Что добавлено:
-// 1) Контроль размеров изображений (Hero/Манифест/Автор): высота (px) + режим вписывания (cover/contain).
-// 2) Автооптимизация загружаемых изображений (ресайз до 1920×1080, сжатие ~0.82) → меньше вес и без «гигантов».
-// 3) Сохранены фиксы v7: универсальные размеры шрифтов, квиз, скролл, убран «Лого», применяются размеры заголовков.
-// ================================
+// E‑BOSH GUERRILLA — v7.5 (Canvas build)
+// Эта версия собрана для Canvas: запускается как один React‑файл с предпросмотром страницы и CMS‑редактором сбоку.
+// Правка: добавлен отсутствующий компонент ManifestEditor (исправляет ReferenceError: ManifestEditor is not defined).
+// Плюс мини‑смоук‑тесты, чтобы отлавливать подобные проблемы в будущем.
 
-// ---------- Storage helpers ----------
-const LS_KEY = "ebosh_cms_v7"; // совместимый ключ хранения
+// ---------- Storage ----------
+const LS_KEY = "ebosh_cms_v7";
 
+function mergeDeep(target, source) {
+  const out = Array.isArray(target) ? [...(target || [])] : { ...(target || {}) };
+  Object.keys(source || {}).forEach((k) => {
+    const sv = source[k], tv = out[k];
+    if (sv && typeof sv === "object" && !Array.isArray(sv)) {
+      out[k] = mergeDeep(tv && typeof tv === "object" && !Array.isArray(tv) ? tv : {}, sv);
+    } else if (Array.isArray(sv)) {
+      // FIX: если значение массива отсутствует у пользователя — берём из source, иначе сохраняем пользовательский массив
+      out[k] = Array.isArray(tv) ? tv : [...sv];
+    } else if (out[k] === undefined) {
+      out[k] = sv;
+    }
+  });
+  return out;
+}
 function load() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return mergeDeep(JSON.parse(raw), DEFAULT_CONTENT);
   } catch {}
   return DEFAULT_CONTENT;
 }
@@ -25,36 +37,20 @@ function save(c) {
 }
 
 // ---------- Images helpers ----------
-async function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
-// Автооптимизация (ресайз + сжатие)
 async function optimizeImage(file, maxW = 1920, maxH = 1080, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const src = reader.result;
-      const img = new Image();
+      const src = reader.result; const img = new Image();
       img.onload = () => {
-        let { width, height } = img;
-        const ratio = Math.min(maxW / width, maxH / height, 1);
-        const w = Math.round(width * ratio);
-        const h = Math.round(height * ratio);
-        const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
+        const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+        const w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
+        const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d"); ctx.drawImage(img, 0, 0, w, h);
         try {
-          const type = (file.type && file.type.startsWith("image/")) ? file.type : "image/jpeg";
-          const out = canvas.toDataURL(type, quality);
-          resolve(out);
-        } catch (e) {
+          const type = (/^image\//.test(file.type) ? file.type : "image/jpeg");
+          resolve(canvas.toDataURL(type, quality));
+        } catch {
           resolve(String(src));
         }
       };
@@ -65,12 +61,7 @@ async function optimizeImage(file, maxW = 1920, maxH = 1080, quality = 0.82) {
     reader.readAsDataURL(file);
   });
 }
-
-function useImageSrc(src) {
-  const [url, setUrl] = useState(undefined);
-  useEffect(() => { setUrl(src || undefined); }, [src]);
-  return url;
-}
+function useImageSrc(src) { const [url, setUrl] = useState(); useEffect(() => setUrl(src || undefined), [src]); return url; }
 
 // ---------- Content model ----------
 const DEFAULT_CONTENT = {
@@ -81,13 +72,25 @@ const DEFAULT_CONTENT = {
     { key: "audience", label: "Для кого", href: "#audience", show: true },
     { key: "author", label: "Автор", href: "#author", show: true },
     { key: "program", label: "Программа", href: "#program", show: true },
-    { key: "kit", label: "Комплект", href: "#kit", show: true },
+    { key: "kit", label: "Комплект", href: "#kit", show: true }, // FIX: placeholder‑раздел ниже
     { key: "gear", label: "Снаряжение", href: "#gear", show: true },
-    { key: "trophies", label: "Трофеи", href: "#trophies", show: true },
+    { key: "trophies", label: "Трофеи", href: "#trophies", show: true }, // FIX: placeholder‑раздел ниже
     { key: "community", label: "Комьюнити", href: "#community", show: true },
     { key: "contract", label: "Контракт", href: "#contract", show: true },
     { key: "cta", label: "Запись", href: "#cta", show: true },
   ],
+  labels: { // надзаголовки
+    hero: "",
+    manifest: "Идеология",
+    audience: "Вербовочный пункт",
+    author: "Командир отряда",
+    program: "Боевая подготовка",
+    gear: "Снаряжение",
+    cases: "Стена трофеев",
+    community: "Рождение отряда",
+    contract: "Двусторонний контракт",
+    cta: "",
+  },
   hero: {
     titleLeft: "ПРЕВРАТИ ИИ В",
     highlight: "ЛИЧНУЮ КУВАЛДУ",
@@ -102,26 +105,21 @@ const DEFAULT_CONTENT = {
     titleSize: 72,
     highlightSize: 72,
   },
-  manifest: {
-    title: "МАНИФЕСТ E-BOSH",
-    background: "",
-    text: "Мир инфобизнеса прогнил. Мы верим не в волшебную палочку, а в кувалду. Мы верим, что ИИ — не замена человеку, а усилитель в его руках.",
-  },
+  manifest: { title: "МАНИФЕСТ E-BOSH", background: "", text: "Мир инфобизнеса прогнил..." },
   audience: {
     title: "Для кого этот курс",
+    iconSize: 48,
+    imageH: 260,
+    imageFit: "cover",
     cards: [
-      { title: "Этот отряд для тех, кто уже в бою", text: "Для специалистов с опытом в своей профессии, которые хотят стать на голову выше." },
-      { title: "Мы усиливаем сильных", text: "Если базовых навыков ноль — умножать нечего. Мы — про работу и рост ценности." },
+      { image: "", icon: "", title: "Этот отряд для тех, кто уже в бою", text: "Для специалистов с опытом..." },
+      { image: "", icon: "", title: "Мы усиливаем сильных", text: "Если базовых навыков ноль — умножать нечего..." }
     ],
   },
-  author: {
-    title: "Кто ведёт в бой",
-    text: "Я из тех, кто привык работать руками и головой. Я не продаю сказки, я показываю систему, которая приносит результат.",
-    photo: "",
-  },
+  author: { title: "Кто ведёт в бой", text: "Я из тех, кто привык работать руками и головой...", photo: "" },
   program: {
     title: "Программа обучения",
-    subtitle: "Цель: сделать из тебя не просто пользователя ИИ, а тактика, который видит задачу и добивается результата.",
+    subtitle: "Цель: сделать из тебя не просто пользователя ИИ...",
     weeks: [
       { title: "Неделя 1. Ввод в обстановку", points: ["Принятие присяги", "Разведка местности", "Выбор цели"] },
       { title: "Неделя 2. Арсенал", points: ["Выбор и пристрелка оружия"] },
@@ -131,97 +129,113 @@ const DEFAULT_CONTENT = {
   },
   cases: {
     title: "Кейсы и отзывы",
+    photoH: 180,
+    photoFit: "cover",
     items: [
-      { name: "Александр", role: "Копирайтер", task: "Сократить время на SEO-статьи", result: "ИИ делает 80% рутины, +80 000 ₽/мес" },
-      { name: "Мария", role: "Дизайнер", task: "Серия креативов под рекламу", result: "10 вариантов за 40 минут без выгорания" },
-      { name: "Илья", role: "Маркетолог", task: "Контент-план + видео", result: "CPL −27%, запуск за 48 часов" },
+      { photo: "", name: "Александр", role: "Копирайтер", task: "Сократить время на SEO-статьи", result: "ИИ делает 80% рутины, +80 000 ₽/мес" },
+      { photo: "", name: "Мария", role: "Дизайнер", task: "Серия креативов под рекламу", result: "10 вариантов за 40 минут без выгорания" },
+      { photo: "", name: "Илья", role: "Маркетолог", task: "Контент-план + видео", result: "CPL −27%, запуск за 48 часов" },
     ],
   },
   community: {
     title: "Комьюнити = точка сбора",
     items: [
-      { title: "Совместные вылазки", text: "Вместе штурмуем новые нейросети. Практика вместо болтовни." },
-      { title: "Общий арсенал", text: "Живая база лучших инструкций, примеров и кейсов." },
-      { title: "Плечо товарища", text: "Поддержка от меня и бойцов отряда." },
+      { title: "Совместные вылазки", text: "Вместе штурмуем новые нейросети..." },
+      { title: "Общий арсенал", text: "Живая база лучших инструкций..." },
+      { title: "Плечо товарища", text: "Поддержка от меня и бойцов..." },
     ],
     note: "Ты вступаешь не в чат. Ты вступаешь в братство.",
   },
   contract: {
     title: "Гарантия, высеченная в граните",
-    mine: "Если за 30 дней ты проходишь все модули и сдаёшь задания, но не создаёшь систему — верну 100% и дам личную консультацию.",
-    yours: "Это тренировочный лагерь, а не Netflix. Пропуск двух практических заданий подряд без причины — отчисление и возврат (минус комиссии).",
+    mine: "Если за 30 дней...",
+    yours: "Это тренировочный лагерь...",
+    leftBg: "", rightBg: "", leftFit: "cover", rightFit: "cover", leftBgOpacity: 0.18, rightBgOpacity: 0.18,
   },
   cta: {
     title: "Точка сбора",
-    subtitle: "Ответишь на 3–5 вопросов — получишь «Боевой устав партизана». Я честно скажу, смогу ли помочь.",
+    subtitle: "Ответишь на 3–5 вопросов — получишь «Боевой устав партизана»...",
     primaryText: "Записаться на разведку",
     primaryHref: "#form",
+    primaryIcon: "",
     secondaryText: "Посмотреть программу",
     secondaryHref: "#program",
+    secondaryIcon: "",
+    iconSize: 18,
   },
   gear: {
     title: "Твой арсенал",
     items: [
-      { icon: "", text: "Карта местности. Разложим задачу и составим четкий план атаки." },
-      { icon: "", text: "Личное оружие. Ваша выверенная инструкция под нужную нейросеть." },
-      { icon: "", text: "Боевой трофей. На выходе — готовый результат для портфолио/клиента." },
-      { icon: "", text: "Разведданные. Где применять, чтобы не сливать время." },
-      { icon: "", text: "Полевые учения. Разборы + 2 эфира Q&A. Ответы ≤ 24 ч." },
-      { icon: "", text: "Снаряжение №1 «Черный рынок инструментов». Доступ из РФ." },
-      { icon: "", text: "Снаряжение №2 «Архив боевых операций». База кейсов." },
-      { icon: "", text: "Снаряжение №3 «Вечный патрон». Пожизненный доступ и апдейты." },
+      { icon: "", text: "Карта местности. Разложим задачу..." },
+      { icon: "", text: "Личное оружие. Ваша выверенная инструкция..." },
+      { icon: "", text: "Боевой трофей. На выходе — готовый результат..." },
+      { icon: "", text: "Разведданные. Где применять..." },
+      { icon: "", text: "Полевые учения. Разборы + 2 эфира..." },
+      { icon: "", text: "Снаряжение №1 «Черный рынок инструментов»." },
+      { icon: "", text: "Снаряжение №2 «Архив боевых операций»." },
+      { icon: "", text: "Снаряжение №3 «Вечный патрон»." },
     ],
   },
-  images: { logo: "", hero: "", manifestBg: "", authorPhoto: "", heroH: 420, heroFit: "cover", manifestH: 280, manifestFit: "cover", authorH: 320, authorFit: "cover", iconSize: 64 },
+  images: {
+    logo: "", logoH: 40, logoFit: "contain",
+    hero: "", heroH: 420, heroFit: "cover",
+    manifestBg: "", manifestH: 280, manifestFit: "cover",
+    authorPhoto: "", authorH: 320, authorFit: "cover",
+    iconSize: 64,
+  },
+  quiz: {
+    title: "Разведка — мини‑квиз",
+    steps: [
+      { type: "choice", label: "Кто ты по роли?", options: ["Дизайнер", "Маркетолог", "Копирайтер", "Продюсер", "Предприниматель", "Другое"] },
+      { type: "text", label: "Цель на 30 дней", placeholder: "Например: автоматизировать подготовку рекламных макетов" },
+      { type: "choice", label: "Опыт с ИИ", options: ["0", "1–6 мес", "6–12 мес", "> 12 мес"] },
+      { type: "text", label: "Ниша/чем занимаешься", placeholder: "Например: перформанс‑маркетинг, e‑com, B2B SaaS" },
+      { type: "textarea", label: "Какой конкретный результат ждёшь?", placeholder: "Например: подготовить 30 креативов/мес без найма дизайнера" },
+    ],
+    labels: { back: "Назад", next: "Далее", submit: "Отправить", doneTitle: "Готово!", doneText: "Ответы сохранены. Мы свяжемся, если ты подходишь под формат отряда." },
+  },
   styles: {},
 };
 
 // ---------- Utils ----------
-function toHTML(t) {
-  return (t || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br/>");
-}
-
 const Label = ({ children }) => <div className="text-xs text-white/60 mb-1">{children}</div>;
-
-function FileRow({ label, value, onChange }) {
-  const url = useImageSrc(value);
-  return (
-    <div className="mb-4">
-      <Label>{label}</Label>
-      <div className="flex gap-2 items-start">
-        <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="Вставь ссылку или оставь пусто — используй загрузку" className="flex-1 bg-neutral-800/70 rounded px-2 py-2 text-sm outline-none" />
-        <label className="px-3 py-2 rounded bg-neutral-700 hover:bg-neutral-600 cursor-pointer text-sm">
-          Загрузить файл
-          <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const data = await optimizeImage(f); onChange(String(data)); }} />
-        </label>
-      </div>
-      <div className="mt-2 h-28 bg-neutral-900/50 rounded flex items-center justify-center overflow-hidden border border-white/5">
-        {url ? <img src={url} alt="preview" className="max-h-28 object-contain" /> : <span className="text-xs text-white/40">preview</span>}
-      </div>
-    </div>
-  );
-}
-
+function toHTML(t) { return (t || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br/>"); }
 function useNodeStyle(content, k, extra = "") {
   const s = (content.styles && content.styles[k]) || {};
   const classAlign = s.align === "center" ? "text-center" : s.align === "right" ? "text-right" : s.align === "left" ? "text-left" : "";
   const className = [extra, classAlign, "whitespace-pre-line"].filter(Boolean).join(" ");
   const style = {};
   if (s.fontSize) style.fontSize = s.fontSize + "px";
-  if (s.lineHeight) style.lineHeight = s.lineHeight;
+  if (s.lineHeight) style.lineHeight = s.lineHeight; // FIX: строка может быть числом или 'px'
   if (s.weight) style.fontWeight = s.weight;
   return { className, style };
 }
-
 function T({ c, k, as = "div", html, children, extra = "", baseStyle }) {
-  const Tag = as;
-  const ns = useNodeStyle(c, k, extra);
-  const style = { ...(baseStyle || {}), ...(ns.style || {}) };
+  const Tag = as; const ns = useNodeStyle(c, k, extra); const style = { ...(baseStyle || {}), ...(ns.style || {}) };
   if (html) return <Tag data-k={k} className={ns.className} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <Tag data-k={k} className={ns.className} style={style}>{children}</Tag>;
+}
+const Section = ({ id, children }) => <section id={id} className="scroll-mt-28">{children}</section>;
+function IconImg({ src, size = 64 }) { const url = useImageSrc(src); if (!url) return null; return <img src={url} alt="icon" style={{ width: size, height: size }} className="object-contain flex-none"/>; }
+const Kicker = ({ text }) => text ? <div className="text-sm text-white/50 mb-3">{text}</div> : null;
+
+// ---------- File input row ----------
+function FileRow({ label, value, onChange }) {
+  const url = useImageSrc(value);
+  const inputValue = value && String(value).startsWith("data:image/") ? "" : (value || "");
   return (
-    <Tag data-k={k} className={ns.className} style={style}>
-      {children}
-    </Tag>
+    <div className="mb-4">
+      <Label>{label}</Label>
+      <div className="flex gap-2 items-start">
+        <input value={inputValue} onChange={(e)=>onChange(e.target.value)} placeholder="Вставь ссылку или оставь пусто — используй загрузку" className="flex-1 bg-neutral-800/70 rounded px-2 py-2 text-sm outline-none"/>
+        <label className="px-3 py-2 rounded bg-neutral-700 hover:bg-neutral-600 cursor-pointer text-sm">Загрузить файл
+          <input type="file" accept="image/*" className="hidden" onChange={async(e)=>{ const f=e.target.files?.[0]; if(!f) return; const data=await optimizeImage(f); onChange(String(data)); }}/>
+        </label>
+      </div>
+      <div className="mt-2 h-28 bg-neutral-900/50 rounded flex items-center justify-center overflow-hidden border border-white/5">
+        {url ? <img src={url} alt="preview" className="max-h-28 object-contain"/> : <span className="text-xs text-white/40">preview</span>}
+      </div>
+    </div>
   );
 }
 
@@ -233,10 +247,10 @@ function NavEditor({ content, set }) {
       <div className="flex justify-between items-center mb-3"><div className="font-medium">Навигация</div><button onClick={add} className="text-xs px-2 py-1 bg-neutral-700 rounded">Добавить пункт</button></div>
       {content.nav.map((n, i) => (
         <div key={n.key} className="grid grid-cols-12 gap-2 mb-2">
-          <input className="col-span-4 bg-neutral-800/70 rounded px-2 py-1" value={n.label} onChange={(e) => { const nav = [...content.nav]; nav[i] = { ...n, label: e.target.value }; set({ ...content, nav }); }} />
-          <input className="col-span-6 bg-neutral-800/70 rounded px-2 py-1" value={n.href} onChange={(e) => { const nav = [...content.nav]; nav[i] = { ...n, href: e.target.value }; set({ ...content, nav }); }} />
-          <label className="col-span-1 text-xs flex items-center gap-1"><input type="checkbox" checked={n.show} onChange={(e) => { const nav = [...content.nav]; nav[i] = { ...n, show: e.target.checked }; set({ ...content, nav }); }} />показывать</label>
-          <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={() => { const nav = [...content.nav]; nav.splice(i, 1); set({ ...content, nav }); }}>Удалить</button>
+          <input className="col-span-4 bg-neutral-800/70 rounded px-2 py-1" value={n.label} onChange={(e)=>{const nav=[...content.nav]; nav[i]={...n, label:e.target.value}; set({ ...content, nav });}}/>
+          <input className="col-span-6 bg-neutral-800/70 rounded px-2 py-1" value={n.href} onChange={(e)=>{const nav=[...content.nav]; nav[i]={...n, href:e.target.value}; set({ ...content, nav });}}/>
+          <label className="col-span-1 text-xs flex items-center gap-1"><input type="checkbox" checked={n.show} onChange={(e)=>{const nav=[...content.nav]; nav[i]={...n, show:e.target.checked}; set({ ...content, nav });}}/>показывать</label>
+          <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={()=>{const nav=[...content.nav]; nav.splice(i,1); set({ ...content, nav });}}>Удалить</button>
         </div>
       ))}
     </div>
@@ -246,83 +260,130 @@ function NavEditor({ content, set }) {
 function ImagesEditor({ content, set }) {
   return (
     <div>
-      <FileRow label="Лого" value={content.images.logo} onChange={(v) => set({ ...content, images: { ...content.images, logo: v } })} />
-
-      <FileRow label="Hero изображение" value={content.hero.image || content.images.hero} onChange={(v) => set({ ...content, hero: { ...content.hero, image: v } })} />
+      <FileRow label="Лого" value={content.images.logo} onChange={(v)=>set({ ...content, images: { ...content.images, logo: v } })} />
       <div className="grid grid-cols-12 gap-2 mb-4">
-        <div className="col-span-6"><Label>Hero — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.heroH ?? 420} onChange={(e) => set({ ...content, images: { ...content.images, heroH: Number(e.target.value || 420) } })} /></div>
-        <div className="col-span-6"><Label>Hero — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.heroFit || "cover"} onChange={(e) => set({ ...content, images: { ...content.images, heroFit: e.target.value } })}><option value="cover">cover (обрезать края)</option><option value="contain">contain (вписать)</option></select></div>
+        <div className="col-span-6"><Label>Лого — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.logoH ?? 40} onChange={(e)=>set({ ...content, images:{...content.images, logoH:Number(e.target.value||40)} })}/></div>
+        <div className="col-span-6"><Label>Лого — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.logoFit||"contain"} onChange={(e)=>set({ ...content, images:{...content.images, logoFit:e.target.value} })}><option value="contain">contain</option><option value="cover">cover</option></select></div>
       </div>
 
-      <FileRow label="Фон манифеста" value={content.manifest.background || content.images.manifestBg} onChange={(v) => set({ ...content, manifest: { ...content.manifest, background: v } })} />
+      <FileRow label="Hero изображение" value={content.hero.image || content.images.hero} onChange={(v)=>set({ ...content, hero: { ...content.hero, image: v } })} />
       <div className="grid grid-cols-12 gap-2 mb-4">
-        <div className="col-span-6"><Label>Манифест — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.manifestH ?? 280} onChange={(e) => set({ ...content, images: { ...content.images, manifestH: Number(e.target.value || 280) } })} /></div>
-        <div className="col-span-6"><Label>Манифест — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.manifestFit || "cover"} onChange={(e) => set({ ...content, images: { ...content.images, manifestFit: e.target.value } })}><option value="cover">cover</option><option value="contain">contain</option></select></div>
+        <div className="col-span-6"><Label>Hero — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.heroH ?? 420} onChange={(e)=>set({ ...content, images:{...content.images, heroH:Number(e.target.value||420)} })}/></div>
+        <div className="col-span-6"><Label>Hero — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.heroFit||"cover"} onChange={(e)=>set({ ...content, images:{...content.images, heroFit:e.target.value} })}><option value="cover">cover</option><option value="contain">contain</option></select></div>
       </div>
 
-      <FileRow label="Фото автора" value={content.author.photo || content.images.authorPhoto} onChange={(v) => set({ ...content, author: { ...content.author, photo: v } })} />
+      <FileRow label="Фон манифеста" value={content.manifest.background || content.images.manifestBg} onChange={(v)=>set({ ...content, manifest: { ...content.manifest, background: v } })} />
+      <div className="grid grid-cols-12 gap-2 mb-4">
+        <div className="col-span-6"><Label>Манифест — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.manifestH ?? 280} onChange={(e)=>set({ ...content, images:{...content.images, manifestH:Number(e.target.value||280)} })}/></div>
+        <div className="col-span-6"><Label>Манифест — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.manifestFit||"cover"} onChange={(e)=>set({ ...content, images:{...content.images, manifestFit:e.target.value} })}><option value="cover">cover</option><option value="contain">contain</option></select></div>
+      </div>
+
+      <FileRow label="Фото автора" value={content.author.photo || content.images.authorPhoto} onChange={(v)=>set({ ...content, author: { ...content.author, photo: v } })} />
       <div className="grid grid-cols-12 gap-2 mb-6">
-        <div className="col-span-6"><Label>Автор — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.authorH ?? 320} onChange={(e) => set({ ...content, images: { ...content.images, authorH: Number(e.target.value || 320) } })} /></div>
-        <div className="col-span-6"><Label>Автор — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.authorFit || "cover"} onChange={(e) => set({ ...content, images: { ...content.images, authorFit: e.target.value } })}><option value="cover">cover</option><option value="contain">contain</option></select></div>
+        <div className="col-span-6"><Label>Автор — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.authorH ?? 320} onChange={(e)=>set({ ...content, images:{...content.images, authorH:Number(e.target.value||320)} })}/></div>
+        <div className="col-span-6"><Label>Автор — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.authorFit||"cover"} onChange={(e)=>set({ ...content, images:{...content.images, authorFit:e.target.value} })}><option value="cover">cover</option><option value="contain">contain</option></select></div>
       </div>
 
-      <div className="mb-4"><Label>Размер иконок (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.iconSize ?? 64} onChange={(e) => set({ ...content, images: { ...content.images, iconSize: Number(e.target.value || 64) } })} /></div>
-
-      {content.gear.items.map((g, i) => (
-        <FileRow key={i} label={`Иконка #${i + 1}`} value={g.icon} onChange={(v) => { const items = [...content.gear.items]; items[i] = { ...items[i], icon: v }; set({ ...content, gear: { ...content.gear, items } }); }} />
-      ))}
+      <div className="mb-4"><Label>Размер иконок (общий, px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.iconSize ?? 64} onChange={(e)=>set({ ...content, images:{...content.images, iconSize:Number(e.target.value||64)} })}/></div>
     </div>
   );
 }
 
 function HeroEditor({ content, set }) {
-  const h = content.hero;
+  const h = content.hero; const patchStyle = (key, patch) => { const styles = { ...(content.styles||{}) }; styles[key] = { ...(styles[key]||{}), ...patch }; set({ ...content, styles }); };
   const addBullet = () => set({ ...content, hero: { ...h, bullets: [...h.bullets, "Новый пункт"] } });
-  const patchStyle = (key, patch) => { const styles = { ...(content.styles || {}) }; styles[key] = { ...(styles[key] || {}), ...patch }; set({ ...content, styles }); };
   return (
     <div>
       <Label>Бренд</Label>
-      <input value={content.brand} onChange={(e) => set({ ...content, brand: e.target.value })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3" />
-      <Label>Заголовок (левая часть) — переносы сохраняются</Label>
-      <textarea value={h.titleLeft} onChange={(e) => set({ ...content, hero: { ...h, titleLeft: e.target.value } })} rows={2} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
-      <div className="flex items-center gap-3 mb-3"><Label>Размер заголовка (px)</Label><input type="range" min={36} max={128} value={h.titleSize ?? 72} onChange={(e) => { const v = Number(e.target.value); set({ ...content, hero: { ...h, titleSize: v } }); patchStyle("hero.titleLeft", { fontSize: v }); }} /><input type="number" className="w-20 bg-neutral-800/70 rounded px-2 py-1" value={h.titleSize ?? 72} onChange={(e) => { const v = Number(e.target.value || 72); set({ ...content, hero: { ...h, titleSize: v } }); patchStyle("hero.titleLeft", { fontSize: v }); }} /></div>
+      <input value={content.brand} onChange={(e)=>set({ ...content, brand: e.target.value })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3"/>
+
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.hero||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, hero: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3"/>
+
+      <Label>Заголовок (левая часть)</Label>
+      <textarea value={h.titleLeft} onChange={(e)=>set({ ...content, hero:{...h, titleLeft:e.target.value} })} rows={2} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+      <div className="flex items-center gap-3 mb-3"><Label>Размер заголовка (px)</Label><input type="range" min={36} max={128} value={h.titleSize??72} onChange={(e)=>{const v=Number(e.target.value); set({ ...content, hero:{...h, titleSize:v} }); patchStyle("hero.titleLeft",{fontSize:v});}}/><input type="number" className="w-20 bg-neutral-800/70 rounded px-2 py-1" value={h.titleSize??72} onChange={(e)=>{const v=Number(e.target.value||72); set({ ...content, hero:{...h, titleSize:v} }); patchStyle("hero.titleLeft",{fontSize:v});}}/></div>
+
       <Label>Выделение</Label>
-      <input value={h.highlight} onChange={(e) => set({ ...content, hero: { ...h, highlight: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
-      <div className="flex items-center gap-3 mb-3"><Label>Размер выделения (px)</Label><input type="range" min={36} max={128} value={h.highlightSize ?? 72} onChange={(e) => { const v = Number(e.target.value); set({ ...content, hero: { ...h, highlightSize: v } }); patchStyle("hero.highlight", { fontSize: v }); }} /><input type="number" className="w-20 bg-neutral-800/70 rounded px-2 py-1" value={h.highlightSize ?? 72} onChange={(e) => { const v = Number(e.target.value || 72); set({ ...content, hero: { ...h, highlightSize: v } }); patchStyle("hero.highlight", { fontSize: v }); }} /></div>
+      <input value={h.highlight} onChange={(e)=>set({ ...content, hero:{...h, highlight:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+      <div className="flex items-center gap-3 mb-3"><Label>Размер выделения (px)</Label><input type="range" min={36} max={128} value={h.highlightSize??72} onChange={(e)=>{const v=Number(e.target.value); set({ ...content, hero:{...h, highlightSize:v} }); patchStyle("hero.highlight",{fontSize:v});}}/><input type="number" className="w-20 bg-neutral-800/70 rounded px-2 py-1" value={h.highlightSize??72} onChange={(e)=>{const v=Number(e.target.value||72); set({ ...content, hero:{...h, highlightSize:v} }); patchStyle("hero.highlight",{fontSize:v});}}/></div>
+
       <Label>Лид (**жирный** и переносы)</Label>
-      <textarea value={h.lead} onChange={(e) => set({ ...content, hero: { ...h, lead: e.target.value } })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3" />
-      <div className="mb-2 font-medium">Пункты-лиды</div>
+      <textarea value={h.lead} onChange={(e)=>set({ ...content, hero:{...h, lead:e.target.value} })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3"/>
+
+      <div className="mb-2 font-medium">Пункты‑лиды</div>
       {h.bullets.map((b, i) => (
-        <div key={i} className="flex gap-2 mb-2"><input className="flex-1 bg-neutral-800/70 rounded px-2 py-1" value={b} onChange={(e) => { const bullets = [...h.bullets]; bullets[i] = e.target.value; set({ ...content, hero: { ...h, bullets } }); }} /><button className="px-2 py-1 text-xs bg-neutral-700 rounded" onClick={() => { const bullets = [...h.bullets]; bullets.splice(i, 1); set({ ...content, hero: { ...h, bullets } }); }}>X</button></div>
+        <div key={i} className="flex gap-2 mb-2"><input className="flex-1 bg-neutral-800/70 rounded px-2 py-1" value={b} onChange={(e)=>{const bullets=[...h.bullets]; bullets[i]=e.target.value; set({ ...content, hero:{...h, bullets} });}}/><button className="px-2 py-1 text-xs bg-neutral-700 rounded" onClick={()=>{const bullets=[...h.bullets]; bullets.splice(i,1); set({ ...content, hero:{...h, bullets} });}}>X</button></div>
       ))}
       <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={addBullet}>Добавить пункт</button>
     </div>
   );
 }
 
-function ManifestEditor({ content, set }) {
+// NEW: ManifestEditor — отсутствующий ранее редактор раздела «Манифест»
+function ManifestEditor({ content, set }){
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.manifest||""} onChange={(e)=>set({ ...content, labels:{...content.labels, manifest:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+
       <Label>Заголовок</Label>
-      <input value={content.manifest.title} onChange={(e) => set({ ...content, manifest: { ...content.manifest, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3" />
-      <Label>Текст (**жирный** и переносы)</Label>
-      <textarea value={content.manifest.text} onChange={(e) => set({ ...content, manifest: { ...content.manifest, text: e.target.value } })} rows={6} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+      <input value={content.manifest.title} onChange={(e)=>set({ ...content, manifest:{...content.manifest, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+
+      <FileRow label="Фон (опционально)" value={content.manifest.background||""} onChange={(v)=>set({ ...content, manifest:{...content.manifest, background:v} })} />
+      <div className="grid grid-cols-12 gap-2 mb-4">
+        <div className="col-span-6"><Label>Высота блока (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.manifestH ?? 280} onChange={(e)=>set({ ...content, images:{...content.images, manifestH:Number(e.target.value||280)} })}/></div>
+        <div className="col-span-6"><Label>Вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.images.manifestFit||"cover"} onChange={(e)=>set({ ...content, images:{...content.images, manifestFit:e.target.value} })}><option value="cover">cover</option><option value="contain">contain</option></select></div>
+      </div>
+
+      <Label>Текст (поддерживает **жирный** и переносы)</Label>
+      <textarea rows={6} className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.manifest.text} onChange={(e)=>set({ ...content, manifest:{...content.manifest, text:e.target.value} })}/>
     </div>
   );
 }
 
 function AudienceEditor({ content, set }) {
-  const add = () => set({ ...content, audience: { ...content.audience, cards: [...content.audience.cards, { title: "Новый заголовок", text: "Текст" }] } });
+  const add = () => set({ ...content, audience: { ...content.audience, cards: [ ...content.audience.cards, { image: "", icon: "", title: "Новый заголовок", text: "Текст" } ] } });
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.audience || ""} onChange={(e) => set({ ...content, labels: { ...content.labels, audience: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Заголовок</Label>
-      <input value={content.audience.title} onChange={(e) => set({ ...content, audience: { ...content.audience, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
-      <div className="flex justify-between items-center mb-2"><div className="font-medium">Карточки</div><button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>Добавить</button></div>
+      <input value={content.audience.title} onChange={(e) => set({ ...content, audience: { ...content.audience, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+
+      <div className="grid grid-cols-12 gap-2 mb-3">
+        <div className="col-span-6">
+          <Label>Окно изображения — высота (px)</Label>
+          <input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.audience.imageH ?? 260} onChange={(e) => set({ ...content, audience: { ...content.audience, imageH: Number(e.target.value || 260) } })}/>
+        </div>
+        <div className="col-span-6">
+          <Label>Окно изображения — вписывание</Label>
+          <select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.audience.imageFit || "cover"} onChange={(e) => set({ ...content, audience: { ...content.audience, imageFit: e.target.value } })}>
+            <option value="cover">cover</option>
+            <option value="contain">contain</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <Label>Размер иконок (px)</Label>
+        <input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.audience.iconSize ?? 48} onChange={(e) => set({ ...content, audience: { ...content.audience, iconSize: Number(e.target.value || 48) } })}/>
+      </div>
+
+      <div className="flex justify-between items-center mb-2">
+        <div className="font-medium">Карточки</div>
+        <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>Добавить</button>
+      </div>
+
       {content.audience.cards.map((cItem, i) => (
-        <div key={i} className="mb-2 grid grid-cols-12 gap-2">
-          <input className="col-span-4 bg-neutral-800/70 rounded px-2 py-1" value={cItem.title} onChange={(e) => { const cards = [...content.audience.cards]; cards[i] = { ...cItem, title: e.target.value }; set({ ...content, audience: { ...content.audience, cards } }); }} />
-          <textarea className="col-span-7 bg-neutral-800/70 rounded px-2 py-1" rows={2} value={cItem.text} onChange={(e) => { const cards = [...content.audience.cards]; cards[i] = { ...cItem, text: e.target.value }; set({ ...content, audience: { ...content.audience, cards } }); }} />
-          <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={() => { const cards = [...content.audience.cards]; cards.splice(i, 1); set({ ...content, audience: { ...content.audience, cards } }); }}>X</button>
+        <div key={i} className="mb-2 p-2 rounded bg-white/5">
+          <FileRow label={`Изображение (окошко) #${i + 1}`} value={cItem.image || ""} onChange={(v) => { const cards = [...content.audience.cards]; cards[i] = { ...cItem, image: v }; set({ ...content, audience: { ...content.audience, cards } }); }}/>
+          <FileRow label={`Иконка #${i + 1} (необязательно)`} value={cItem.icon || ""} onChange={(v) => { const cards = [...content.audience.cards]; cards[i] = { ...cItem, icon: v }; set({ ...content, audience: { ...content.audience, cards } }); }}/>
+          <div className="grid grid-cols-12 gap-2">
+            <input className="col-span-4 bg-neutral-800/70 rounded px-2 py-1" value={cItem.title} onChange={(e) => { const cards = [...content.audience.cards]; cards[i] = { ...cItem, title: e.target.value }; set({ ...content, audience: { ...content.audience, cards } }); }}/>
+            <textarea className="col-span-7 bg-neutral-800/70 rounded px-2 py-1" rows={2} value={cItem.text} onChange={(e) => { const cards = [...content.audience.cards]; cards[i] = { ...cItem, text: e.target.value }; set({ ...content, audience: { ...content.audience, cards } }); }}/>
+            <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={() => { const cards = [...content.audience.cards]; cards.splice(i, 1); set({ ...content, audience: { ...content.audience, cards } }); }}>X</button>
+          </div>
         </div>
       ))}
     </div>
@@ -332,31 +393,35 @@ function AudienceEditor({ content, set }) {
 function AuthorEditor({ content, set }) {
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.author||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, author: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Заголовок</Label>
-      <input value={content.author.title} onChange={(e) => set({ ...content, author: { ...content.author, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <input value={content.author.title} onChange={(e)=>set({ ...content, author:{...content.author, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Текст</Label>
-      <textarea value={content.author.text} onChange={(e) => set({ ...content, author: { ...content.author, text: e.target.value } })} rows={6} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
-      <FileRow label="Фото автора" value={content.author.photo} onChange={(v) => set({ ...content, author: { ...content.author, photo: v } })} />
+      <textarea value={content.author.text} onChange={(e)=>set({ ...content, author:{...content.author, text:e.target.value} })} rows={6} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+      <FileRow label="Фото автора" value={content.author.photo} onChange={(v)=>set({ ...content, author:{...content.author, photo:v} })}/>
     </div>
   );
 }
 
 function ProgramEditor({ content, set }) {
-  const add = () => set({ ...content, program: { ...content.program, weeks: [...content.program.weeks, { title: "Новая неделя", points: ["Пункт"] }] } });
+  const add = () => set({ ...content, program:{...content.program, weeks:[...content.program.weeks, { title: "Новая неделя", points:["Пункт"] }] } });
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.program||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, program: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Заголовок</Label>
-      <input value={content.program.title} onChange={(e) => set({ ...content, program: { ...content.program, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <input value={content.program.title} onChange={(e)=>set({ ...content, program:{...content.program, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Подзаголовок</Label>
-      <textarea value={content.program.subtitle} onChange={(e) => set({ ...content, program: { ...content.program, subtitle: e.target.value } })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <textarea value={content.program.subtitle} onChange={(e)=>set({ ...content, program:{...content.program, subtitle:e.target.value} })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <div className="flex justify-between items-center mb-2"><div className="font-medium">Недели</div><button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>Добавить</button></div>
       {content.program.weeks.map((w, wi) => (
         <div key={wi} className="mb-2 p-2 rounded bg-white/5">
-          <input className="w-full bg-neutral-800/70 rounded px-2 py-1 mb-2" value={w.title} onChange={(e) => { const weeks = [...content.program.weeks]; weeks[wi] = { ...w, title: e.target.value }; set({ ...content, program: { ...content.program, weeks } }); }} />
+          <input className="w-full bg-neutral-800/70 rounded px-2 py-1 mb-2" value={w.title} onChange={(e)=>{const weeks=[...content.program.weeks]; weeks[wi]={...w, title:e.target.value}; set({ ...content, program:{...content.program, weeks} });}}/>
           {w.points.map((p, pi) => (
-            <div key={pi} className="flex gap-2 mb-2"><input className="flex-1 bg-neutral-800/70 rounded px-2 py-1" value={p} onChange={(e) => { const weeks = [...content.program.weeks]; const pts = [...weeks[wi].points]; pts[pi] = e.target.value; weeks[wi] = { ...w, points: pts }; set({ ...content, program: { ...content.program, weeks } }); }} /><button className="px-2 py-1 text-xs bg-neutral-700 rounded" onClick={() => { const weeks = [...content.program.weeks]; const pts = [...weeks[wi].points]; pts.splice(pi, 1); weeks[wi] = { ...w, points: pts }; set({ ...content, program: { ...content.program, weeks } }); }}>X</button></div>
+            <div key={pi} className="flex gap-2 mb-2"><input className="flex-1 bg-neutral-800/70 rounded px-2 py-1" value={p} onChange={(e)=>{const weeks=[...content.program.weeks]; const pts=[...weeks[wi].points]; pts[pi]=e.target.value; weeks[wi]={...w, points:pts}; set({ ...content, program:{...content.program, weeks} });}}/><button className="px-2 py-1 text-xs bg-neutral-700 rounded" onClick={()=>{const weeks=[...content.program.weeks]; const pts=[...weeks[wi].points]; pts.splice(pi,1); weeks[wi]={...w, points:pts}; set({ ...content, program:{...content.program, weeks} });}}>X</button></div>
           ))}
-          <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={() => { const weeks = [...content.program.weeks]; weeks[wi] = { ...w, points: [...w.points, "Пункт"] }; set({ ...content, program: { ...content.program, weeks } }); }}>Добавить пункт</button>
+          <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={()=>{const weeks=[...content.program.weeks]; weeks[wi]={...w, points:[...w.points, "Пункт"]}; set({ ...content, program:{...content.program, weeks} });}}>Добавить пункт</button>
         </div>
       ))}
     </div>
@@ -364,19 +429,26 @@ function ProgramEditor({ content, set }) {
 }
 
 function CasesEditor({ content, set }) {
-  const add = () => set({ ...content, cases: { ...content.cases, items: [...content.cases.items, { name: "Имя", role: "Роль", task: "Задача", result: "Результат" }] } });
+  const add = () => set({ ...content, cases:{...content.cases, items:[...content.cases.items, { photo:"", name:"Имя", role:"Роль", task:"Задача", result:"Результат" }] } });
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.cases||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, cases: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Заголовок</Label>
-      <input value={content.cases.title} onChange={(e) => set({ ...content, cases: { ...content.cases, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <input value={content.cases.title} onChange={(e)=>set({ ...content, cases:{...content.cases, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+      <div className="grid grid-cols-12 gap-2 mb-3">
+        <div className="col-span-6"><Label>Фото — высота (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.cases.photoH??180} onChange={(e)=>set({ ...content, cases:{...content.cases, photoH:Number(e.target.value||180)} })}/></div>
+        <div className="col-span-6"><Label>Фото — вписывание</Label><select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.cases.photoFit||"cover"} onChange={(e)=>set({ ...content, cases:{...content.cases, photoFit:e.target.value} })}><option value="cover">cover</option><option value="contain">contain</option></select></div>
+      </div>
       <div className="flex justify-between items-center mb-2"><div className="font-medium">Кейсы</div><button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>Добавить</button></div>
       {content.cases.items.map((it, i) => (
-        <div key={i} className="grid grid-cols-12 gap-2 mb-2">
-          <input className="col-span-3 bg-neutral-800/70 rounded px-2 py-1" value={it.name} onChange={(e) => { const items = [...content.cases.items]; items[i] = { ...it, name: e.target.value }; set({ ...content, cases: { ...content.cases, items } }); }} placeholder="Имя" />
-          <input className="col-span-3 bg-neutral-800/70 rounded px-2 py-1" value={it.role} onChange={(e) => { const items = [...content.cases.items]; items[i] = { ...it, role: e.target.value }; set({ ...content, cases: { ...content.cases, items } }); }} placeholder="Роль" />
-          <input className="col-span-3 bg-neutral-800/70 rounded px-2 py-1" value={it.task} onChange={(e) => { const items = [...content.cases.items]; items[i] = { ...it, task: e.target.value }; set({ ...content, cases: { ...content.cases, items } }); }} placeholder="Задача" />
-          <input className="col-span-2 bg-neutral-800/70 rounded px-2 py-1" value={it.result} onChange={(e) => { const items = [...content.cases.items]; items[i] = { ...it, result: e.target.value }; set({ ...content, cases: { ...content.cases, items } }); }} placeholder="Результат" />
-          <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={() => { const items = [...content.cases.items]; items.splice(i, 1); set({ ...content, cases: { ...content.cases, items } }); }}>X</button>
+        <div key={i} className="grid grid-cols-12 gap-2 mb-2 p-2 rounded bg-white/5">
+          <div className="col-span-12 md:col-span-3"><FileRow label={`Фото #${i+1}`} value={it.photo} onChange={(v)=>{const items=[...content.cases.items]; items[i]={...it, photo:v}; set({ ...content, cases:{...content.cases, items} });}}/></div>
+          <input className="col-span-3 bg-neutral-800/70 rounded px-2 py-1" value={it.name} onChange={(e)=>{const items=[...content.cases.items]; items[i]={...it, name:e.target.value}; set({ ...content, cases:{...content.cases, items} });}} placeholder="Имя"/>
+          <input className="col-span-3 bg-neutral-800/70 rounded px-2 py-1" value={it.role} onChange={(e)=>{const items=[...content.cases.items]; items[i]={...it, role:e.target.value}; set({ ...content, cases:{...content.cases, items} });}} placeholder="Роль"/>
+          <input className="col-span-3 bg-neutral-800/70 rounded px-2 py-1" value={it.task} onChange={(e)=>{const items=[...content.cases.items]; items[i]={...it, task:e.target.value}; set({ ...content, cases:{...content.cases, items} });}} placeholder="Задача"/>
+          <div className="col-span-11"><input className="w-full bg-neutral-800/70 rounded px-2 py-1" value={it.result} onChange={(e)=>{const items=[...content.cases.items]; items[i]={...it, result:e.target.value}; set({ ...content, cases:{...content.cases, items} });}} placeholder="Результат"/></div>
+          <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={()=>{const items=[...content.cases.items]; items.splice(i,1); set({ ...content, cases:{...content.cases, items} });}}>X</button>
         </div>
       ))}
     </div>
@@ -384,21 +456,46 @@ function CasesEditor({ content, set }) {
 }
 
 function CommunityEditor({ content, set }) {
-  const add = () => set({ ...content, community: { ...content.community, items: [...content.community.items, { title: "Пункт", text: "Текст" }] } });
+  const add = () => set({ ...content, community:{...content.community, items:[...content.community.items, { title:"Пункт", text:"Текст" }] } });
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.community||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, community: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Заголовок</Label>
-      <input value={content.community.title} onChange={(e) => set({ ...content, community: { ...content.community, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <input value={content.community.title} onChange={(e)=>set({ ...content, community:{...content.community, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <div className="flex justify-between items-center mb-2"><div className="font-medium">Пункты</div><button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>Добавить</button></div>
       {content.community.items.map((it, i) => (
         <div key={i} className="grid grid-cols-12 gap-2 mb-2">
-          <input className="col-span-4 bg-neutral-800/70 rounded px-2 py-1" value={it.title} onChange={(e) => { const items = [...content.community.items]; items[i] = { ...it, title: e.target.value }; set({ ...content, community: { ...content.community, items } }); }} />
-          <textarea className="col-span-7 bg-neutral-800/70 rounded px-2 py-1" rows={2} value={it.text} onChange={(e) => { const items = [...content.community.items]; items[i] = { ...it, text: e.target.value }; set({ ...content, community: { ...content.community, items } }); }} />
-          <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={() => { const items = [...content.community.items]; items.splice(i, 1); set({ ...content, community: { ...content.community, items } }); }}>X</button>
+          <input className="col-span-4 bg-neutral-800/70 rounded px-2 py-1" value={it.title} onChange={(e)=>{const items=[...content.community.items]; items[i]={...it, title:e.target.value}; set({ ...content, community:{...content.community, items} });}}/>
+          <textarea className="col-span-7 bg-neutral-800/70 rounded px-2 py-1" rows={2} value={it.text} onChange={(e)=>{const items=[...content.community.items]; items[i]={...it, text:e.target.value}; set({ ...content, community:{...content.community, items} });}}/>
+          <button className="col-span-1 text-xs px-2 py-1 bg-neutral-700 rounded" onClick={()=>{const items=[...content.community.items]; items.splice(i,1); set({ ...content, community:{...content.community, items} });}}>X</button>
         </div>
       ))}
       <Label>Нижняя подпись</Label>
-      <input value={content.community.note} onChange={(e) => set({ ...content, community: { ...content.community, note: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+      <input value={content.community.note} onChange={(e)=>set({ ...content, community:{...content.community, note:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2"/>
+    </div>
+  );
+}
+
+function GearEditor({ content, set }) {
+  const add = () => set({ ...content, gear:{...content.gear, items:[...content.gear.items, { icon:"", text:"Новый пункт" }] } });
+  const upd = (i, patch) => { const items=[...content.gear.items]; items[i]={...items[i], ...patch}; set({ ...content, gear:{...content.gear, items} }); };
+  const del = (i) => { const items=[...content.gear.items]; items.splice(i,1); set({ ...content, gear:{...content.gear, items} }); };
+  return (
+    <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.gear||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, gear: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3"/>
+      <Label>Заголовок</Label>
+      <input value={content.gear.title} onChange={(e)=>set({ ...content, gear:{...content.gear, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-3"/>
+      <div className="flex items-center justify-between mb-2"><div className="font-medium">Пункты</div><button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={add}>Добавить</button></div>
+      {content.gear.items.map((it, i) => (
+        <div key={i} className="mb-3 p-2 rounded bg-white/5">
+          <FileRow label={`Иконка #${i+1}`} value={it.icon} onChange={(v)=>upd(i,{icon:v})}/>
+          <Label>Текст</Label>
+          <textarea rows={2} className="w-full bg-neutral-800/70 rounded px-2 py-2" value={it.text} onChange={(e)=>upd(i,{text:e.target.value})}/>
+          <div className="mt-2"><button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={()=>del(i)}>Удалить</button></div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -406,12 +503,32 @@ function CommunityEditor({ content, set }) {
 function ContractEditor({ content, set }) {
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.contract||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, contract: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Заголовок</Label>
-      <input value={content.contract.title} onChange={(e) => set({ ...content, contract: { ...content.contract, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <input value={content.contract.title} onChange={(e)=>set({ ...content, contract:{...content.contract, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+      <div className="grid grid-cols-12 gap-2 mb-2">
+        <div className="col-span-6">
+          <Label>Фон слева</Label>
+          <FileRow label="Изображение" value={content.contract.leftBg} onChange={(v)=>set({ ...content, contract:{...content.contract, leftBg:v} })}/>
+          <Label>Fit</Label>
+          <select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.contract.leftFit||"cover"} onChange={(e)=>set({ ...content, contract:{...content.contract, leftFit:e.target.value} })}><option value="cover">cover</option><option value="contain">contain</option></select>
+          <Label>Прозрачность</Label>
+          <input type="range" min={0} max={0.6} step={0.02} value={content.contract.leftBgOpacity??0.18} onChange={(e)=>set({ ...content, contract:{...content.contract, leftBgOpacity:Number(e.target.value)} })}/>
+        </div>
+        <div className="col-span-6">
+          <Label>Фон справа</Label>
+          <FileRow label="Изображение" value={content.contract.rightBg} onChange={(v)=>set({ ...content, contract:{...content.contract, rightBg:v} })}/>
+          <Label>Fit</Label>
+          <select className="w-full bg-neutral-800/70 rounded px-2 py-2" value={content.contract.rightFit||"cover"} onChange={(e)=>set({ ...content, contract:{...content.contract, rightFit:e.target.value} })}><option value="cover">cover</option><option value="contain">contain</option></select>
+          <Label>Прозрачность</Label>
+          <input type="range" min={0} max={0.6} step={0.02} value={content.contract.rightBgOpacity??0.18} onChange={(e)=>set({ ...content, contract:{...content.contract, rightBgOpacity:Number(e.target.value)} })}/>
+        </div>
+      </div>
       <Label>Мои обязательства</Label>
-      <textarea value={content.contract.mine} onChange={(e) => set({ ...content, contract: { ...content.contract, mine: e.target.value } })} rows={4} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <textarea value={content.contract.mine} onChange={(e)=>set({ ...content, contract:{...content.contract, mine:e.target.value} })} rows={4} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Твои обязательства</Label>
-      <textarea value={content.contract.yours} onChange={(e) => set({ ...content, contract: { ...content.contract, yours: e.target.value } })} rows={4} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+      <textarea value={content.contract.yours} onChange={(e)=>set({ ...content, contract:{...content.contract, yours:e.target.value} })} rows={4} className="w-full bg-neutral-800/70 rounded px-2 py-2"/>
     </div>
   );
 }
@@ -420,24 +537,27 @@ function CTAEditor({ content, set }) {
   const cta = content.cta;
   return (
     <div>
+      <Label>Надзаголовок</Label>
+      <input value={content.labels.cta||""} onChange={(e)=>set({ ...content, labels: { ...content.labels, cta: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Заголовок</Label>
-      <input value={cta.title} onChange={(e) => set({ ...content, cta: { ...cta, title: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
+      <input value={cta.title} onChange={(e)=>set({ ...content, cta:{...cta, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
       <Label>Подзаголовок</Label>
-      <textarea value={cta.subtitle} onChange={(e) => set({ ...content, cta: { ...cta, subtitle: e.target.value } })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
-      <div className="grid grid-cols-2 gap-2">
-        <div>
+      <textarea value={cta.subtitle} onChange={(e)=>set({ ...content, cta:{...cta, subtitle:e.target.value} })} rows={3} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+      <div className="grid grid-cols-12 gap-3">
+        <div className="col-span-6">
           <Label>Кнопка 1 — текст</Label>
-          <input value={cta.primaryText} onChange={(e) => set({ ...content, cta: { ...cta, primaryText: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
-          <Label>Кнопка 1 — ссылка (не используется, т.к. открываем квиз)</Label>
-          <input value={cta.primaryHref} onChange={(e) => set({ ...content, cta: { ...cta, primaryHref: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+          <input value={cta.primaryText} onChange={(e)=>set({ ...content, cta:{...cta, primaryText:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+          <Label>Кнопка 1 — иконка</Label>
+          <FileRow label="Иконка" value={cta.primaryIcon} onChange={(v)=>set({ ...content, cta:{...cta, primaryIcon:v} })}/>
         </div>
-        <div>
+        <div className="col-span-6">
           <Label>Кнопка 2 — текст</Label>
-          <input value={cta.secondaryText || ""} onChange={(e) => set({ ...content, cta: { ...cta, secondaryText: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2" />
-          <Label>Кнопка 2 — ссылка (скроллит к блоку)</Label>
-          <input value={cta.secondaryHref || "#program"} onChange={(e) => set({ ...content, cta: { ...cta, secondaryHref: e.target.value } })} className="w-full bg-neutral-800/70 rounded px-2 py-2" />
+          <input value={cta.secondaryText||""} onChange={(e)=>set({ ...content, cta:{...cta, secondaryText:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+          <Label>Кнопка 2 — иконка</Label>
+          <FileRow label="Иконка" value={cta.secondaryIcon||""} onChange={(v)=>set({ ...content, cta:{...cta, secondaryIcon:v} })}/>
         </div>
       </div>
+      <div className="mt-2"><Label>Размер иконок кнопок (px)</Label><input type="number" className="w-full bg-neutral-800/70 rounded px-2 py-2" value={cta.iconSize??18} onChange={(e)=>set({ ...content, cta:{...cta, iconSize:Number(e.target.value||18)} })}/></div>
     </div>
   );
 }
@@ -447,225 +567,254 @@ function DataEditor({ content, set }) {
   return (
     <div>
       <div className="flex gap-2 mb-2">
-        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={() => setText(JSON.stringify(content, null, 2))}>Экспорт в текст</button>
-        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={() => { try { const c = JSON.parse(text); set(c); save(c); } catch {} }}>Импорт из текста</button>
-        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={() => { localStorage.removeItem(LS_KEY); set(DEFAULT_CONTENT); save(DEFAULT_CONTENT); setText(JSON.stringify(DEFAULT_CONTENT, null, 2)); }}>Сброс</button>
+        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={()=>setText(JSON.stringify(content, null, 2))}>Экспорт в текст</button>
+        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={()=>{ try{ const c=JSON.parse(text); set(c); save(c); }catch{} }}>Импорт из текста</button>
+        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={()=>{ localStorage.removeItem(LS_KEY); set(DEFAULT_CONTENT); save(DEFAULT_CONTENT); setText(JSON.stringify(DEFAULT_CONTENT, null, 2)); }}>Сброс</button>
       </div>
-      <textarea className="w-full h-64 bg-neutral-800/70 rounded px-2 py-2 font-mono text-xs" value={text} onChange={(e) => setText(e.target.value)} />
+      <textarea className="w-full h-64 bg-neutral-800/70 rounded px-2 py-2 font-mono text-xs" value={text} onChange={(e)=>setText(e.target.value)} />
     </div>
   );
 }
 
-function listKeys(content) {
-  const out = []; const push = (key, label) => out.push({ key, label });
-  push("brand", "Шапка — бренд");
-  push("hero.titleLeft", "Hero — заголовок");
-  push("hero.highlight", "Hero — выделение");
-  push("hero.lead", "Hero — лид");
-  content.hero.bullets.forEach((_, i) => push(`hero.bullets.${i}`, `Hero — пункт #${i + 1}`));
-  push("manifest.title", "Манифест — заголовок");
-  push("manifest.text", "Манифест — текст");
-  push("audience.title", "Для кого — заголовок");
-  content.audience.cards.forEach((_, i) => { push(`audience.cards.${i}.title`, `Для кого — карточка #${i + 1} заголовок`); push(`audience.cards.${i}.text`, `Для кого — карточка #${i + 1} текст`); });
-  push("author.title", "Автор — заголовок");
-  push("author.text", "Автор — текст");
-  push("program.title", "Программа — заголовок");
-  push("program.subtitle", "Программа — подзаголовок");
-  content.program.weeks.forEach((w, wi) => w.points.forEach((_, pi) => push(`program.weeks.${wi}.points.${pi}`, `Программа — неделя ${wi + 1} пункт ${pi + 1}`)));
-  push("gear.title", "Снаряжение — заголовок");
-  content.gear.items.forEach((_, i) => push(`gear.items.${i}.text`, `Снаряжение — пункт #${i + 1}`));
-  push("cases.title", "Кейсы — заголовок");
-  content.cases.items.forEach((_, i) => { push(`cases.items.${i}.name`, `Кейс #${i + 1} — имя`); push(`cases.items.${i}.role`, `Кейс #${i + 1} — роль`); push(`cases.items.${i}.task`, `Кейс #${i + 1} — задача`); push(`cases.items.${i}.result`, `Кейс #${i + 1} — результат`); });
-  push("community.title", "Комьюнити — заголовок");
-  content.community.items.forEach((_, i) => { push(`community.items.${i}.title`, `Комьюнити — пункт #${i + 1} заголовок`); push(`community.items.${i}.text`, `Комьюнити — пункт #${i + 1} текст`); });
-  push("community.note", "Комьюнити — нижняя подпись");
-  push("contract.title", "Контракт — заголовок");
-  push("contract.mine", "Контракт — мои обязательства");
-  push("contract.yours", "Контракт — твои обязательства");
-  push("cta.title", "CTA — заголовок");
-  push("cta.subtitle", "CTA — подзаголовок");
-  content.nav.forEach((_, i) => push(`nav.${i}.label`, `Навигация — пункт #${i + 1}`));
+function listKeys(content){
+  const out=[]; const push=(key,label)=>out.push({key,label});
+  push("brand","Шапка — бренд");
+  push("hero.titleLeft","Hero — заголовок"); push("hero.highlight","Hero — выделение"); push("hero.lead","Hero — лид");
+  content.hero.bullets.forEach((_,i)=>push(`hero.bullets.${i}`,`Hero — пункт #${i+1}`));
+  push("manifest.title","Манифест — заголовок"); push("manifest.text","Манифест — текст");
+  push("audience.title","Для кого — заголовок"); content.audience.cards.forEach((_,i)=>{push(`audience.cards.${i}.title`,`Для кого — карточка #${i+1} заголовок`); push(`audience.cards.${i}.text`,`Для кого — карточка #${i+1} текст`);});
+  push("author.title","Автор — заголовок"); push("author.text","Автор — текст");
+  push("program.title","Программа — заголовок"); push("program.subtitle","Программа — подзаголовок"); content.program.weeks.forEach((w,wi)=>w.points.forEach((_,pi)=>push(`program.weeks.${wi}.points.${pi}`,`Программа — неделя ${wi+1} пункт ${pi+1}`)));
+  push("gear.title","Снаряжение — заголовок"); content.gear.items.forEach((_,i)=>push(`gear.items.${i}.text`, `Снаряжение — пункт #${i+1}`));
+  push("cases.title","Кейсы — заголовок"); content.cases.items.forEach((_,i)=>{ push(`cases.items.${i}.name`,`Кейс #${i+1} — имя`); push(`cases.items.${i}.role`,`Кейс #${i+1} — роль`); push(`cases.items.${i}.task`,`Кейс #${i+1} — задача`); push(`cases.items.${i}.result`,`Кейс #${i+1} — результат`); });
+  push("community.title","Комьюнити — заголовок"); content.community.items.forEach((_,i)=>{ push(`community.items.${i}.title`,`Комьюнити — пункт #${i+1} заголовок`); push(`community.items.${i}.text`,`Комьюнити — пункт #${i+1} текст`);});
+  push("community.note","Комьюнити — нижняя подпись");
+  push("contract.title","Контракт — заголовок"); push("contract.mine","Контракт — мои обязательства"); push("contract.yours","Контракт — твои обязательства");
+  push("cta.title","CTA — заголовок"); push("cta.subtitle","CTA — подзаголовок");
+  content.nav.forEach((_,i)=>push(`nav.${i}.label`,`Навигация — пункт #${i+1}`));
   return out;
 }
 
-function StyleEditor({ content, set, pickedKey, setPickedKey }) {
-  const s = (content.styles && content.styles[pickedKey]) || {};
-  const setStyle = (patch) => { const styles = { ...(content.styles || {}), [pickedKey]: { ...(content.styles?.[pickedKey] || {}), ...patch } }; set({ ...content, styles }); };
-  const reset = () => { const styles = { ...(content.styles || {}) }; delete styles[pickedKey]; set({ ...content, styles }); };
-  const keys = listKeys(content);
+function StyleEditor({ content, set, pickedKey, setPickedKey }){
+  const s=(content.styles&&content.styles[pickedKey])||{};
+  const setStyle=(patch)=>{ const styles={...(content.styles||{}), [pickedKey]:{...(content.styles?.[pickedKey]||{}), ...patch}}; set({ ...content, styles }); };
+  const reset=()=>{ const styles={...(content.styles||{})}; delete styles[pickedKey]; set({ ...content, styles }); };
+  const keys=listKeys(content);
+  // FIX: lineHeight slider работает и с числами, и со строками вида '28px'
+  const lhVal = useMemo(()=>{
+    const v = s.lineHeight; if (v==null) return 1.2; const num = Number(v); return Number.isFinite(num) && num>0 ? num : 1.2;
+  }, [s.lineHeight]);
   return (
     <div>
-      <div className="mb-3"><Label>Элементы на странице</Label><div className="flex flex-wrap gap-2">{keys.map(({ key, label }) => (<button key={key} onClick={() => setPickedKey(key)} className={`px-2 py-1 rounded text-xs ${pickedKey === key ? "bg-emerald-700" : "bg-neutral-700"}`}>{label}</button>))}</div></div>
-      {!pickedKey && <div className="text-sm text-white/60 mb-4">Выбери элемент выше или кликни по тексту на странице с включённой «Пипеткой».</div>}
+      <div className="mb-3"><Label>Элементы на странице</Label><div className="flex flex-wrap gap-2">{keys.map(({key,label})=>(<button key={key} onClick={()=>setPickedKey(key)} className={`px-2 py-1 rounded text-xs ${pickedKey===key?"bg-emerald-700":"bg-neutral-700"}`}>{label}</button>))}</div></div>
+      {!pickedKey && <div className="text-sm text:white/60 mb-4">Выбери элемент выше или кликни по тексту на странице с включённой «Пипеткой».</div>}
       {pickedKey && (<>
         <div className="text-xs text-white/50 mb-2">Цель: {pickedKey}</div>
-        <div className="mb-4"><Label>Размер шрифта (px)</Label><div className="flex items-center gap-3"><input type="range" min={12} max={128} step={1} value={s.fontSize ?? 18} onChange={(e) => setStyle({ fontSize: Number(e.target.value) })} /><input type="number" className="w-20 bg-neutral-800/70 rounded px-2 py-1" value={s.fontSize ?? 18} onChange={(e) => setStyle({ fontSize: Number(e.target.value || 18) })} /></div></div>
-        <div className="mb-4"><Label>Начертание</Label><select className="bg-neutral-800/70 rounded px-2 py-2" value={s.weight ?? 400} onChange={(e) => setStyle({ weight: Number(e.target.value) })}><option value={300}>Light (300)</option><option value={400}>Regular (400)</option><option value={600}>SemiBold (600)</option><option value={700}>Bold (700)</option><option value={800}>ExtraBold (800)</option></select></div>
-        <div className="mb-4"><Label>Выравнивание</Label><div className="flex gap-2">{[["left","Слева"],["center","По центру"],["right","Справа"]].map(([val,label]) => (<button key={val} onClick={() => setStyle({ align: val })} className={`px-3 py-1 rounded ${s.align === val ? "bg-emerald-700" : "bg-neutral-700"}`}>{label}</button>))}</div></div>
-        <div className="mb-4"><Label>Межстрочный интервал (CSS line-height)</Label><input placeholder="Напр., 1.2 или 28px" value={s.lineHeight ?? ""} onChange={(e) => setStyle({ lineHeight: e.target.value })} className="w-full bg-neutral-800/70 rounded px-2 py-2" /></div>
+        <div className="mb-4"><Label>Размер шрифта (px)</Label><div className="flex items-center gap-3"><input type="range" min={12} max={128} step={1} value={s.fontSize??18} onChange={(e)=>setStyle({fontSize:Number(e.target.value)})}/><input type="number" className="w-20 bg-neutral-800/70 rounded px-2 py-1" value={s.fontSize??18} onChange={(e)=>setStyle({fontSize:Number(e.target.value||18)})}/></div></div>
+        <div className="mb-4"><Label>Межстрочный интервал</Label><div className="flex items-center gap-3"><input type="range" min={0.8} max={2} step={0.05} value={lhVal} onChange={(e)=>setStyle({lineHeight:Number(e.target.value)})}/><input type="text" className="w-24 bg-neutral-800/70 rounded px-2 py-1" value={s.lineHeight??"1.2"} onChange={(e)=>setStyle({lineHeight:e.target.value})}/><div className="text-xs text-white/40">число или px (например, 1.4 или 28px)</div></div></div>
+        <div className="mb-4"><Label>Начертание</Label><select className="bg-neutral-800/70 rounded px-2 py-2" value={s.weight??400} onChange={(e)=>setStyle({weight:Number(e.target.value)})}><option value={300}>Light (300)</option><option value={400}>Regular (400)</option><option value={600}>SemiBold (600)</option><option value={700}>Bold (700)</option><option value={800}>ExtraBold (800)</option></select></div>
+        <div className="mb-4"><Label>Выравнивание</Label><div className="flex gap-2">{[["left","Слева"],["center","По центру"],["right","Справа"]].map(([val,label])=> (<button key={val} onClick={()=>setStyle({align:val})} className={`px-3 py-1 rounded ${s.align===val?"bg-emerald-700":"bg-neutral-700"}`}>{label}</button>))}</div></div>
         <div className="flex gap-2"><button className="px-3 py-1 rounded bg-neutral-700" onClick={reset}>Сбросить стиль</button></div>
       </>)}
     </div>
   );
 }
 
-function Editor({ open, onClose, content, setContent, tab, setTab, pickMode, setPickMode, pickedKey, setPickedKey }) {
-  if (!open) return null;
+function QuizEditor({ content, set }){
+  const q=content.quiz;
+  const updateStep=(i, patch)=>{ const steps=[...q.steps]; steps[i]={...steps[i], ...patch}; set({ ...content, quiz:{...q, steps} }); };
+  const addChoice=(i)=>updateStep(i,{ options:[...(q.steps[i].options||[]), "Новый вариант"] });
+  const addStep = (type) => set({ ...content, quiz:{...q, steps:[...q.steps, type==="choice"?{type:"choice", label:"Вопрос", options:["Вариант 1"]}:{type, label:"Вопрос", placeholder:""}] } });
+  const delStep = (i) => set({ ...content, quiz:{...q, steps:q.steps.filter((_,idx)=>idx!==i)} });
   return (
-    <div className="fixed inset-0 z-50 bg-black/60">
-      <div className="absolute right-0 top-0 h-full w-[580px] bg-neutral-900/95 backdrop-blur p-4 overflow-y-auto border-l border-white/5">
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          {[["hero","Герой"],["manifest","Манифест"],["audience","Для кого"],["author","Автор"],["program","Программа"],["cases","Кейсы"],["community","Комьюнити"],["contract","Контракт"],["gear","Снаряжение"],["nav","Навигация"],["images","Изображения"],["cta","CTA"],["style","Стиль"],["data","Данные"]].map(([k,t]) => (
-            <button key={k} onClick={() => setTab(k)} className={`px-3 py-1 rounded text-sm ${tab === k ? "bg-emerald-700" : "bg-neutral-700"}`}>{t}</button>
-          ))}
-          <div className="grow" />
-          <button onClick={() => setPickMode(!pickMode)} className={`px-3 py-1 rounded text-sm ${pickMode ? "bg-amber-600" : "bg-neutral-700"}`} title="Пипетка: клик по любому тексту на странице — откроет его в «Стиль»">{pickMode ? "Пипетка ВКЛ" : "Пипетка"}</button>
-          <button onClick={() => { save(content); onClose(); }} className="px-3 py-1 rounded bg-emerald-700 text-sm">Применить всё</button>
-          <button onClick={onClose} className="px-3 py-1 rounded bg-neutral-700 text-sm">Выйти</button>
+    <div>
+      <Label>Заголовок квиза</Label>
+      <input value={q.title} onChange={(e)=>set({ ...content, quiz:{...q, title:e.target.value} })} className="w-full bg-neutral-800/70 rounded px-2 py-2 mb-2"/>
+      <div className="flex gap-2 mb-2">
+        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={()=>addStep("choice")}>Добавить выбор</button>
+        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={()=>addStep("text")}>Добавить текст</button>
+        <button className="px-2 py-1 bg-neutral-700 rounded text-xs" onClick={()=>addStep("textarea")}>Добавить многострочный</button>
+      </div>
+      {q.steps.map((s, i)=> (
+        <div key={i} className="mb-3 p-2 rounded bg:white/5">
+          <div className="grid grid-cols-12 gap-2 items-center mb-2">
+            <div className="col-span-10"><input className="w-full bg-neutral-800/70 rounded px-2 py-1" value={s.label} onChange={(e)=>updateStep(i,{label:e.target.value})}/></div>
+            <div className="col-span-2 text-right"><span className="text-xs px-2 py-1 rounded bg-neutral-700">{s.type}</span></div>
+          </div>
+          {s.type==="choice" && (
+            <div>
+              {(s.options||[]).map((opt, oi)=> (
+                <div key={oi} className="flex gap-2 mb-1 items-center">
+                  <input className="flex-1 bg-neutral-800/70 rounded px-2 py-1" value={opt} onChange={(e)=>{ const options=[...(s.options||[])]; options[oi]=e.target.value; updateStep(i,{options}); }}/>
+                  <button className="px-2 py-1 text-xs bg-neutral-700 rounded" onClick={()=>{ const options=[...(s.options||[])]; options.splice(oi,1); updateStep(i,{options}); }}>X</button>
+                </div>
+              ))}
+              <button className="text-xs px-2 py-1 bg-neutral-700 rounded" onClick={()=>addChoice(i)}>Добавить вариант</button>
+            </div>
+          )}
+          {s.type!=="choice" && (
+            <div>
+              <Label>Placeholder</Label>
+              <input className="w-full bg-neutral-800/70 rounded px-2 py-1" value={s.placeholder||""} onChange={(e)=>updateStep(i,{placeholder:e.target.value})}/>
+            </div>
+          )}
+          <div className="mt-2 text-right"><button className="px-2 py-1 text-xs bg-neutral-700 rounded" onClick={()=>delStep(i)}>Удалить шаг</button></div>
         </div>
-        {tab === "hero" && <HeroEditor content={content} set={setContent} />}
-        {tab === "manifest" && <ManifestEditor content={content} set={setContent} />}
-        {tab === "audience" && <AudienceEditor content={content} set={setContent} />}
-        {tab === "author" && <AuthorEditor content={content} set={setContent} />}
-        {tab === "program" && <ProgramEditor content={content} set={setContent} />}
-        {tab === "cases" && <CasesEditor content={content} set={setContent} />}
-        {tab === "community" && <CommunityEditor content={content} set={setContent} />}
-        {tab === "contract" && <ContractEditor content={content} set={setContent} />}
-        {tab === "gear" && <GearEditor content={content} set={setContent} />}
-        {tab === "nav" && <NavEditor content={content} set={setContent} />}
-        {tab === "images" && <ImagesEditor content={content} set={setContent} />}
-        {tab === "cta" && <CTAEditor content={content} set={setContent} />}
-        {tab === "style" && <StyleEditor content={content} set={setContent} pickedKey={pickedKey} setPickedKey={setPickedKey} />}
-        {tab === "data" && <DataEditor content={content} set={setContent} />}
+      ))}
+      <div className="grid grid-cols-12 gap-2">
+        <div className="col-span-4"><Label>Кнопка Назад</Label><input className="w-full bg-neutral-800/70 rounded px-2 py-1" value={q.labels.back} onChange={(e)=>set({ ...content, quiz:{...q, labels:{...q.labels, back:e.target.value}} })}/></div>
+        <div className="col-span-4"><Label>Кнопка Далее</Label><input className="w-full bg-neutral-800/70 rounded px-2 py-1" value={q.labels.next} onChange={(e)=>set({ ...content, quiz:{...q, labels:{...q.labels, next:e.target.value}} })}/></div>
+        <div className="col-span-4"><Label>Кнопка Отправить</Label><input className="w-full bg-neutral-800/70 rounded px-2 py-1" value={q.labels.submit} onChange={(e)=>set({ ...content, quiz:{...q, labels:{...q.labels, submit:e.target.value}} })}/></div>
       </div>
     </div>
   );
 }
 
-// ---------- Sections ----------
-const Section = ({ id, children }) => <section id={id} className="scroll-mt-28">{children}</section>;
+// ---------- Превью сайта ----------
+function Header({ content }) {
+  const logoUrl = useImageSrc(content.images.logo);
+  const navItems = content.nav.filter(n=>n.show);
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur bg-neutral-900/70 border-b border-white/5">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            <img src={logoUrl} alt="logo" style={{height: content.images.logoH||40}} className={content.images.logoFit==="contain"?"object-contain":"object-cover"} />
+          ) : (
+            <div className="text-white/80 font-semibold tracking-wide">{content.brand}</div>
+          )}
+        </div>
+        <nav className="hidden md:flex items-center gap-4 text-sm">
+          {navItems.map((n)=> (
+            <a key={n.key} href={n.href} className="text-white/70 hover:text-white transition-colors">{n.label}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+  );
+}
 
-function IconImg({ src, size = 64 }) { const url = useImageSrc(src); if (!url) return null; return <img src={url} alt="icon" style={{ width: size, height: size }} className="object-contain flex-none" />; }
-
-function Hero({ c }) {
-  const heroUrl = useImageSrc(c.hero.image || c.images.hero);
+function Hero({ content }){
+  const img = useImageSrc(content.hero.image || content.images.hero);
+  const fit = content.images.heroFit||"cover";
   return (
     <Section id="hero">
-      <div className="grid md:grid-cols-2 gap-8 items-center py-10">
+      <div className="max-w-6xl mx-auto px-4 pt-28 pb-12 grid md:grid-cols-2 gap-8 items-center">
         <div>
-          <T c={c} k="hero.titleLeft" as="h1" extra="font-extrabold leading-tight text-white" baseStyle={{ fontSize: (c.hero.titleSize ?? 72) + "px" }}>{c.hero.titleLeft}</T>
-          <T c={c} k="hero.highlight" as="div" extra="font-extrabold leading-tight text-amber-400 mt-2" baseStyle={{ fontSize: (c.hero.highlightSize ?? 72) + "px" }}>{c.hero.highlight}</T>
-          <T c={c} k="hero.lead" as="p" html={toHTML(c.hero.lead)} extra="mt-6 text-white/80 text-lg" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 text-white/80">
-            {c.hero.bullets.map((b, i) => (
-              <div key={i} className="flex items-start gap-2"><span className="mt-1 w-2 h-2 rounded-full bg-amber-400" /><T c={c} k={`hero.bullets.${i}`} as="span">{b}</T></div>
+          <Kicker text={content.labels.hero}/>
+          <T c={content} k="hero.titleLeft" as="h1" extra="text-4xl md:text-6xl font-extrabold leading-tight">{content.hero.titleLeft}</T>
+          <T c={content} k="hero.highlight" as="div" extra="text-4xl md:text-6xl font-extrabold text-emerald-400">{content.hero.highlight}</T>
+          <T c={content} k="hero.lead" as="div" html={toHTML(content.hero.lead)} extra="mt-4 text-white/80" />
+          <ul className="mt-4 space-y-2">
+            {content.hero.bullets.map((b,i)=>(
+              <li key={i} className="flex items-start gap-2 list-none">
+                <div className="mt-1 h-1.5 w-3 rounded bg-emerald-500 flex-none" />
+                <T c={content} k={`hero.bullets.${i}`} extra="text-white/80">{b}</T>
+              </li>
             ))}
-          </div>
-          <a href="#" onClick={(e)=>e.preventDefault()} className="inline-block mt-7 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-semibold" data-quiz-trigger>Записаться на разведку</a>
+          </ul>
         </div>
-        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center" style={{ height: (c.images.heroH ?? 420) + "px" }}>
-          {heroUrl && <img src={heroUrl} alt="Hero" className="w-full h-full" style={{ objectFit: c.images.heroFit || "cover" }} />}
+        <div className="rounded-xl overflow-hidden border border-white/10 bg-neutral-800/30">
+          {img ? (
+            <img src={img} alt="hero" style={{height: (content.images.heroH||420)}} className={fit==="contain"?"w-full object-contain":"w-full object-cover"} />
+          ) : (
+            <div style={{height: (content.images.heroH||420)}} className="w-full grid place-items-center text-white/30">hero image</div>
+          )}
         </div>
       </div>
     </Section>
   );
 }
 
-function Manifest({ c }) {
-  const bg = useImageSrc(c.manifest.background || c.images.manifestBg);
+function Manifest({ content }){
+  const bg = useImageSrc(content.manifest.background || content.images.manifestBg);
+  const fit = content.images.manifestFit||"cover";
   return (
     <Section id="manifest">
-      <div className="py-14">
-        <div className="text-sm text-white/50 mb-3">Идеология</div>
-        <T c={c} k="manifest.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.manifest.title}</T>
-        <div className="grid md:grid-cols-2 gap-6">
-          <T c={c} k="manifest.text" as="div" html={toHTML(c.manifest.text)} extra="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85 leading-relaxed" />
-          <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center" style={{ height: (c.images.manifestH ?? 280) + "px" }}>
-            {bg && <img src={bg} alt="bg" className="w-full h-full" style={{ objectFit: c.images.manifestFit || "cover" }} />}
-          </div>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Kicker text={content.labels.manifest}/>
+        <T c={content} k="manifest.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-4">{content.manifest.title}</T>
+        <div className="rounded-xl overflow-hidden border border-white/10">
+          <div style={{height:(content.images.manifestH||280), backgroundImage:bg?`url(${bg})`:undefined, backgroundSize:fit, backgroundRepeat:'no-repeat', backgroundPosition:'center'}} className="w-full" />
         </div>
+        <T c={content} k="manifest.text" extra="mt-4 text-white/80" html={toHTML(content.manifest.text)} />
       </div>
     </Section>
   );
 }
 
-function Gear({ c }) {
-  return (
-    <Section id="gear">
-      <div className="py-12">
-        <div className="text-sm text-white/50 mb-3">Снаряжение</div>
-        <T c={c} k="gear.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.gear.title}</T>
-        <div className="grid md:grid-cols-3 gap-5">
-          {c.gear.items.map((g, i) => (
-            <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 text-white/85 flex gap-4">
-              <IconImg src={g.icon} size={c.images.iconSize ?? 64} />
-              <T c={c} k={`gear.items.${i}.text`} as="div" extra="leading-relaxed">{g.text}</T>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-function Audience({ c }) {
+function Audience({ content }){
   return (
     <Section id="audience">
-      <div className="py-12">
-        <div className="text-sm text-white/50 mb-3">Вербовочный пункт</div>
-        <T c={c} k="audience.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.audience.title}</T>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Kicker text={content.labels.audience}/>
+        <T c={content} k="audience.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-6">{content.audience.title}</T>
         <div className="grid md:grid-cols-2 gap-6">
-          {c.audience.cards.map((cd, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85 leading-relaxed">
-              <T c={c} k={`audience.cards.${i}.title`} as="div" extra="font-semibold text-white mb-2 text-xl">{cd.title}</T>
-              <T c={c} k={`audience.cards.${i}.text`} as="div">{cd.text}</T>
-            </div>
-          ))}
+          {content.audience.cards.map((c,i)=>{
+            const img = useImageSrc(c.image);
+            const fit = content.audience.imageFit||"cover";
+            return (
+              <div key={i} className="rounded-xl overflow-hidden border border-white/10 bg-neutral-800/30">
+                <div className="p-3 flex items-start gap-3">
+                  {c.icon ? <IconImg src={c.icon} size={content.audience.iconSize||48}/> : <div className="h-10 w-10 rounded bg-white/10"/>}
+                  <div className="flex-1">
+                    <T c={content} k={`audience.cards.${i}.title`} extra="font-semibold">{c.title}</T>
+                    <T c={content} k={`audience.cards.${i}.text`} extra="text-white/70">{c.text}</T>
+                  </div>
+                </div>
+                <div className="border-t border-white/10">
+                  {img ? (
+                    <img src={img} alt="card" style={{height: (content.audience.imageH||260)}} className={fit==="contain"?"w-full object-contain":"w-full object-cover"} />
+                  ) : (
+                    <div style={{height:(content.audience.imageH||260)}} className="w-full grid place-items-center text-white/30">image</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </Section>
   );
 }
 
-function Author({ c }) {
-  const photo = useImageSrc(c.author.photo || c.images.authorPhoto);
+function Author({ content }){
+  const photo = useImageSrc(content.author.photo || content.images.authorPhoto);
+  const fit = content.images.authorFit||"cover";
   return (
     <Section id="author">
-      <div className="py-12 grid md:grid-cols-2 gap-6 items-start">
-        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85 leading-relaxed">
-          <div className="text-sm text-white/50 mb-3">Командир отряда</div>
-          <T c={c} k="author.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.author.title}</T>
-          <T c={c} k="author.text" as="div" html={toHTML(c.author.text)} />
+      <div className="max-w-6xl mx-auto px-4 py-12 grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <Kicker text={content.labels.author}/>
+          <T c={content} k="author.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-3">{content.author.title}</T>
+          <T c={content} k="author.text" extra="text-white/80">{content.author.text}</T>
         </div>
-        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center" style={{ height: (c.images.authorH ?? 320) + "px" }}>
-          {photo && <img src={photo} alt="author" className="w-full h-full" style={{ objectFit: c.images.authorFit || "cover" }} />}
+        <div className="rounded-xl overflow-hidden border border-white/10 bg-neutral-800/30">
+          {photo ? (
+            <img src={photo} alt="author" style={{height:(content.images.authorH||320)}} className={fit==="contain"?"w-full object-contain":"w-full object-cover"} />
+          ) : (
+            <div style={{height:(content.images.authorH||320)}} className="w-full grid place-items-center text-white/30">author</div>
+          )}
         </div>
       </div>
     </Section>
   );
 }
 
-function Program({ c }) {
-  const [open, setOpen] = useState(0);
+function Program({ content }){
   return (
     <Section id="program">
-      <div className="py-12">
-        <div className="text-sm text-white/50 mb-3">Боевая подготовка</div>
-        <T c={c} k="program.title" as="h2" extra="text-4xl font-extrabold text-white mb-2">{c.program.title}</T>
-        <T c={c} k="program.subtitle" as="div" extra="text-white/70 mb-6">{c.program.subtitle}</T>
-        <div className="space-y-3">
-          {c.program.weeks.map((w, i) => (
-            <div key={i} className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
-              <button className="w-full text-left px-4 py-4 font-semibold" onClick={() => setOpen(open === i ? null : i)}>
-                <span className="mr-2 inline-flex w-6 h-6 items-center justify-center rounded bg-amber-500/20 text-amber-300">{i + 1}</span>{w.title}
-              </button>
-              {open === i && (
-                <div className="px-6 pb-4 text-white/80">
-                  {w.points.map((p, pi) => (
-                    <div key={pi} className="flex items-start gap-2 mb-2"><span className="mt-1 w-2 h-2 rounded-full bg-amber-400" /><T c={c} k={`program.weeks.${i}.points.${pi}`} as="span">{p}</T></div>
-                  ))}
-                </div>
-              )}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Kicker text={content.labels.program}/>
+        <T c={content} k="program.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-2">{content.program.title}</T>
+        <T c={content} k="program.subtitle" extra="text-white/70 mb-6">{content.program.subtitle}</T>
+        <div className="grid md:grid-cols-2 gap-4">
+          {content.program.weeks.map((w, i)=>(
+            <div key={i} className="rounded-xl border border-white/10 p-4 bg-neutral-800/30">
+              <div className="font-semibold mb-2">{w.title}</div>
+              <ul className="space-y-1 text-white/80 list-none">
+                {w.points.map((p, pi)=>(<li key={pi} className="flex items-start gap-2"><div className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500"/><T c={content} k={`program.weeks.${i}.points.${pi}`}>{p}</T></li>))}
+              </ul>
             </div>
           ))}
         </div>
@@ -674,62 +823,94 @@ function Program({ c }) {
   );
 }
 
-function Cases({ c }) {
+function Gear({ content }){
+  return (
+    <Section id="gear">
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Kicker text={content.labels.gear}/>
+        <T c={content} k="gear.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-6">{content.gear.title}</T>
+        <div className="grid md:grid-cols-2 gap-4">
+          {content.gear.items.map((it,i)=>(
+            <div key={i} className="flex gap-3 p-3 rounded-xl border border-white/10 bg-neutral-800/30">
+              <IconImg src={it.icon} size={content.images.iconSize||64} />
+              <T c={content} k={`gear.items.${i}.text`} extra="text-white/80">{it.text}</T>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Cases({ content }){
   return (
     <Section id="trophies">
-      <div className="py-12">
-        <div className="text-sm text-white/50 mb-3">Стена трофеев</div>
-        <T c={c} k="cases.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.cases.title}</T>
-        <div className="grid md:grid-cols-3 gap-5">
-          {c.cases.items.map((it, i) => (
-            <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 text-white/85">
-              <div className="text-amber-300 text-sm mb-2">Позывной</div>
-              <T c={c} k={`cases.items.${i}.name`} as="div" extra="text-xl font-semibold mb-1">{it.name}</T>
-              <T c={c} k={`cases.items.${i}.role`} as="div" extra="text-white/60 mb-3">Специализация: {it.role}</T>
-              <div className="mb-2"><b>Боевая задача.</b> <T c={c} k={`cases.items.${i}.task`} as="span">{it.task}</T></div>
-              <div className="mt-3 p-3 rounded bg-emerald-900/20 text-emerald-300"><b>Результат.</b> <T c={c} k={`cases.items.${i}.result`} as="span">{it.result}</T></div>
-            </div>
-          ))}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Kicker text={content.labels.cases}/>
+        <T c={content} k="cases.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-6">{content.cases.title}</T>
+        <div className="grid md:grid-cols-3 gap-4">
+          {content.cases.items.map((it,i)=>{
+            const ph = useImageSrc(it.photo);
+            const fit = content.cases.photoFit||"cover";
+            return (
+              <div key={i} className="rounded-xl overflow-hidden border border-white/10 bg-neutral-800/30">
+                {ph ? (<img src={ph} alt="case" style={{height:(content.cases.photoH||180)}} className={fit==="contain"?"w-full object-contain":"w-full object-cover"} />) : (<div style={{height:(content.cases.photoH||180)}} className="w-full grid place-items-center text-white/30">photo</div>)}
+                <div className="p-3 text-sm">
+                  <div className="font-semibold">{it.name} — {it.role}</div>
+                  <div className="text-white/70">Задача: {it.task}</div>
+                  <div className="text-emerald-400 mt-1">{it.result}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </Section>
   );
 }
 
-function Community({ c }) {
+function Community({ content }){
   return (
     <Section id="community">
-      <div className="py-12">
-        <div className="text-sm text-white/50 mb-3">Рождение отряда</div>
-        <T c={c} k="community.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.community.title}</T>
-        <div className="grid md:grid-cols-3 gap-5">
-          {c.community.items.map((it, i) => (
-            <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 text-white/85">
-              <T c={c} k={`community.items.${i}.title`} as="div" extra="text-xl font-semibold mb-2">{it.title}</T>
-              <T c={c} k={`community.items.${i}.text`} as="div">{it.text}</T>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Kicker text={content.labels.community}/>
+        <T c={content} k="community.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-6">{content.community.title}</T>
+        <div className="grid md:grid-cols-3 gap-4">
+          {content.community.items.map((it,i)=>(
+            <div key={i} className="rounded-xl border border:white/10 p-4 bg-neutral-800/30">
+              <div className="font-semibold mb-1">{it.title}</div>
+              <div className="text-white/80">{it.text}</div>
             </div>
           ))}
         </div>
-        <T c={c} k="community.note" as="div" extra="mt-6 text-white/60">{c.community.note}</T>
+        <div className="mt-4 text-white/60">{content.community.note}</div>
       </div>
     </Section>
   );
 }
 
-function Contract({ c }) {
+function Contract({ content }){
+  const left = useImageSrc(content.contract.leftBg);
+  const right = useImageSrc(content.contract.rightBg);
   return (
     <Section id="contract">
-      <div className="py-12">
-        <div className="text-sm text-white/50 mb-3">Двусторонний контракт</div>
-        <T c={c} k="contract.title" as="h2" extra="text-4xl font-extrabold text-white mb-6">{c.contract.title}</T>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85">
-            <div className="font-semibold text-amber-300 mb-2">Мои обязательства</div>
-            <T c={c} k="contract.mine" as="div">{c.contract.mine}</T>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Kicker text={content.labels.contract}/>
+        <T c={content} k="contract.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-6">{content.contract.title}</T>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-white/10 p-4 relative overflow-hidden">
+            {left && <div className="absolute inset-0" style={{backgroundImage:`url(${left})`, backgroundSize:content.contract.leftFit||'cover', backgroundPosition:'center', opacity:content.contract.leftBgOpacity??0.18}}/>}
+            <div className="relative">
+              <div className="font-semibold mb-2">Мои обязательства</div>
+              <div className="text-white/80 whitespace-pre-line">{content.contract.mine}</div>
+            </div>
           </div>
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/85">
-            <div className="font-semibold text-amber-300 mb-2">Твои обязательства</div>
-            <T c={c} k="contract.yours" as="div">{c.contract.yours}</T>
+          <div className="rounded-xl border border-white/10 p-4 relative overflow-hidden">
+            {right && <div className="absolute inset-0" style={{backgroundImage:`url(${right})`, backgroundSize:content.contract.rightFit||'cover', backgroundPosition:'center', opacity:content.contract.rightBgOpacity??0.18}}/>}
+            <div className="relative">
+              <div className="font-semibold mb-2">Твои обязательства</div>
+              <div className="text-white/80 whitespace-pre-line">{content.contract.yours}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -737,104 +918,188 @@ function Contract({ c }) {
   );
 }
 
-function CTA({ c, onStartQuiz, onShowProgram }) {
+function CTA({ content }){
+  const pIcon = useImageSrc(content.cta.primaryIcon);
+  const sIcon = useImageSrc(content.cta.secondaryIcon);
   return (
     <Section id="cta">
-      <div className="py-16 text-center">
-        <T c={c} k="cta.title" as="h2" extra="text-4xl font-extrabold text-white mb-2">{c.cta.title}</T>
-        <T c={c} k="cta.subtitle" as="div" extra="text-white/70 mb-6">{c.cta.subtitle}</T>
-        <div className="flex justify-center gap-4">
-          <button onClick={onStartQuiz} className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-semibold">{c.cta.primaryText}</button>
-          {c.cta.secondaryText && (<button onClick={onShowProgram} className="px-6 py-3 rounded-xl border border-white/20">{c.cta.secondaryText}</button>)}
+      <div className="max-w-6xl mx-auto px-4 py-16 text-center">
+        <Kicker text={content.labels.cta}/>
+        <T c={content} k="cta.title" as="h2" extra="text-3xl md:text-4xl font-bold mb-2">{content.cta.title}</T>
+        <T c={content} k="cta.subtitle" extra="text-white/70 max-w-2xl mx-auto mb-6">{content.cta.subtitle}</T>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href={content.cta.primaryHref||"#form"} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 transition font-semibold">
+            {pIcon && <img src={pIcon} alt="" style={{width:content.cta.iconSize||18, height:content.cta.iconSize||18}} className="object-contain"/>}
+            {content.cta.primaryText}
+          </a>
+          {(content.cta.secondaryText||content.cta.secondaryIcon) && (
+            <a href={content.cta.secondaryHref||"#program"} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-neutral-700 hover:bg-neutral-600 transition font-semibold">
+              {sIcon && <img src={sIcon} alt="" style={{width:content.cta.iconSize||18, height:content.cta.iconSize||18}} className="object-contain"/>}
+              {content.cta.secondaryText||"Подробнее"}
+            </a>
+          )}
         </div>
       </div>
     </Section>
   );
 }
 
-function Quiz({ open, onClose }) {
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState({ role: "", goal: "", xp: "", niche: "", result: "" });
-  useEffect(() => { if (!open) return; const prev = document.body.style.overflow; document.body.style.overflow = "hidden"; return () => (document.body.style.overflow = prev); }, [open]);
-  if (!open) return null;
-  const steps = [
-    (<div key={0}><div className="text-lg font-semibold mb-3">Кто ты по роли?</div><div className="grid grid-cols-2 gap-2">{["Дизайнер","Маркетолог","Копирайтер","Продюсер","Предприниматель","Другое"].map((r) => (<button key={r} className={`px-3 py-2 rounded bg-neutral-700 ${form.role === r ? "outline outline-2 outline-amber-500" : ""}`} onClick={() => setForm({ ...form, role: r })}>{r}</button>))}</div></div>),
-    (<div key={1}><div className="text-lg font-semibold mb-3">Цель на 30 дней</div><input value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })} placeholder="Например: автоматизировать подготовку рекламных макетов" className="w-full bg-neutral-800/70 rounded px-3 py-2" /></div>),
-    (<div key={2}><div className="text-lg font-semibold mb-3">Опыт с ИИ</div><div className="grid grid-cols-2 gap-2">{["0","1–6 мес","6–12 мес","> 12 мес"].map((r) => (<button key={r} className={`px-3 py-2 rounded bg-neutral-700 ${form.xp === r ? "outline outline-2 outline-amber-500" : ""}`} onClick={() => setForm({ ...form, xp: r })}>{r}</button>))}</div></div>),
-    (<div key={3}><div className="text-lg font-semibold mb-3">Ниша/чем занимаешься</div><input value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Например: перформанс‑маркетинг, e‑com, B2B SaaS" className="w-full bg-neutral-800/70 rounded px-3 py-2" /></div>),
-    (<div key={4}><div className="text-lg font-semibold mb-3">Какой конкретный результат ждёшь?</div><textarea value={form.result} onChange={(e) => setForm({ ...form, result: e.target.value })} rows={3} placeholder="Например: подготовить 30 креативов/мес без найма дизайнера" className="w-full bg-neutral-800/70 rounded px-3 py-2" /></div>),
-  ];
-  const canNext = () => (step === 0 ? !!form.role : step === 1 ? !!form.goal : step === 2 ? !!form.xp : step === 3 ? !!form.niche : step === 4 ? !!form.result : true);
-  const submit = () => { const payload = { ...form, ts: new Date().toISOString() }; try { const arr = JSON.parse(localStorage.getItem("ebosh_lead_quiz") || "[]"); arr.push(payload); localStorage.setItem("ebosh_lead_quiz", JSON.stringify(arr)); } catch {} setStep(999); };
+function Quiz({ content }){
+  const [i, setI] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const step = content.quiz.steps[i];
+  const onNext = () => setI((x)=> Math.min(x+1, content.quiz.steps.length-1));
+  const onBack = () => setI((x)=> Math.max(x-1, 0));
+  const onSubmit = () => setI(content.quiz.steps.length);
   return (
-    <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-neutral-900 border border-white/10 p-5">
-        <div className="flex items-center justify-between mb-4"><div className="font-semibold">Разведка — мини‑квиз</div><button onClick={onClose} className="text-white/60 hover:text-white">✕</button></div>
-        {step === 999 ? (<div className="text-center py-8"><div className="text-xl font-semibold mb-2">Готово!</div><div className="text-white/70 mb-4">Ответы сохранены. Мы свяжемся, если ты подходишь под формат отряда.</div><button onClick={onClose} className="px-4 py-2 rounded bg-emerald-700">Закрыть</button></div>) : (<>{steps[step]}<div className="flex justify-between mt-5"><button className="px-4 py-2 rounded bg-neutral-700" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>Назад</button>{step < steps.length - 1 ? (<button className="px-4 py-2 rounded bg-emerald-700 disabled:opacity-50" onClick={() => setStep(step + 1)} disabled={!canNext()}>Далее</button>) : (<button className="px-4 py-2 rounded bg-amber-600 disabled:opacity-50" onClick={submit} disabled={!canNext()}>Отправить</button>)}</div></>) }
+    <Section id="form">
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        <div className="text-center text-2xl font-bold mb-4">{content.quiz.title}</div>
+        {i < content.quiz.steps.length ? (
+          <div className="rounded-xl border border-white/10 p-4 bg-neutral-800/30">
+            <div className="mb-3 font-semibold">{step.label}</div>
+            {step.type==="choice" && (
+              <div className="grid sm:grid-cols-2 gap-2">
+                {(step.options||[]).map((opt, oi)=> (
+                  <label key={oi} className={`px-3 py-2 rounded-lg border ${answers[i]===opt?"border-emerald-500 bg-emerald-500/10":"border-white/10"}`}>
+                    <input type="radio" name={`s${i}`} className="mr-2" checked={answers[i]===opt} onChange={()=>setAnswers(a=>({...a,[i]:opt}))}/>
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            )}
+            {step.type==="text" && (
+              <input className="w-full bg-neutral-800/70 rounded px-3 py-2" placeholder={step.placeholder||""} value={answers[i]||""} onChange={(e)=>setAnswers(a=>({...a,[i]:e.target.value}))}/>
+            )}
+            {step.type==="textarea" && (
+              <textarea className="w-full bg-neutral-800/70 rounded px-3 py-2" rows={5} placeholder={step.placeholder||""} value={answers[i]||""} onChange={(e)=>setAnswers(a=>({...a,[i]:e.target.value}))}/>
+            )}
+            <div className="mt-4 flex justify-between">
+              <button onClick={onBack} disabled={i===0} className={`px-4 py-2 rounded ${i===0?"bg-neutral-700 text-white/40":"bg-neutral-700 hover:bg-neutral-600"}`}>{content.quiz.labels.back}</button>
+              {i===content.quiz.steps.length-1 ? (
+                <button onClick={onSubmit} className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500">{content.quiz.labels.submit}</button>
+              ) : (
+                <button onClick={onNext} className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500">{content.quiz.labels.next}</button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-white/10 p-6 bg-neutral-800/30 text-center">
+            <div className="text-2xl font-bold mb-2">{content.quiz.labels.doneTitle||"Готово!"}</div>
+            <div className="text-white/70 mb-4">{content.quiz.labels.doneText||"Ответы сохранены."}</div>
+            <pre className="text-left text-xs bg-black/30 rounded p-3 overflow-auto">{JSON.stringify(answers, null, 2)}</pre>
+          </div>
+        )}
       </div>
-    </div>
+    </Section>
   );
 }
 
-// ---------- App ----------
-export default function App() {
+// Placeholder‑секции, чтобы не было битых якорей (nav содержит kit/trophies)
+function KitPlaceholder(){
+  return (
+    <Section id="kit">
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="text-white/50">Раздел «Комплект» готов к наполнению.</div>
+      </div>
+    </Section>
+  );
+}
+
+// ---------- Мини‑смоук‑тесты ----------
+function smokeTests(content, tabs){
+  const errs=[];
+  if (typeof ManifestEditor !== 'function') errs.push('ManifestEditor missing');
+  if (!tabs.some(t=>t.k==='manifest')) errs.push('Tab "manifest" отсутствует');
+  if (!content?.manifest || typeof content.manifest.title !== 'string') errs.push('content.manifest: структура некорректна');
+  if (!Array.isArray(content?.cases?.items)) errs.push('content.cases.items: ожидался массив');
+  return errs;
+}
+
+// ---------- Главный компонент ----------
+export default function App(){
   const [content, setContent] = useState(load());
-  const [editor, setEditor] = useState(false);
-  const [active, setActive] = useState("hero");
+  const set = (c) => { setContent(c); save(c); };
   const [tab, setTab] = useState("hero");
-  const [pickMode, setPickMode] = useState(false);
+  const [pipette, setPipette] = useState(false);
   const [pickedKey, setPickedKey] = useState("");
-  const [quizOpen, setQuizOpen] = useState(false);
+  const previewRef = useRef(null);
 
-  useEffect(() => save(content), [content]);
-  useEffect(() => {
-    const ids = Array.from(new Set(content.nav.map((n) => n.href.replace("#", "")).filter(Boolean)));
-    const obs = new IntersectionObserver((entries) => { const e = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (e) setActive(e.target.id); }, { rootMargin: "-40% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] });
-    ids.forEach((id) => { const el = document.getElementById(id); if (el) obs.observe(el); });
-    return () => obs.disconnect();
-  }, [content.nav]);
+  useEffect(()=>{ const h = (e)=>{ if(!pipette) return; const el = e.target.closest?.('[data-k]'); if(el){ const key = el.getAttribute('data-k'); if(key){ setPickedKey(key); setPipette(false); } } }; const node = previewRef.current; node?.addEventListener('click', h); return ()=>node?.removeEventListener('click', h); },[pipette]);
 
-  const logo = useImageSrc(content.images.logo);
+  const tabs = [
+    {k:"nav", t:"Навигация", c:<NavEditor content={content} set={set}/>},
+    {k:"images", t:"Изображения", c:<ImagesEditor content={content} set={set}/>},
+    {k:"hero", t:"Hero", c:<HeroEditor content={content} set={set}/>},
+    {k:"manifest", t:"Манифест", c:<ManifestEditor content={content} set={set}/>},
+    {k:"audience", t:"Для кого", c:<AudienceEditor content={content} set={set}/>},
+    {k:"author", t:"Автор", c:<AuthorEditor content={content} set={set}/>},
+    {k:"program", t:"Программа", c:<ProgramEditor content={content} set={set}/>},
+    {k:"gear", t:"Снаряжение", c:<GearEditor content={content} set={set}/>},
+    {k:"cases", t:"Кейсы", c:<CasesEditor content={content} set={set}/>},
+    {k:"community", t:"Комьюнити", c:<CommunityEditor content={content} set={set}/>},
+    {k:"contract", t:"Контракт", c:<ContractEditor content={content} set={set}/>},
+    {k:"cta", t:"CTA", c:<CTAEditor content={content} set={set}/>},
+    {k:"quiz", t:"Квиз", c:<QuizEditor content={content} set={set}/>},
+    {k:"style", t:"Стиль", c:<StyleEditor content={content} set={set} pickedKey={pickedKey} setPickedKey={setPickedKey}/>},
+    {k:"data", t:"Данные", c:<DataEditor content={content} set={set}/>},
+  ];
 
-  const onPickCapture = (e) => { if (!pickMode) return; const el = e.target.closest("[data-k]"); if (el) { const k = el.getAttribute("data-k"); setPickedKey(k || ""); setEditor(true); setTab("style"); setPickMode(false); e.preventDefault(); e.stopPropagation(); } };
-  const handleStartQuiz = () => setQuizOpen(true);
-  const handleShowProgram = () => { const el = document.getElementById("program"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  // Запускаем мини‑смоук‑тесты один раз при инициализации
+  useEffect(()=>{
+    const errs = smokeTests(content, tabs);
+    if (errs.length) {
+      console.warn('[SMOKE TESTS] Fail:', errs);
+    } else {
+      console.log('[SMOKE TESTS] OK');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-900 to-neutral-950 text-white" onClickCapture={onPickCapture}>
-      <header className="sticky top-0 z-40 backdrop-blur bg-black/40 border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            {logo ? <img src={logo} alt="logo" className="w-10 h-10 rounded" /> : <div className="w-10 h-10 rounded bg-white/5" />}
-            <div className="leading-tight"><T c={content} k="brand" as="div" extra="font-semibold text-white">{content.brand}</T></div>
-          </div>
-          <nav className="ml-auto flex items-center gap-2 flex-wrap">
-            {content.nav.filter((n) => n.show).map((n, i) => { const id = n.href.replace("#", ""); return (
-              <a key={n.key} href={n.href} className={`px-3 py-2 rounded-md hover:bg-white/5 ${active === id ? "bg-gradient-to-r from-amber-500 to-orange-600 text-black" : "text-white/85"}`} onClick={(e) => { const el = document.getElementById(id); if (el) { e.preventDefault(); el.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>
-                <T c={content} k={`nav.${i}.label`} as="span">{n.label}</T>
-              </a>
-            );})}
-            <button onClick={() => setEditor(true)} className="ml-2 px-3 py-2 rounded-md border border-white/20">Редактировать</button>
-          </nav>
+    <div className="min-h-screen bg-neutral-900 text-white scroll-smooth">
+      <Header content={content} />
+
+      <div className="max-w-6xl mx-auto px-4 pt-24 pb-8 flex justify-between items-center">
+        <div className="text-white/70 text-sm">Canvas build • локальное сохранение • клик‑пипетка</div>
+        <div className="flex items-center gap-2">
+          <button onClick={()=>setPipette(p=>!p)} className={`px-3 py-1.5 rounded-lg border ${pipette?"border-emerald-500 bg-emerald-500/10":"border-white/10 bg-neutral-800/50"}`}>Пипетка {pipette?"вкл":"выкл"}</button>
+          <button onClick={()=>{ localStorage.removeItem(LS_KEY); set(DEFAULT_CONTENT); }} className="px-3 py-1.5 rounded-lg border border-white/10 bg-neutral-800/50">Сбросить контент</button>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-4">
-        <Hero c={content} />
-        <Manifest c={content} />
-        <Audience c={content} />
-        <Author c={content} />
-        <Program c={content} />
-        <Gear c={content} />
-        <Cases c={content} />
-        <Community c={content} />
-        <Contract c={content} />
-        <CTA c={content} onStartQuiz={handleStartQuiz} onShowProgram={handleShowProgram} />
-        <div id="kit" className="h-2" />
-      </main>
+      {/* Preview + Editor */}
+      <div className="max-w-[1400px] mx-auto px-4 pb-16 grid lg:grid-cols-[1fr_420px] gap-6">
+        {/* Preview */}
+        <div ref={previewRef} className="rounded-xl border border-white/10 overflow-hidden bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950">
+          <Hero content={content} />
+          <Manifest content={content} />
+          <Audience content={content} />
+          <Author content={content} />
+          <Program content={content} />
+          <KitPlaceholder />
+          <Gear content={content} />
+          <Cases content={content} />
+          <Community content={content} />
+          <Contract content={content} />
+          <CTA content={content} />
+          <Quiz content={content} />
+        </div>
 
-      <Editor open={editor} onClose={() => setEditor(false)} content={content} setContent={setContent} tab={tab} setTab={setTab} pickMode={pickMode} setPickMode={setPickMode} pickedKey={pickedKey} setPickedKey={setPickedKey} />
-      <Quiz open={quizOpen} onClose={() => setQuizOpen(false)} />
+        {/* Editor */}
+        <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="flex flex-wrap gap-1 p-2 bg-neutral-900/80 border-b border-white/10 sticky top-16 z-40">
+            {tabs.map(t => (
+              <button key={t.k} onClick={()=>setTab(t.k)} className={`px-3 py-1.5 rounded ${tab===t.k?"bg-emerald-700":"bg-neutral-700"}`}>{t.t}</button>
+            ))}
+          </div>
+          <div className="p-3 bg-neutral-900/60 max-h-[80vh] overflow-auto">
+            {tabs.find(t=>t.k===tab)?.c}
+          </div>
+        </div>
+      </div>
+
+      <footer className="text-center text-xs text-white/40 pb-8">E‑BOSH GUERRILLA • Canvas build</footer>
     </div>
   );
 }
